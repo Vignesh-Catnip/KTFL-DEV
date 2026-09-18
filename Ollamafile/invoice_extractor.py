@@ -22,6 +22,26 @@ Requirements:
     9. Never invent values.
 """
 
+import os
+
+# ============================================================
+# LOCAL OLLAMA PROXY FIX
+# Prevent Windows/server proxy settings from affecting
+# localhost / 127.0.0.1 Ollama requests.
+# ============================================================
+for proxy_key in [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+]:
+    os.environ.pop(proxy_key, None)
+
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+os.environ["no_proxy"] = "localhost,127.0.0.1"
+
 import base64
 import json
 import re
@@ -46,7 +66,7 @@ from pydantic import BaseModel, Field
 
 PDF_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Input-pdf"
 
-OLLAMA_URL = "http://localhost:11434"
+OLLAMA_URL = "http://127.0.0.1:11434"
 OLLAMA_MODEL = "qwen3-vl:32b"
 
 OUTPUT_FOLDER = (
@@ -435,6 +455,11 @@ def create_llm():
         base_url=OLLAMA_URL,
         temperature=0,
         num_ctx=16384,
+        num_predict=4096,
+        reasoning=False,
+        # Important: do not read Windows HTTP_PROXY/HTTPS_PROXY
+        # when connecting to local Ollama.
+        client_kwargs={"trust_env": False},
     )
 
 
@@ -1702,6 +1727,50 @@ def main():
         f"Output    : {output_folder}"
     )
     print("=" * 70)
+
+    # --------------------------------------------------------
+    # 0. CHECK LOCAL OLLAMA BEFORE PROCESSING PDFs
+    # --------------------------------------------------------
+    try:
+        import httpx
+
+        check = httpx.get(
+            f"{OLLAMA_URL}/api/tags",
+            timeout=10,
+            trust_env=False,
+        )
+        check.raise_for_status()
+
+        models = check.json().get("models", [])
+        model_names = [m.get("name", "") for m in models]
+
+        print("Local Ollama : OK")
+        print(
+            "Available models: "
+            + (", ".join(model_names) if model_names else "NONE")
+        )
+
+        if OLLAMA_MODEL not in model_names:
+            print()
+            print(
+                f"WARNING: {OLLAMA_MODEL} is not listed in Ollama."
+            )
+            print(
+                f"Run: ollama pull {OLLAMA_MODEL}"
+            )
+            sys.exit(1)
+
+    except Exception as error:
+        print()
+        print("ERROR: Cannot connect to local Ollama.")
+        print(f"Ollama URL: {OLLAMA_URL}")
+        print(f"Details   : {error}")
+        print()
+        print(
+            "Manual test: "
+            "curl http://127.0.0.1:11434/api/tags"
+        )
+        sys.exit(1)
 
     llm = create_llm()
 
