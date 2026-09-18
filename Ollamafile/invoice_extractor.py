@@ -26,16 +26,10 @@ import os
 
 # ============================================================
 # LOCAL OLLAMA PROXY FIX
-# Prevent Windows/server proxy settings from affecting
-# localhost / 127.0.0.1 Ollama requests.
 # ============================================================
 for proxy_key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
+    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
+    "http_proxy", "https_proxy", "all_proxy",
 ]:
     os.environ.pop(proxy_key, None)
 
@@ -73,10 +67,9 @@ OUTPUT_FOLDER = (
     r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 )
 
-MAX_PAGES = 3
+MAX_PAGES = 6
 IMAGE_ZOOM = 1.5
 TIMEOUT = 900
-OCR_MAX_CHARS = 5000
 
 # True = also create a combined summary Excel
 CREATE_SUMMARY = True
@@ -237,7 +230,7 @@ line 5 HSN/SAC = 998519
 HANDWRITING
 ============================================================
 
-If handwritten text is visible and readable, extract it.
+If handwritten text is visible and readable, extract it EXACTLY. Pay special attention to handwritten PO/reference numbers above the invoice header.
 
 Do NOT ignore handwriting.
 
@@ -459,11 +452,8 @@ def create_llm():
         num_predict=3000,
         reasoning=False,
         format="json",
-        # Important: do not read Windows HTTP_PROXY/HTTPS_PROXY
-        # when connecting to local Ollama.
         client_kwargs={"trust_env": False},
     )
-
 
 def create_message(prompt, images, pdf_text=""):
 
@@ -482,7 +472,7 @@ def create_message(prompt, images, pdf_text=""):
             "\n\nSECONDARY OCR REFERENCE.\n"
             "WARNING: OCR CAN BE WRONG.\n"
             "Use this only to cross-check the image.\n\n"
-            + pdf_text[:OCR_MAX_CHARS]
+            + pdf_text[:5000]
         )
 
         content.append({
@@ -505,70 +495,67 @@ def create_message(prompt, images, pdf_text=""):
 
 
 def clean_json_response(raw):
-
     if isinstance(raw, list):
-
-        values = []
-
+        parts = []
         for item in raw:
-
             if isinstance(item, dict):
-
-                values.append(
-                    str(item.get("text", ""))
-                )
-
+                parts.append(str(item.get("text", "")))
             else:
+                parts.append(str(item))
+        raw = "".join(parts)
 
-                values.append(str(item))
-
-        raw = "".join(values)
-
-    text = str(raw)
+    text = str(raw).strip()
 
     text = re.sub(
         r"<think>.*?</think>",
         "",
         text,
-        flags=re.IGNORECASE | re.DOTALL
+        flags=re.IGNORECASE | re.DOTALL,
     )
 
     text = re.sub(
-        r"^```(?:json)?\s*",
+        r"```(?:json)?",
         "",
         text,
-        flags=re.IGNORECASE
+        flags=re.IGNORECASE,
     )
+    text = text.replace("```", "").strip()
 
-    text = re.sub(
-        r"\s*```$",
-        "",
-        text
-    )
-
-    text = text.strip()
-
+    # Direct JSON
     try:
         return json.loads(text)
-
     except Exception:
         pass
 
+    # JSON object embedded in extra text
     start = text.find("{")
     end = text.rfind("}")
-
     if start >= 0 and end > start:
-
         try:
-            return json.loads(
-                text[start:end + 1]
-            )
-
+            return json.loads(text[start:end + 1])
         except Exception:
             pass
 
+    # Balanced JSON object fallback
+    depth = 0
+    object_start = None
+    for i, char in enumerate(text):
+        if char == "{":
+            if object_start is None:
+                object_start = i
+            depth += 1
+        elif char == "}" and object_start is not None:
+            depth -= 1
+            if depth == 0:
+                candidate = text[object_start:i + 1]
+                try:
+                    return json.loads(candidate)
+                except Exception:
+                    object_start = None
+
     raise ValueError(
-        "Model did not return valid JSON"
+        "Model did not return valid JSON. Raw response: "
+        + text[:3000]
     )
 
 
@@ -578,18 +565,191 @@ def invoke_model(
     images,
     pdf_text=""
 ):
-
-    message = create_message(
-        prompt,
-        images,
-        pdf_text
-    )
-
+    message = create_message(prompt, images, pdf_text)
     response = llm.invoke([message])
 
-    return clean_json_response(
-        response.content
-    )
+    try:
+        return clean_json_response(response.content)
+    except Exception as first_error:
+        print("  -> JSON parse failed; retrying with strict JSON instruction...")
+        retry_prompt = (
+            prompt
+            + "\n\nCRITICAL: Return ONLY one valid JSON object. "
+              "No markdown, no explanation, no thinking text. "
+              "Use empty strings/arrays/0 when a value is not visible."
+        )
+        retry_message = create_message(retry_prompt, images, pdf_text)
+        retry_response = llm.invoke([retry_message])
+
+        try:
+            return clean_json_response(retry_response.content)
+        except Exception:
+            print("  -> Raw model response (first 3000 chars):")
+            print(str(retry_response.content)[:3000])
+            raise first_error
+
+
+# ============================================================
+# PAGE-BY-PAGE VISION EXTRACTION
+# Keeps each Ollama request small enough for the 16K context.
+# ============================================================
+
+def extract_all_pages(llm, prompt, images, pdf_text=""):
+    merged = {
+        "vendor": "",
+        "invoice_number": "",
+        "invoice_date": "",
+        "po_number": "",
+        "po_numbers": [],
+        "handwritten_references": [],
+        "gstin": "",
+        "hsn_sac": "",
+        "vendor_code": "",
+        "tax_code": "",
+        "business_place": "",
+        "currency": "INR",
+        "subtotal": 0,
+        "cgst": 0,
+        "sgst": 0,
+        "igst": 0,
+        "total_tax": 0,
+        "total": 0,
+        "confidence": 0,
+        "lines": [],
+    }
+
+    for page_index, image in enumerate(images, start=1):
+        print(f"     Vision page {page_index}/{len(images)}...")
+        page_text = ""
+        if pdf_text:
+            parts = pdf_text.split("--- PAGE ")
+            if page_index < len(parts):
+                page_text = parts[page_index][:5000]
+
+        page_prompt = (
+            prompt
+            + f"\n\nYou are viewing PAGE {page_index}. "
+              "Extract values visible on this page. "
+              "If a field is not visible on this page, leave it empty. "
+              "Return ONLY valid JSON."
+        )
+
+        try:
+            data = invoke_model(
+                llm,
+                page_prompt,
+                [image],
+                page_text,
+            )
+        except Exception as error:
+            print(f"     Page {page_index} skipped: {error}")
+            continue
+
+        if not isinstance(data, dict):
+            continue
+
+        # Header fields: fill only when currently empty.
+        for field in [
+            "vendor", "invoice_number", "invoice_date", "po_number",
+            "gstin", "hsn_sac", "vendor_code", "tax_code",
+            "business_place", "currency",
+        ]:
+            value = clean_string(data.get(field))
+            if value and not merged.get(field):
+                merged[field] = value
+
+        for field in ["subtotal", "cgst", "sgst", "igst", "total_tax", "total"]:
+            value = to_float(data.get(field))
+            if value and not merged.get(field):
+                merged[field] = value
+
+        for po in data.get("po_numbers") or []:
+            po = clean_string(po)
+            if po and po not in merged["po_numbers"]:
+                merged["po_numbers"].append(po)
+
+        for ref in data.get("handwritten_references") or []:
+            ref = clean_string(ref)
+            if ref and ref not in merged["handwritten_references"]:
+                merged["handwritten_references"].append(ref)
+
+        page_lines = data.get("lines") or data.get("line_items") or data.get("items") or []
+        if isinstance(page_lines, list):
+            merged["lines"].extend(
+                [x for x in page_lines if isinstance(x, dict)]
+            )
+
+        conf = to_float(data.get("confidence"))
+        if conf > merged["confidence"]:
+            merged["confidence"] = conf
+
+    return merged
+
+
+def extract_validation_all_pages(llm, prompt, images, pdf_text=""):
+    merged = {
+        "invoice_number": "",
+        "invoice_date": "",
+        "po_number": "",
+        "po_numbers": [],
+        "handwritten_references": [],
+        "gstin": "",
+        "hsn_sac": "",
+        "line_hsn_sac": [],
+        "total": 0,
+    }
+
+    for page_index, image in enumerate(images, start=1):
+        print(f"     Validation page {page_index}/{len(images)}...")
+        page_text = ""
+        if pdf_text:
+            parts = pdf_text.split("--- PAGE ")
+            if page_index < len(parts):
+                page_text = parts[page_index][:5000]
+
+        page_prompt = (
+            prompt
+            + f"\n\nThis is PAGE {page_index}. "
+              "Return ONLY valid JSON."
+        )
+
+        try:
+            data = invoke_model(llm, page_prompt, [image], page_text)
+        except Exception as error:
+            print(f"     Validation page {page_index} skipped: {error}")
+            continue
+
+        if not isinstance(data, dict):
+            continue
+
+        for field in [
+            "invoice_number", "invoice_date", "po_number", "gstin", "hsn_sac"
+        ]:
+            value = clean_string(data.get(field))
+            if value and not merged.get(field):
+                merged[field] = value
+
+        total = to_float(data.get("total"))
+        if total and not merged["total"]:
+            merged["total"] = total
+
+        for po in data.get("po_numbers") or []:
+            po = clean_string(po)
+            if po and po not in merged["po_numbers"]:
+                merged["po_numbers"].append(po)
+
+        for ref in data.get("handwritten_references") or []:
+            ref = clean_string(ref)
+            if ref and ref not in merged["handwritten_references"]:
+                merged["handwritten_references"].append(ref)
+
+        codes = data.get("line_hsn_sac") or []
+        if isinstance(codes, list):
+            merged["line_hsn_sac"].extend(
+                [clean_string(x) for x in codes if clean_string(x)]
+            )
+
+    return merged
 
 
 # ============================================================
@@ -1730,50 +1890,6 @@ def main():
     )
     print("=" * 70)
 
-    # --------------------------------------------------------
-    # 0. CHECK LOCAL OLLAMA BEFORE PROCESSING PDFs
-    # --------------------------------------------------------
-    try:
-        import httpx
-
-        check = httpx.get(
-            f"{OLLAMA_URL}/api/tags",
-            timeout=10,
-            trust_env=False,
-        )
-        check.raise_for_status()
-
-        models = check.json().get("models", [])
-        model_names = [m.get("name", "") for m in models]
-
-        print("Local Ollama : OK")
-        print(
-            "Available models: "
-            + (", ".join(model_names) if model_names else "NONE")
-        )
-
-        if OLLAMA_MODEL not in model_names:
-            print()
-            print(
-                f"WARNING: {OLLAMA_MODEL} is not listed in Ollama."
-            )
-            print(
-                f"Run: ollama pull {OLLAMA_MODEL}"
-            )
-            sys.exit(1)
-
-    except Exception as error:
-        print()
-        print("ERROR: Cannot connect to local Ollama.")
-        print(f"Ollama URL: {OLLAMA_URL}")
-        print(f"Details   : {error}")
-        print()
-        print(
-            "Manual test: "
-            "curl http://127.0.0.1:11434/api/tags"
-        )
-        sys.exit(1)
-
     llm = create_llm()
 
     all_headers = []
@@ -1815,7 +1931,7 @@ def main():
                 "  -> Main vision extraction..."
             )
 
-            data = invoke_model(
+            data = extract_all_pages(
                 llm,
                 EXTRACTION_PROMPT,
                 images,
@@ -1838,7 +1954,7 @@ def main():
                 "validation..."
             )
 
-            validation = invoke_model(
+            validation = extract_validation_all_pages(
                 llm,
                 VALIDATION_PROMPT,
                 images,
