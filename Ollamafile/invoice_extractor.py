@@ -73,9 +73,10 @@ OUTPUT_FOLDER = (
     r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 )
 
-MAX_PAGES = 6
-IMAGE_ZOOM = 2.0
+MAX_PAGES = 3
+IMAGE_ZOOM = 1.5
 TIMEOUT = 900
+OCR_MAX_CHARS = 5000
 
 # True = also create a combined summary Excel
 CREATE_SUMMARY = True
@@ -455,8 +456,9 @@ def create_llm():
         base_url=OLLAMA_URL,
         temperature=0,
         num_ctx=16384,
-        num_predict=4096,
+        num_predict=3000,
         reasoning=False,
+        format="json",
         # Important: do not read Windows HTTP_PROXY/HTTPS_PROXY
         # when connecting to local Ollama.
         client_kwargs={"trust_env": False},
@@ -480,7 +482,7 @@ def create_message(prompt, images, pdf_text=""):
             "\n\nSECONDARY OCR REFERENCE.\n"
             "WARNING: OCR CAN BE WRONG.\n"
             "Use this only to cross-check the image.\n\n"
-            + pdf_text[:20000]
+            + pdf_text[:OCR_MAX_CHARS]
         )
 
         content.append({
