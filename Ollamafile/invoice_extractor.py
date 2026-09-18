@@ -41,6 +41,7 @@ import json
 import re
 import sys
 import time
+import httpx
 from pathlib import Path
 from typing import List
 
@@ -390,6 +391,42 @@ Return ONLY JSON:
 
 
 # ============================================================
+# TARGETED HANDWRITING / PO CHECK
+# ============================================================
+
+HANDWRITING_PROMPT = r"""
+Read ONLY the invoice image and carefully inspect the entire top area,
+especially the handwritten notes above and around the invoice header.
+
+Extract:
+1. Clearly readable handwritten PO number(s).
+2. Clearly readable handwritten reference number(s).
+3. Invoice/Bill number if visible.
+4. HSN/SAC if visible.
+
+Important:
+- Handwritten text is required.
+- Preserve the exact characters and digits.
+- A handwritten value such as PO-710067998 must be captured exactly.
+- Do not convert or guess unclear handwriting.
+- Do not confuse invoice number, GRN, security number, challan,
+  e-way bill, or other references with PO.
+- If the image clearly shows a PO reference without a "PO" label,
+  return it in po_number only when the visual context identifies it
+  as a PO.
+- Return ONLY valid JSON.
+
+{
+  "invoice_number": "",
+  "po_number": "",
+  "po_numbers": [],
+  "handwritten_references": [],
+  "hsn_sac": ""
+}
+"""
+
+
+# ============================================================
 # IMAGE / PDF HELPERS
 # ============================================================
 
@@ -444,6 +481,10 @@ def get_pdf_text(pdf_path: Path):
 # ============================================================
 
 def create_llm():
+    # LangChain client is kept for the project architecture.
+    # For Qwen3-VL, invoke_model() uses Ollama's native /api/chat
+    # with think=False, because some LangChain/Ollama combinations
+    # can place the answer in the thinking channel.
     return ChatOllama(
         model=OLLAMA_MODEL,
         base_url=OLLAMA_URL,
@@ -559,34 +600,166 @@ def clean_json_response(raw):
     )
 
 
+def _ollama_native_chat(prompt, images, pdf_text=""):
+    """
+    Reliable Qwen3-VL call using Ollama's native API.
+
+    Important:
+    - think=False prevents Qwen3-VL from returning only reasoning.
+    - format=json requests a JSON object.
+    - trust_env=False prevents proxy settings from touching localhost.
+    """
+
+    content = prompt
+
+    if pdf_text:
+        content += (
+            "\n\nSECONDARY OCR REFERENCE.\n"
+            "OCR may be wrong. IMAGE HAS PRIORITY.\n"
+            "Use OCR only to cross-check printed text.\n\n"
+            + pdf_text[:5000]
+        )
+
+    # Ollama native vision format: one text message + image base64 list.
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": content,
+                "images": images,
+            }
+        ],
+        "stream": False,
+        "format": "json",
+        "think": False,
+        "options": {
+            "temperature": 0,
+            "num_ctx": 16384,
+            "num_predict": 3000,
+        },
+    }
+
+    response = httpx.post(
+        f"{OLLAMA_URL}/api/chat",
+        json=payload,
+        timeout=TIMEOUT,
+        trust_env=False,
+    )
+    response.raise_for_status()
+
+    result = response.json()
+    message = result.get("message") or {}
+
+    # Normal final answer.
+    content_text = message.get("content") or ""
+
+    if content_text.strip():
+        return clean_json_response(content_text)
+
+    # Some Ollama/Qwen versions may still place text in thinking.
+    # Only use it as a machine-readable fallback if it contains JSON.
+    thinking_text = message.get("thinking") or ""
+
+    if thinking_text.strip():
+        try:
+            return clean_json_response(thinking_text)
+        except Exception:
+            pass
+
+    raise ValueError(
+        "Ollama returned an empty final answer. "
+        f"Response keys: {list(message.keys())}"
+    )
+
+
 def invoke_model(
     llm,
     prompt,
     images,
     pdf_text=""
 ):
-    message = create_message(prompt, images, pdf_text)
+    """
+    Qwen3-VL extraction:
+    1. Native Ollama API with think=False.
+    2. One native retry with stricter JSON instruction.
+    3. LangChain fallback.
+    """
+
+    # --------------------------------------------------------
+    # 1. Native Ollama - primary path
+    # --------------------------------------------------------
+    try:
+        return _ollama_native_chat(
+            prompt,
+            images,
+            pdf_text
+        )
+
+    except Exception as native_error:
+        print(
+            f"     Native Ollama attempt failed: {native_error}"
+        )
+
+    # --------------------------------------------------------
+    # 2. Native retry
+    # --------------------------------------------------------
+    retry_prompt = (
+        prompt
+        + "\n\nFINAL OUTPUT RULE:\n"
+          "Return exactly ONE valid JSON object and nothing else.\n"
+          "Do NOT write analysis, reasoning, markdown, or explanation.\n"
+          "Do NOT use ``` fences.\n"
+          "If a value is not visible, use an empty string, empty array, "
+          "or 0.\n"
+          "The invoice IMAGE is the source of truth.\n"
+    )
+
+    try:
+        return _ollama_native_chat(
+            retry_prompt,
+            images,
+            pdf_text
+        )
+
+    except Exception as retry_error:
+        print(
+            f"     Native retry failed: {retry_error}"
+        )
+
+    # --------------------------------------------------------
+    # 3. LangChain fallback
+    # --------------------------------------------------------
+    message = create_message(
+        prompt,
+        images,
+        pdf_text
+    )
+
     response = llm.invoke([message])
 
     try:
-        return clean_json_response(response.content)
-    except Exception as first_error:
-        print("  -> JSON parse failed; retrying with strict JSON instruction...")
-        retry_prompt = (
-            prompt
-            + "\n\nCRITICAL: Return ONLY one valid JSON object. "
-              "No markdown, no explanation, no thinking text. "
-              "Use empty strings/arrays/0 when a value is not visible."
+        return clean_json_response(
+            response.content
         )
-        retry_message = create_message(retry_prompt, images, pdf_text)
-        retry_response = llm.invoke([retry_message])
 
-        try:
-            return clean_json_response(retry_response.content)
-        except Exception:
-            print("  -> Raw model response (first 3000 chars):")
-            print(str(retry_response.content)[:3000])
-            raise first_error
+    except Exception:
+        raw = str(response.content or "").strip()
+
+        print(
+            "     LangChain response was not valid JSON."
+        )
+
+        if raw:
+            print(
+                "     Raw response (first 1000 chars):"
+            )
+            print(raw[:1000])
+
+        raise ValueError(
+            "Qwen3-VL did not return usable JSON "
+            "through native Ollama or LangChain."
+        )
 
 
 # ============================================================
@@ -752,6 +925,36 @@ def extract_validation_all_pages(llm, prompt, images, pdf_text=""):
     return merged
 
 
+def extract_handwriting_check(
+    llm,
+    image,
+    pdf_text=""
+):
+    """
+    Extra focused pass for handwritten PO/reference values.
+    Uses only the first page because PO notes are normally near
+    the invoice header/top margin.
+    """
+
+    print("  -> Targeted handwritten PO check...")
+
+    try:
+        data = invoke_model(
+            llm,
+            HANDWRITING_PROMPT,
+            [image],
+            pdf_text
+        )
+
+        return data if isinstance(data, dict) else {}
+
+    except Exception as error:
+        print(
+            f"     Handwriting check skipped: {error}"
+        )
+        return {}
+
+
 # ============================================================
 # NORMALIZATION
 # ============================================================
@@ -838,6 +1041,25 @@ def normalize_invoice(data, filename):
         }
 
         lines.append(line)
+
+    # Remove exact duplicate line items that can occur when
+    # page-level extraction repeats a table/header.
+    unique_lines = []
+    seen_lines = set()
+
+    for line in lines:
+        key = (
+            line["item"],
+            line["quantity"],
+            line["rate"],
+            line["hsn_sac"],
+            line["amount"],
+        )
+        if key not in seen_lines:
+            seen_lines.add(key)
+            unique_lines.append(line)
+
+    lines = unique_lines
 
     cgst = to_float(data.get("cgst"))
     sgst = to_float(data.get("sgst"))
@@ -1890,6 +2112,58 @@ def main():
     )
     print("=" * 70)
 
+    # --------------------------------------------------------
+    # 0. CHECK LOCAL OLLAMA BEFORE PROCESSING PDFs
+    # --------------------------------------------------------
+    try:
+        check = httpx.get(
+            f"{OLLAMA_URL}/api/tags",
+            timeout=10,
+            trust_env=False,
+        )
+        check.raise_for_status()
+
+        models = check.json().get("models", [])
+        model_names = [
+            m.get("name", "")
+            for m in models
+        ]
+
+        print(
+            "Local Ollama : OK"
+        )
+        print(
+            "Available models: "
+            + (
+                ", ".join(model_names)
+                if model_names
+                else "NONE"
+            )
+        )
+
+        if OLLAMA_MODEL not in model_names:
+            print()
+            print(
+                f"ERROR: {OLLAMA_MODEL} is not installed."
+            )
+            print(
+                f"Run: ollama pull {OLLAMA_MODEL}"
+            )
+            sys.exit(1)
+
+    except Exception as error:
+        print()
+        print(
+            "ERROR: Cannot connect to local Ollama."
+        )
+        print(
+            f"Ollama URL: {OLLAMA_URL}"
+        )
+        print(
+            f"Details: {error}"
+        )
+        sys.exit(1)
+
     llm = create_llm()
 
     all_headers = []
@@ -1970,7 +2244,62 @@ def main():
             )
 
             # ------------------------------------------------
-            # 5. Regex fallback
+            # 5. TARGETED HANDWRITING / PO CHECK
+            # ------------------------------------------------
+            if images:
+                handwriting = extract_handwriting_check(
+                    llm,
+                    images[0],
+                    text[:5000]
+                )
+
+                # Fill missing invoice-level values.
+                for field in [
+                    "invoice_number",
+                    "po_number",
+                    "hsn_sac",
+                ]:
+                    value = clean_string(
+                        handwriting.get(field)
+                    )
+                    if value and not header.get(field):
+                        header[field] = value
+
+                for po in handwriting.get("po_numbers") or []:
+                    po = clean_string(po)
+                    if (
+                        po
+                        and po not in header["po_numbers"]
+                    ):
+                        header["po_numbers"].append(po)
+
+                for ref in (
+                    handwriting.get(
+                        "handwritten_references"
+                    )
+                    or []
+                ):
+                    ref = clean_string(ref)
+                    if (
+                        ref
+                        and ref not in header[
+                            "handwritten_references"
+                        ]
+                    ):
+                        header[
+                            "handwritten_references"
+                        ].append(ref)
+
+                if (
+                    not header["po_number"]
+                    and header["po_numbers"]
+                ):
+                    header["po_number"] = (
+                        header["po_numbers"][0]
+                    )
+
+            # ------------------------------------------------
+            # 6. Regex fallback
             # ------------------------------------------------
 
             header, lines = (
@@ -1982,7 +2311,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # 6. SINGLE HSN/SAC -> ALL ITEMS
+            # 7. SINGLE HSN/SAC -> ALL ITEMS
             # ------------------------------------------------
 
             header, lines = (
@@ -1993,7 +2322,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # 7. Confidence
+            # 8. Confidence
             # ------------------------------------------------
 
             header["confidence"] = round(
@@ -2015,7 +2344,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # 8. Create one Excel per invoice
+            # 9. Create one Excel per invoice
             # ------------------------------------------------
 
             create_invoice_excel(
@@ -2082,7 +2411,7 @@ def main():
             time.sleep(1)
 
     # --------------------------------------------------------
-    # 9. Combined summary
+    # 10. Combined summary
     # --------------------------------------------------------
 
     if (
