@@ -25,3 +25,8 @@ AI Confidence %	90
 
 Sl.No	Item / Description	Quantity	Rate	HSN/SAC	Amount
 1	K218631 / 36 PCS FFV - SAE 1050(M) - 80 ROUND	7.97	65900	72149990	525223
+
+
+
+Start-Process "C:Program Files\SAP\FrontEnd\SAPGUI\saplogon.exe" -
+WindowStyle Maximized
