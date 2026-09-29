@@ -8,8 +8,11 @@ defVar --name login_window_success --type Boolean
 defVar --name username --type String
 defVar --name password --type String
 
+defVar --name sap_prd_user --type String
+defVar --name sap_prd_pass --type String
 defVar --name ktfl_sap_user --type String
 defVar --name ktfl_sap_pass --type String
+defVar --name T_code --type String
 
 getParameter --name ktfl_sap_user ktfl_sap_user=value
 getParameter --name "ktfl-sap-pass" ktfl_sap_pass=value
@@ -55,7 +58,7 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
 	
 	
 	// Wait for SAP login screen
-	waitWindow --classname GuiMainWindow --timeout "00:00:15" login_window=value login_window_success=success
+	waitWindow --title SAP --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:15" login_window=value login_window_success=success
 	
 	
 	if --left "${login_window_success}" --operator "Is_True"
@@ -83,7 +86,7 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
 		
 		
 		// Wait for SAP Easy Access
-		waitWindow --title "SAP Easy Access" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:15" SAP_Easy_Access=value SAP_Easy_Access_success=success
+		waitWindow --title "SAP Easy Access  -  User Menu for Abhijeet Chaudhari" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch  --timeout "00:00:15" SAP_Easy_Access=value SAP_Easy_Access_success=success
 		
 	else
 		
@@ -101,6 +104,9 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True"
 	
 	// Click T-Code box
 	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[2]/combobox[1]"
+	setVar --name "${T_code}" --value MIRO
+	typeText --text "${T_code}"
+	keyboard --type "KeyPress" --key "Return"
 	
 	logMessage --message "SAP login successful. T-Code box selected." --type "Info"
 	
