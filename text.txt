@@ -2,4 +2,26 @@ User ID- ATC01021
 
 Password- Ktfl@12345
 
- 
+ Field	Value
+File Name	RM.pdf
+Vendor	KALYANI STEELS LIMITED
+Invoice Number	9043043679
+Invoice Date	30.07.2026
+PO Number	Jul.Schedule
+Vendor GSTIN	29AAACK7315D1ZQ
+HSN / SAC	72149990
+Vendor Code	
+Currency	INR
+Subtotal (Taxable Value)	525223
+CGST	0
+SGST	0
+IGST	94540.14
+Total Tax	94540.14
+Invoice Total	619763.14
+GRN / Inward Number	11129
+Handwritten References	511627,511763
+AI Confidence %	90
+
+
+Sl.No	Item / Description	Quantity	Rate	HSN/SAC	Amount
+1	K218631 / 36 PCS FFV - SAE 1050(M) - 80 ROUND	7.97	65900	72149990	525223
