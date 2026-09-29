@@ -1,0 +1,75 @@
+defVar --name SAP_Easy_Access --type Window
+defVar --name SAP_Easy_Access_success --type Boolean
+defVar --name sap_logon_window --type Window
+defVar --name sap_logon_window_success --type Boolean
+defVar --name login_window --type Window
+defVar --name login_window_success --type Boolean
+defVar --name username --type String --value NM00236
+defVar --name password --type String --value "Kalyani@123"
+defVar --name Click_Tcodebox_success --type Boolean
+defVar --name sap_prd_user --type String
+defVar --name sap_prd_pass --type String
+getParameter --name sap_prd_user sap_prd_user=value
+getParameter --name sap_prd_pass sap_prd_pass=value
+setVar --name "${username}" --value "${sap_prd_user}"
+setVar --name "${password}" --value "${sap_prd_pass}"
+waitWindow --title "SAP Easy Access  -  User Menu for Nilesh Mali" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:05" SAP_Easy_Access=value SAP_Easy_Access_success=success
+
+// Step 2: If NOT already logged in, execute the login sequence
+if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
+	powerShell --apartmentState "MTA" --script "Stop-Process -Name \"saplogon\", \"sapgui\" -Force -ErrorAction SilentlyContinue"
+	// Check if the SAP Logon Pad is open
+	findWindow --title "SAP Logon 800" sap_logon_window=value sap_logon_window_success=success
+	
+	// If SAP Logon Pad is not open, launch it
+	if --left "${sap_logon_window_success}" --operator "Is_True" --negate
+		powerShell --apartmentState "MTA" --script "Start-Process \"C:\\Program Files\\SAP\\FrontEnd\\SAPGUI\\saplogon.exe\" -WindowStyle Maximized"
+		waitWindow --title "SAP Logon 800" --classname "#32770" --processname saplogon --timeout "00:00:10" sap_logon_window=value sap_logon_window_success=success
+	endIf
+	
+	// Bring SAP Logon Pad to focus
+	attachWindow --window ${sap_logon_window}
+	showWindow --maximize
+	
+	// Select your environment connection (Note: If this absolute XPath fails, consider remoting via ID or Name)
+	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/list[1]/listitem[3]"
+	delay --timeout "00:00:00.5000000"
+	keyboard --type "KeyDown" --key "Return"
+	
+	// Step 3: Handle the Login Screen
+	waitWindow --classname GuiMainWindow --timeout "00:00:15" login_window=value login_window_success=success
+	
+	if --left "${login_window_success}" --operator "Is_True"
+		attachWindow --window ${login_window}
+		
+		// Enter Username
+		typeText --text "${username}"
+		delay --timeout "00:00:00.5000000"
+		keyboard --type "KeyDown" --key "Tab"
+		
+		// Enter Password
+		delay --timeout "00:00:00.5000000"
+		typeText --text "${password}"
+		delay --timeout "00:00:00.5000000"
+		keyboard --type "KeyDown" --key "Return"
+		
+		// Step 4: Safely wait for the Main Screen (Replaces the broken infinite while loop)
+		waitWindow --title "SAP Easy Access" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:10" SAP_Easy_Access=value SAP_Easy_Access_success=success
+	else
+		logMessage --message "Error: SAP Login window failed to appear." --type "Warning"
+	endIf
+	
+endIf
+
+// Step 5: If we successfully reached/found the Easy Access screen, click the T-Code box
+if --left "${SAP_Easy_Access_success}" --operator "Is_True"
+	attachWindow --window ${SAP_Easy_Access}
+	// Clicking the Transaction Code input box
+	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[2]/combobox[1]" Click_Tcodebox_success=value
+	logMessage --message "Successfully targeted the T-Code box." --type "Info"
+else
+	logMessage --message "Automation Failed: Could not reach the SAP Easy Access screen." --type "Error"
+endIf
+
+logMessage --message "Process finished" --type "Info"
+delay --timeout "00:00:00.3000000"
