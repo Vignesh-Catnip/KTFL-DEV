@@ -15,6 +15,7 @@ defVar --name ktfl_sap_pass --type String
 defVar --name T_code --type String
 defVar --name company_code_window --type Window
 defVar --name company_code_windows_Success --type Boolean
+defVar --name company_code --type String
 
 getParameter --name ktfl_sap_user ktfl_sap_user=value
 getParameter --name "ktfl-sap-pass" ktfl_sap_pass=value
@@ -26,74 +27,42 @@ setVar --name "${password}" --value "${ktfl_sap_pass}"
 // Check whether SAP is already logged in
 waitWindow --title "SAP Easy Access" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:05" SAP_Easy_Access=value SAP_Easy_Access_success=success
 
-
 if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
-	
 	// Check SAP Logon window
 	findWindow --title "SAP Logon 800" sap_logon_window=value sap_logon_window_success=success
-	
-	
 	// If SAP Logon is not open, launch it
 	if --left "${sap_logon_window_success}" --operator "Is_True" --negate
-		
 		powerShell --apartmentState "MTA" --script "\"Start-Process"
-		
 		waitWindow --title "SAP Logon 800" --classname "#32770" --processname saplogon --timeout "00:00:10" sap_logon_window=value sap_logon_window_success=success
-		
 	endIf
-	
-	
 	// Attach SAP Logon
 	attachWindow --window ${sap_logon_window}
-	
 	// Maximize SAP Logon
 	showWindow --maximize
-	
-	
 	// Select KTFL SAP connection
 	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/pane[2]/pane[1]/list[1]/listitem[1]/text[1]"
-	
 	delay --timeout "00:00:00.5000000"
-	
 	// Open selected connection
 	keyboard --type "KeyDown" --key "Return"
-	
-	
 	// Wait for SAP login screen
 	waitWindow --title SAP --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:15" login_window=value login_window_success=success
-	
-	
 	if --left "${login_window_success}" --operator "Is_True"
-		
 		attachWindow --window ${login_window}
-		
-		
 		// Username
 		typeText --text "${username}"
-		
 		delay --timeout "00:00:00.5000000"
-		
 		// Move to Password field
 		keyboard --type "KeyDown" --key "Tab"
-		
 		delay --timeout "00:00:00.5000000"
-		
 		// Password
 		typeText --text "${password}"
-		
 		delay --timeout "00:00:00.5000000"
-		
 		// Login
 		keyboard --type "KeyDown" --key "Return"
-		
-		
 		// Wait for SAP Easy Access
 		waitWindow --title "SAP Easy Access  -  User Menu for Abhijeet Chaudhari" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch  --timeout "00:00:15" SAP_Easy_Access=value SAP_Easy_Access_success=success
-		
 	else
-		
 		logMessage --message "SAP Login window failed to appear." --type "Warning"
-		
 	endIf
 	
 endIf
@@ -101,10 +70,8 @@ endIf
 
 // Check login success
 if --left "${SAP_Easy_Access_success}" --operator "Is_True"
-	
 	logMessage --message "SAP login successful. T-Code box selected." --type "Info"
 	attachWindow --window ${SAP_Easy_Access}
-	
 	// Click T-Code box
 	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[2]/combobox[1]"
 	setVar --name "${T_code}" --value MIRO
@@ -112,18 +79,20 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True"
 	keyboard --type "KeyPress" --key "Return"
 	waitWindow --title "Enter Company Code" --classname "#32770" --processname saplogon --safesearch  --timeout "00:00:03" company_code_window=value company_code_windows_Success=success
 	if --left "${company_code_windows_Success}" --operator "Is_True"
-		
 		attachWindow --window ${company_code_window}
-		typeText --text "${T_code}"
+		setVar --name "${company_code}" --value 2000
+		typeText --text "${company_code}"
 		delay --timeout "00:00:03"
 		keyboard --type "KeyPress" --key "Return"
-		
-		
 	else
-		
-		logMessage --message "SAP login failed. SAP Easy Access screen not found." --type "Error"
-		
+		logMessage --message "company code window not showing" --type "Info"
 	endIf
 	
-	logMessage --message "SAP Login process completed." --type "Info"
 	
+else
+	
+	logMessage --message "SAP login failed. SAP Easy Access screen not found." --type "Error"
+	
+endIf
+
+logMessage --message "SAP Login process completed." --type "Info"
