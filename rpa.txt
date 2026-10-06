@@ -16,6 +16,13 @@ defVar --name T_code --type String
 defVar --name company_code_window --type Window
 defVar --name company_code_windows_Success --type Boolean
 defVar --name company_code --type String
+defVar --name db_connection --type DbConnection
+defVar --name invoice_table --type DataTable
+defVar --name total_rows --type Numeric
+defVar --name current_row --type Numeric
+defVar --name invoice_number --type String
+defVar --name invoice_date --type String
+defVar --name po_number --type String
 
 getParameter --name ktfl_sap_user ktfl_sap_user=value
 getParameter --name "ktfl-sap-pass" ktfl_sap_pass=value
@@ -25,7 +32,7 @@ setVar --name "${password}" --value "${ktfl_sap_pass}"
 
 
 // Check whether SAP is already logged in
-waitWindow --title "SAP Easy Access" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:05" SAP_Easy_Access=value SAP_Easy_Access_success=success
+waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --timeout "00:00:05" SAP_Easy_Access=value SAP_Easy_Access_success=success
 
 if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
 	// Check SAP Logon window
@@ -96,3 +103,11 @@ else
 endIf
 
 logMessage --message "SAP Login process completed." --type "Info"
+
+postgreConnect --connectionstring "Host=10.7.11.22;Port=5432;Database=miro_invoice;User ID=appuser;Password=appuser123;" db_connection=connection
+sqlExecuteReader --connection ${db_connection} --statement "SELECT\r\n    id,\r\n    invoice_number,\r\n    invoice_date,\r\n    po_number\r\nFROM invoices\r\nWHERE status = \'REVIEW\'\r\nORDER BY id" invoice_table=value total_rows=rows
+for --variable ${current_row} --from 1 --to ${total_rows} --step 1
+	mapTableRow --dataTable ${invoice_table} --row ${current_row} --mappings "[{\"Number\":\"2\",\"Output\":\"${invoice_number}\"},{\"Number\":\"3\",\"Output\":\"${invoice_date}\"},{\"Number\":\"4\",\"Output\":\"${po_number}\"}]"
+	logMessage --message "${invoice_number}\r\n${invoice_date}\r\n${po_number}" --type "Info"
+	waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch
+next
