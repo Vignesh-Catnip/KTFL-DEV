@@ -1,3 +1,4 @@
+import --name image1 --type "Image" --content iVBORw0KGgoAAAANSUhEUgAAAAYAAAAICAYAAADaxo44AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAXSURBVBhXY/wPBAxYABOUxgCDUYKBAQAaHwQMctD1bQAAAABJRU5ErkJggg==
 defVar --name SAP_Easy_Access --type Window
 defVar --name SAP_Easy_Access_success --type Boolean
 defVar --name sap_logon_window --type Window
@@ -23,6 +24,8 @@ defVar --name current_row --type Numeric
 defVar --name invoice_number --type String
 defVar --name invoice_date --type String
 defVar --name po_number --type String
+defVar --name miro_window --type Window
+defVar --name miro_window_success --type Boolean
 
 getParameter --name ktfl_sap_user ktfl_sap_user=value
 getParameter --name "ktfl-sap-pass" ktfl_sap_pass=value
@@ -109,5 +112,15 @@ sqlExecuteReader --connection ${db_connection} --statement "SELECT\r\n    id,\r\
 for --variable ${current_row} --from 1 --to ${total_rows} --step 1
 	mapTableRow --dataTable ${invoice_table} --row ${current_row} --mappings "[{\"Number\":\"2\",\"Output\":\"${invoice_number}\"},{\"Number\":\"3\",\"Output\":\"${invoice_date}\"},{\"Number\":\"4\",\"Output\":\"${po_number}\"}]"
 	logMessage --message "${invoice_number}\r\n${invoice_date}\r\n${po_number}" --type "Info"
-	waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch
+	waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch  miro_window=value miro_window_success=success
+	attachWindow --window ${miro_window}
+	keyboard --type "KeyPress" --key "Return"
+	delay --timeout "00:00:03"
+	typeText --text "${invoice_date}"
+	delay --timeout "00:00:04"
+	keyboard --type "KeyPress" --key "Return"
+	delay --timeout "00:00:03"
+	typeText --text "${invoice_number}"
+	delay --timeout "00:00:03"
+	keyboard --type "KeyPress" --key "Return"
 next
