@@ -1,0 +1,20 @@
+Pull from remote:
+
+git -c http.proxy=http://bflwcg.kalyanicorp.com:8080 pull origin main
+
+
+push :
+ git add .
+
+git commit -m "test"
+
+git -c http.proxy=http://bflwcg.kalyanicorp.com:8080 push origin main
+git -c http.proxy=http://bflwcg.kalyanicorp.com:8080 -c https.proxy=http://bflwcg.kalyanicorp.com:8080 push origin main --force
+
+git -c http.proxy=http://bflwcg.kalyanicorp.com:8080 -c https.proxy=http://bflwcg.kalyanicorp.com:8080 pull origin main
+
+git remote add origin https://github.com/Vignesh-Catnip/KTFL-DEV.git   
+
+git init   
+
+git branch -M main  
