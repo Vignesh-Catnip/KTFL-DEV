@@ -342,6 +342,44 @@ def get_pdf_text(path: Path) -> str:
     doc.close()
     return "\n".join(parts)
 
+def format_date(raw: str) -> str:
+    """
+    எந்த format-ல இருந்தாலும் → DD.MM.YYYY
+    Examples:
+      2026-08-09     → 09.08.2026
+      09/08/2026     → 09.08.2026
+      09-Aug-26      → 09.08.2026
+      August 9, 2026 → 09.08.2026
+      09.08.2026     → 09.08.2026  (already correct)
+    """
+    if not raw: return ""
+    raw = str(raw).strip()
+    MONTH_MAP = {
+        "jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,
+        "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12,
+        "january":1,"february":2,"march":3,"april":4,"june":6,
+        "july":7,"august":8,"september":9,"october":10,"november":11,"december":12,
+    }
+    formats = [
+        "%d.%m.%Y","%d/%m/%Y","%Y-%m-%d","%d-%m-%Y",
+        "%d-%m-%y","%d/%m/%y","%B %d, %Y","%b %d, %Y",
+        "%d %B %Y","%d %b %Y","%Y/%m/%d",
+    ]
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(raw, fmt)
+            if dt.year < 100: dt = dt.replace(year=dt.year+2000)
+            return dt.strftime("%d.%m.%Y")
+        except: pass
+    # Pattern: 9-Aug-26 or 09-Aug-2026
+    m = re.match(r"(\d{1,2})[-/\s]([A-Za-z]+)[-/\s](\d{2,4})$", raw)
+    if m:
+        day, mon, yr = int(m.group(1)), m.group(2).lower()[:3], int(m.group(3))
+        if yr < 100: yr += 2000
+        mo = MONTH_MAP.get(mon, 0)
+        if mo: return f"{day:02d}.{mo:02d}.{yr}"
+    return raw  # return as-is if nothing matches
+
 def fix_amounts(subtotal, cgst, sgst, igst, total_tax, total):
     if total > 0 and total_tax > total:
         candidate = round(total_tax / 100, 2)
@@ -437,7 +475,7 @@ def normalize(data: dict, filename: str):
         "filename":    filename,
         "vendor":      clean(data.get("vendor")),
         "invoice_number": clean(data.get("invoice_number")),
-        "invoice_date":   clean(data.get("invoice_date")),
+        "invoice_date":   format_date(clean(data.get("invoice_date"))),
         "po_number":      clean(data.get("po_number")),
         "gstin":          clean(data.get("gstin")),
         "hsn_sac":        hsn_inv,
