@@ -2,15 +2,15 @@
 KTFL Invoice Extractor — LangChain + Ollama + PostgreSQL
 =========================================================
 Tables used:
-  - invoices        : main invoice data
+  - invoices        : main invoice data (ALWAYS pushed for every run)
   - invoice_lines   : line items
-  - invoice_master  : duplicate check (invoice_number UNIQUE)
+  - invoice_master  : master reference only (NOT used to skip invoices push)
   - audit_logs      : every action logged
   - processing_runs : RPA (unchanged)
 
 Duplicate rule:
-  invoice_master-ல invoice_number already இருந்தா → SKIP
-  இல்லைன்னா → invoices push + invoice_master add
+  invoices table → ALWAYS insert (every run creates a new record)
+  invoice_master → upsert master reference data only, does NOT block invoices push
 """
 
 import os
@@ -153,27 +153,43 @@ def setup_db():
 
 # ── Duplicate Check ───────────────────────────────────────────
 
-def is_duplicate(session, invoice_number: str) -> tuple[bool, str]:
+def is_duplicate_in_invoices(session, invoice_number: str, po_number: str, vendor_code: str) -> tuple[bool, str]:
     """
-    invoice_master-ல invoice_number இருந்தா → DUPLICATE
-    இல்லைன்னா → NEW
+    invoices table-ல same invoice_number + po_number + vendor_code combo இருந்தா → DUPLICATE (skip)
+    இல்லைன்னா → NEW (push)
+
+    Examples:
+      INV-001 + PO-100 + V-001  (first time)  → ALLOW
+      INV-001 + PO-100 + V-001  (again)        → SKIP
+      INV-001 + PO-200 + V-001                 → ALLOW (PO changed)
+      INV-001 + PO-100 + V-002                 → ALLOW (vendor code changed)
+      INV-002 + PO-100 + V-001                 → ALLOW (new invoice)
     """
     if not invoice_number:
         return False, "No invoice number — skip duplicate check"
 
-    existing = session.scalar(
-        select(InvoiceMaster).where(
-            InvoiceMaster.invoice_number == invoice_number
-        )
-    )
+    filters = [Invoice.invoice_number == invoice_number]
+
+    # po_number match
+    if po_number:
+        filters.append(Invoice.po_number == po_number)
+    else:
+        filters.append(Invoice.po_number == None)
+
+    # vendor_code match
+    if vendor_code:
+        filters.append(Invoice.vendor_code == vendor_code)
+    else:
+        filters.append(Invoice.vendor_code == None)
+
+    existing = session.scalar(select(Invoice).where(*filters))
 
     if existing:
         return True, (
-            f"DUPLICATE: invoice_number '{invoice_number}' "
-            f"already in invoice_master (first seen: {existing.first_seen_date.date()}, "
-            f"vendor: {existing.vendor or '?'})"
+            f"DUPLICATE: invoice='{invoice_number}' po='{po_number}' vendor_code='{vendor_code}' "
+            f"already in invoices (id={existing.id})"
         )
-    return False, "New invoice — OK to push"
+    return False, "New combo — OK to push"
 
 
 # ── DB Push ───────────────────────────────────────────────────
@@ -182,7 +198,7 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
     """
     1. invoices table-ல insert
     2. invoice_lines table-ல insert
-    3. invoice_master table-ல add (duplicate prevention)
+    3. invoice_master table-ல upsert (master reference only)
     4. audit_logs table-ல log
     """
 
@@ -224,7 +240,7 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
             amount     = l["amount"],
         ))
 
-    # 3. Invoice master (duplicate prevention)
+    # 3. Invoice master (master reference — upsert, never blocks invoices push)
     session.add(InvoiceMaster(
         invoice_number  = header["invoice_number"],
         vendor          = header["vendor"],
@@ -639,7 +655,7 @@ def main():
         print(f"ERROR: Ollama failed: {e}"); sys.exit(1)
 
     llm = create_llm()
-    stats = {"pushed":0, "duplicate":0, "error":0}
+    stats = {"pushed":0, "error":0}
 
     for idx, pdf in enumerate(pdfs, 1):
         t0 = time.time()
@@ -657,30 +673,34 @@ def main():
             print(f"  Total   : {header['total']}  GRN: {header['grn_number'] or '-'}")
 
             with Session() as session:
-                # Duplicate check via invoice_master
-                dup, reason = is_duplicate(session, header["invoice_number"])
+                # Duplicate check: same invoice_number + po_number + vendor_code in invoices table
+                dup, reason = is_duplicate_in_invoices(
+                    session,
+                    header["invoice_number"],
+                    header["po_number"],
+                    header["vendor_code"],
+                )
                 print(f"  Check   : {reason}")
 
                 if dup:
-                    print(f"  ⚠️  SKIPPED — Duplicate")
-
-                    # Log duplicate attempt in audit_logs
+                    print(f"  ⚠️  SKIPPED — same invoice+PO+VendorCode already in invoices table")
                     session.add(AuditLog(
                         invoice_id = None,
                         action     = "DUPLICATE_SKIPPED",
                         detail     = {
                             "file"           : pdf.name,
                             "invoice_number" : header["invoice_number"],
-                            "vendor"         : header["vendor"],
+                            "po_number"      : header["po_number"],
+                            "vendor_code"    : header["vendor_code"],
                             "reason"         : reason,
                         }
                     ))
                     session.commit()
-                    stats["duplicate"] += 1
+                    stats["duplicate"] = stats.get("duplicate", 0) + 1
                     create_excel(header, lines, out)
                     continue
 
-                # Push to DB
+                # Push to invoices table
                 inv_id  = push_to_db(session, header, lines, pdf.name)
                 elapsed = round(time.time()-t0, 1)
                 print(f"  ✅ DB pushed — id={inv_id}  ({elapsed}s)")
@@ -714,7 +734,7 @@ def main():
     print("\n" + "="*60)
     print("DONE")
     print(f"  ✅ Pushed to DB  : {stats['pushed']}")
-    print(f"  ⚠️  Duplicates    : {stats['duplicate']} (skipped)")
+    print(f"  ⚠️  Duplicates    : {stats.get('duplicate', 0)} (skipped)")
     print(f"  ❌ Errors        : {stats['error']}")
     print(f"  📁 Excel folder  : {out}")
     print("="*60)
