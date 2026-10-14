@@ -48,7 +48,7 @@ OLLAMA_MODEL  = "qwen3-vl:32b"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-MAX_PAGES    = 2
+MAX_PAGES    = 6
 IMAGE_ZOOM   = 1.4
 NUM_CTX      = 8192
 NUM_PREDICT  = 2048
