@@ -308,6 +308,40 @@ def to_float(v) -> float:
 def clean(v) -> str:
     return str(v).strip() if v else ""
 
+def clean_po(v) -> str:
+    """PO-5100002309 → 5100002309  |  po5100002309 → 5100002309"""
+    s = clean(v)
+    # Remove common prefixes: PO-, PO, P.O., P/O, po- etc.
+    s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
+    return s
+
+def clean_grn(v) -> str:
+    """
+    OCR letter→number fix for GRN numbers.
+    S00356389 → 500356389
+    O2O26OO3 → 020260003
+    Replace ALL OCR-misread letters with correct digits.
+    """
+    s = clean(v)
+    if not s:
+        return s
+    # Character-by-character OCR correction map
+    OCR_MAP = {
+        'S': '5', 's': '5',
+        'O': '0', 'o': '0',
+        'I': '1', 'l': '1',
+        'Z': '2', 'z': '2',
+        'B': '8',
+        'G': '6',
+        'T': '7',
+        'A': '4',
+        'q': '9',
+    }
+    result = ""
+    for ch in s:
+        result += OCR_MAP.get(ch, ch)
+    return result
+
 def extract_json(raw) -> dict:
     if isinstance(raw, list):
         raw = "".join(str(x.get("text","") if isinstance(x,dict) else x) for x in raw)
@@ -476,7 +510,7 @@ def normalize(data: dict, filename: str):
         "vendor":      clean(data.get("vendor")),
         "invoice_number": clean(data.get("invoice_number")),
         "invoice_date":   format_date(clean(data.get("invoice_date"))),
-        "po_number":      clean(data.get("po_number")),
+        "po_number":      clean_po(data.get("po_number")),
         "gstin":          clean(data.get("gstin")),
         "hsn_sac":        hsn_inv,
         "vendor_code":    clean(data.get("vendor_code")),
@@ -487,7 +521,7 @@ def normalize(data: dict, filename: str):
         "igst":       round(igst,2),
         "total_tax":  round(total_tax,2),
         "total":      round(total,2),
-        "grn_number": clean(data.get("grn_number") or ""),
+        "grn_number": clean_grn(data.get("grn_number") or ""),
         "handwritten_references": clean(hw),
         "confidence": round(max(0,min(1,to_float(data.get("confidence"))))*100,1),
     }, lines
