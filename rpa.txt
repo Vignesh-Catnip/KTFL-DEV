@@ -26,6 +26,8 @@ defVar --name invoice_date --type String
 defVar --name po_number --type String
 defVar --name miro_window --type Window
 defVar --name miro_window_success --type Boolean
+defVar --name tabcounter --type Numeric
+defVar --name currency --type String
 
 getParameter --name ktfl_sap_user ktfl_sap_user=value
 getParameter --name "ktfl-sap-pass" ktfl_sap_pass=value
@@ -110,17 +112,30 @@ logMessage --message "SAP Login process completed." --type "Info"
 postgreConnect --connectionstring "Host=10.7.11.22;Port=5432;Database=miro_invoice;User ID=appuser;Password=appuser123;" db_connection=connection
 sqlExecuteReader --connection ${db_connection} --statement "SELECT\r\n    id,\r\n    invoice_number,\r\n    invoice_date,\r\n    po_number\r\nFROM invoices\r\nWHERE status = \'REVIEW\'\r\nORDER BY id" invoice_table=value total_rows=rows
 for --variable ${current_row} --from 1 --to ${total_rows} --step 1
-	mapTableRow --dataTable ${invoice_table} --row ${current_row} --mappings "[{\"Number\":\"2\",\"Output\":\"${invoice_number}\"},{\"Number\":\"3\",\"Output\":\"${invoice_date}\"},{\"Number\":\"4\",\"Output\":\"${po_number}\"}]"
+	mapTableRow --dataTable ${invoice_table} --row ${current_row} --mappings "[{\"Number\":\"2\",\"Output\":\"${invoice_number}\"},{\"Number\":\"3\",\"Output\":\"${invoice_date}\"},{\"Number\":\"4\",\"Output\":\"${po_number}\"},{\"Number\":\"7\",\"Output\":\"${currency}\"}]"
 	logMessage --message "${invoice_number}\r\n${invoice_date}\r\n${po_number}" --type "Info"
 	waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch  miro_window=value miro_window_success=success
 	attachWindow --window ${miro_window}
 	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:03"
+	delay --timeout "00:00:02"
 	typeText --text "${invoice_date}"
-	delay --timeout "00:00:04"
+	delay --timeout "00:00:02"
 	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:03"
+	delay --timeout "00:00:02"
 	typeText --text "${invoice_number}"
+	delay --timeout "00:00:02"
+	keyboard --type "KeyPress" --key "Return"
+	keyboard --type "KeyPress" --key "Tab"
+	keyboard --type "KeyPress" --key "Tab"
+	keyboard --type "KeyPress" --key "Tab"
+	typeText --text "${currency}"
+	mouseClick --clickevent "LeftClick"
+	for --variable ${tabcounter} --from 1 --to 10 --step 1
+		keyboard --type "KeyPress" --key "Tab"
+		delay --timeout "00:00:02"
+	next
+	typeText --text "${po_number}"
 	delay --timeout "00:00:03"
 	keyboard --type "KeyPress" --key "Return"
+	delay --timeout "00:00:03"
 next
