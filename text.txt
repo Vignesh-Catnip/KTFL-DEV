@@ -883,3 +883,6 @@ SELECT TOP (1000) *
 10/14/2026 4:55:39 PM - Error executing command at line 115: 	mapTableRow --dataTable ${invoice_table} --row ${current_row} --mappings "[{\"Number\":\"2\",\"Output\":\"${invoice_number}\"},{\"Number\":\"3\",\"Output\":\"${invoice_date}\"},{\"Number\":\"4\",\"Output\":\"${po_number}\"},{\"Number\":\"7\",\"Output\":\"${currency}\"}]"
 	Cannot find column 1
 
+
+
+SELECT id, invoice_number, invoice_date, po_number, currency FROM invoices WHERE status = 'REVIEW' ORDER BY id
