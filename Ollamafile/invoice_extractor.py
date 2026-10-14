@@ -37,6 +37,7 @@ from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import (sessionmaker, DeclarativeBase,
                              Mapped, mapped_column, relationship)
 from sqlalchemy import String, Text, Float, DateTime, ForeignKey, JSON, Integer
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 # ============================================================
 # CONFIG
@@ -240,14 +241,17 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
             amount     = l["amount"],
         ))
 
-    # 3. Invoice master (master reference — upsert, never blocks invoices push)
-    session.add(InvoiceMaster(
-        invoice_number  = header["invoice_number"],
-        vendor          = header["vendor"],
-        vendor_code     = header["vendor_code"],
-        po_number       = header["po_number"],
-        invoice_id      = inv.id,
-    ))
+    # 3. Invoice master — new invoice_number மட்டும் add பண்ணு, already இருந்தா skip
+    if header["invoice_number"]:
+        stmt = pg_insert(InvoiceMaster).values(
+            invoice_number  = header["invoice_number"],
+            vendor          = header["vendor"],
+            vendor_code     = header["vendor_code"],
+            po_number       = header["po_number"],
+            first_seen_date = now_utc(),
+            invoice_id      = inv.id,
+        ).on_conflict_do_nothing(index_elements=["invoice_number"])
+        session.execute(stmt)
 
     # 4. Audit log
     session.add(AuditLog(
