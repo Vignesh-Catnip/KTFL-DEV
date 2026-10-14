@@ -263,8 +263,13 @@ AMOUNT RULES:
   Remove ₹ and commas. Keep decimal point exactly.
 
 GRN NUMBER:
-  Look for receiving stamp: "GRN", "Inward No", "INWARD NO", "MRN"
-  Extract ONLY that stamp number. NOT vehicle/challan/e-way bill numbers.
+  Look for handwritten or stamped receiving section at the BOTTOM of invoice.
+  Fields to look for: "GRN NO", "GRN No.", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
+  The GRN number is usually handwritten next to "GRN NO" or "GRN No." label in a stamp/table at bottom.
+  Example: if stamp shows "GRN NO: 50 - 343863" → extract "50 - 343863"
+  DO NOT extract: SCROLL NO, CH NO, Challan No, E-way bill, vehicle number, delivery note number.
+  DO NOT extract numbers from "Other References" or "CH NO" fields.
+  If no GRN stamp found, return empty string "".
 
 LINE ITEMS:
   Extract ONLY invoice line items with amounts. Remove duplicates.
@@ -318,13 +323,18 @@ def clean_po(v) -> str:
 def clean_grn(v) -> str:
     """
     OCR letter→number fix for GRN numbers.
-    S00356389 → 500356389
-    O2O26OO3 → 020260003
-    Replace ALL OCR-misread letters with correct digits.
+    S00356389   → 500356389
+    O2O26OO3    → 020260003
+    50-343863   → 50343863   (dash/space removed)
+    50 - 343863 → 50343863
     """
     s = clean(v)
     if not s:
         return s
+    # dash between digits = "00" (e.g. 50 - 343863 → 5000343863)
+    s = re.sub(r"\s*-\s*", "00", s)
+    # Remove remaining spaces and dots
+    s = re.sub(r"[\s\.]", "", s)
     # Character-by-character OCR correction map
     OCR_MAP = {
         'S': '5', 's': '5',
@@ -340,6 +350,7 @@ def clean_grn(v) -> str:
     result = ""
     for ch in s:
         result += OCR_MAP.get(ch, ch)
+
     return result
 
 def extract_json(raw) -> dict:
