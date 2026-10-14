@@ -273,6 +273,37 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
 
 # ── Extraction Prompt ─────────────────────────────────────────
 
+GRN_PROMPT = r"""
+You are looking at ONE invoice image. Your ONLY job is to find the GRN number from the receiving/inward stamp.
+
+STEP 1 — Find the receiving stamp at the BOTTOM of the page (rubber stamp or handwritten box).
+
+STEP 2 — Look for a line that says exactly:
+  "GRN NO", "GRN No.", "GRN No", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
+
+STEP 3 — Extract the number written NEXT to that label.
+
+CRITICAL — DO NOT extract from these labels (even if the number looks similar):
+  ❌ SCROLL NO  (most common mistake — this is NOT the GRN)
+  ❌ CH NO
+  ❌ Challan No
+  ❌ E-way Bill No
+  ❌ Vehicle No
+  ❌ Gate Pass No
+  ❌ Delivery Note No
+
+STAMP EXAMPLE:
+  SCROLL NO : 020040285    ← DO NOT extract this
+  DATE      : 21/08/26
+  GRN NO    : 50 - 35689   ← EXTRACT this → "50 - 35689"
+
+If you only see SCROLL NO with no GRN NO → return {"grn_number": ""}
+If no stamp found → return {"grn_number": ""}
+
+Return ONLY this JSON, nothing else:
+{"grn_number": "<value or empty string>"}
+"""
+
 PROMPT = r"""
 You are an Indian invoice extraction engine.
 Read the invoice IMAGE. Return ONLY valid JSON. No markdown. No explanation.
@@ -283,13 +314,7 @@ AMOUNT RULES:
   Remove ₹ and commas. Keep decimal point exactly.
 
 GRN NUMBER:
-  Look for handwritten or stamped receiving section at the BOTTOM of invoice.
-  Fields to look for: "GRN NO", "GRN No.", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
-  The GRN number is usually handwritten next to "GRN NO" or "GRN No." label in a stamp/table at bottom.
-  Example: if stamp shows "GRN NO: 50 - 343863" → extract "50 - 343863"
-  DO NOT extract: SCROLL NO, CH NO, Challan No, E-way bill, vehicle number, delivery note number.
-  DO NOT extract numbers from "Other References" or "CH NO" fields.
-  If no GRN stamp found, return empty string "".
+  Set "grn_number" to "" always — it will be extracted separately.
 
 LINE ITEMS:
   Extract ONLY invoice line items with amounts. Remove duplicates.
@@ -398,6 +423,16 @@ def pdf_to_images(path: Path):
     doc.close()
     return imgs
 
+def pdf_last_page_image(path: Path) -> str:
+    """Return the last page as base64 PNG (stamp area is typically on last page)."""
+    doc  = fitz.open(str(path))
+    zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
+    last_idx = doc.page_count - 1
+    pix  = doc[last_idx].get_pixmap(matrix=zoom, alpha=False)
+    img  = base64.b64encode(pix.tobytes("png")).decode()
+    doc.close()
+    return img
+
 def get_pdf_text(path: Path) -> str:
     doc   = fitz.open(str(path))
     parts = []
@@ -504,6 +539,42 @@ def invoke(llm, images, pdf_text="") -> dict:
     raw = (msg.get("content") or msg.get("thinking") or "").strip()
     if not raw: raise ValueError("Ollama returned empty response")
     return extract_json(raw)
+
+def invoke_grn(llm, last_page_img: str) -> str:
+    """
+    Dedicated second-pass GRN extraction.
+    Sends ONLY the last page with a laser-focused GRN-only prompt.
+    Returns the raw GRN string (before clean_grn).
+    """
+    try:
+        content = [
+            {"type": "text",      "text": GRN_PROMPT},
+            {"type": "image_url", "image_url": f"data:image/png;base64,{last_page_img}"},
+        ]
+        resp = llm.invoke([HumanMessage(content=content)])
+        result = extract_json(resp.content)
+        return result.get("grn_number", "")
+    except Exception as e:
+        print(f"     GRN LangChain failed: {e} — raw Ollama fallback...")
+
+    # Raw Ollama fallback
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": [{"role":"user","content":GRN_PROMPT,"images":[last_page_img]}],
+        "stream": False, "format": "json", "think": False,
+        "options": {"temperature":0,"num_ctx":4096,"num_predict":256},
+    }
+    r = httpx.post(f"{OLLAMA_URL}/api/chat",
+                   json=payload, timeout=TIMEOUT, trust_env=False)
+    r.raise_for_status()
+    msg = r.json().get("message", {})
+    raw = (msg.get("content") or "").strip()
+    if not raw: return ""
+    try:
+        result = extract_json(raw)
+        return result.get("grn_number", "")
+    except:
+        return ""
 
 def normalize(data: dict, filename: str):
     if not isinstance(data, dict): data = {}
@@ -666,11 +737,19 @@ def main():
         print(f"\n[{idx}/{len(pdfs)}] {pdf.name}")
 
         try:
-            # Extract
+            # Pass 1 — main extraction (invoice fields, no GRN)
             images   = pdf_to_images(pdf)
             pdf_text = get_pdf_text(pdf)
             data     = invoke(llm, images, pdf_text)
             header, lines = normalize(data, pdf.name)
+
+            # Pass 2 — dedicated GRN extraction from last page only
+            print(f"  Extracting GRN (pass 2)...")
+            last_img = pdf_last_page_image(pdf)
+            raw_grn  = invoke_grn(llm, last_img)
+            grn_clean = clean_grn(raw_grn)
+            header["grn_number"] = grn_clean
+            print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}'")
 
             print(f"  Invoice : {header['invoice_number'] or '?'}")
             print(f"  Vendor  : {header['vendor'] or '?'}")
