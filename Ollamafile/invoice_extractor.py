@@ -423,15 +423,16 @@ def pdf_to_images(path: Path):
     doc.close()
     return imgs
 
-def pdf_last_page_image(path: Path) -> str:
-    """Return the last page as base64 PNG (stamp area is typically on last page)."""
+def pdf_all_page_images(path: Path):
+    """Return all pages (up to MAX_PAGES) as base64 PNG list."""
     doc  = fitz.open(str(path))
     zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
-    last_idx = doc.page_count - 1
-    pix  = doc[last_idx].get_pixmap(matrix=zoom, alpha=False)
-    img  = base64.b64encode(pix.tobytes("png")).decode()
+    imgs = []
+    for i in range(min(doc.page_count, MAX_PAGES)):
+        pix = doc[i].get_pixmap(matrix=zoom, alpha=False)
+        imgs.append(base64.b64encode(pix.tobytes("png")).decode())
     doc.close()
-    return img
+    return imgs
 
 def get_pdf_text(path: Path) -> str:
     doc   = fitz.open(str(path))
@@ -540,41 +541,47 @@ def invoke(llm, images, pdf_text="") -> dict:
     if not raw: raise ValueError("Ollama returned empty response")
     return extract_json(raw)
 
-def invoke_grn(llm, last_page_img: str) -> str:
+def invoke_grn(llm, page_imgs: list) -> str:
     """
     Dedicated second-pass GRN extraction.
-    Sends ONLY the last page with a laser-focused GRN-only prompt.
+    Tries each page one by one until a non-empty GRN is found.
     Returns the raw GRN string (before clean_grn).
     """
-    try:
-        content = [
-            {"type": "text",      "text": GRN_PROMPT},
-            {"type": "image_url", "image_url": f"data:image/png;base64,{last_page_img}"},
-        ]
-        resp = llm.invoke([HumanMessage(content=content)])
-        result = extract_json(resp.content)
-        return result.get("grn_number", "")
-    except Exception as e:
-        print(f"     GRN LangChain failed: {e} — raw Ollama fallback...")
+    for page_num, img in enumerate(page_imgs, 1):
+        print(f"     GRN scan page {page_num}/{len(page_imgs)}...")
+        grn = ""
+        try:
+            content = [
+                {"type": "text",      "text": GRN_PROMPT},
+                {"type": "image_url", "image_url": f"data:image/png;base64,{img}"},
+            ]
+            resp = llm.invoke([HumanMessage(content=content)])
+            result = extract_json(resp.content)
+            grn = result.get("grn_number", "")
+        except Exception as e:
+            print(f"       LangChain failed: {e} — raw Ollama fallback...")
+            try:
+                payload = {
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role":"user","content":GRN_PROMPT,"images":[img]}],
+                    "stream": False, "format": "json", "think": False,
+                    "options": {"temperature":0,"num_ctx":4096,"num_predict":256},
+                }
+                r = httpx.post(f"{OLLAMA_URL}/api/chat",
+                               json=payload, timeout=TIMEOUT, trust_env=False)
+                r.raise_for_status()
+                msg = r.json().get("message", {})
+                raw = (msg.get("content") or "").strip()
+                if raw:
+                    grn = extract_json(raw).get("grn_number", "")
+            except Exception as e2:
+                print(f"       Raw Ollama also failed: {e2}")
 
-    # Raw Ollama fallback
-    payload = {
-        "model": OLLAMA_MODEL,
-        "messages": [{"role":"user","content":GRN_PROMPT,"images":[last_page_img]}],
-        "stream": False, "format": "json", "think": False,
-        "options": {"temperature":0,"num_ctx":4096,"num_predict":256},
-    }
-    r = httpx.post(f"{OLLAMA_URL}/api/chat",
-                   json=payload, timeout=TIMEOUT, trust_env=False)
-    r.raise_for_status()
-    msg = r.json().get("message", {})
-    raw = (msg.get("content") or "").strip()
-    if not raw: return ""
-    try:
-        result = extract_json(raw)
-        return result.get("grn_number", "")
-    except:
-        return ""
+        if grn.strip():
+            print(f"       Found GRN on page {page_num}: '{grn}'")
+            return grn.strip()
+
+    return ""
 
 def normalize(data: dict, filename: str):
     if not isinstance(data, dict): data = {}
@@ -743,10 +750,10 @@ def main():
             data     = invoke(llm, images, pdf_text)
             header, lines = normalize(data, pdf.name)
 
-            # Pass 2 — dedicated GRN extraction from last page only
+            # Pass 2 — dedicated GRN extraction, scans all pages until found
             print(f"  Extracting GRN (pass 2)...")
-            last_img = pdf_last_page_image(pdf)
-            raw_grn  = invoke_grn(llm, last_img)
+            all_imgs = pdf_all_page_images(pdf)
+            raw_grn  = invoke_grn(llm, all_imgs)
             grn_clean = clean_grn(raw_grn)
             header["grn_number"] = grn_clean
             print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}'")
