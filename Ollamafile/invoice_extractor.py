@@ -536,11 +536,33 @@ def normalize(data: dict, fname: str) -> tuple[dict, list]:
 #  DB OPERATIONS
 # ══════════════════════════════════════════
 
-def is_duplicate(session, inv_no: str) -> tuple[bool, str]:
+def is_duplicate(session, inv_no: str, po_number: str, vendor_code: str) -> tuple[bool, str]:
     if not inv_no: return False, "No invoice number"
-    row = session.scalar(select(InvoiceMaster).where(InvoiceMaster.invoice_number == inv_no))
-    if row: return True, f"Already in DB (first seen {row.first_seen_date.date()})"
-    return False, "New"
+
+    # invoices table-ல same invoice_number உள்ள rows எல்லாம் எடு
+    rows = session.scalars(
+        select(Invoice).where(Invoice.invoice_number == inv_no)
+    ).all()
+
+    if not rows:
+        return False, "New invoice"
+
+    # மூணும் exact match ஆனா மட்டும் SKIP
+    for row in rows:
+        same_po     = (row.po_number or "").strip() == (po_number or "").strip()
+        same_vendor = (row.vendor_code or "").strip() == (vendor_code or "").strip()
+        if same_po and same_vendor:
+            return True, (
+                f"Exact duplicate — invoice={inv_no}, "
+                f"PO={po_number}, vendor_code={vendor_code} "
+                f"(existing id={row.id})"
+            )
+
+    # Invoice No same ஆனா PO or Vendor Code வேற → ALLOW
+    return False, (
+        f"Same invoice_number but different PO/VendorCode — ALLOW "
+        f"(existing count={len(rows)})"
+    )
 
 def save_to_db(session, h: dict, lines: list, fname: str) -> int:
     inv = Invoice(
@@ -726,7 +748,12 @@ def main():
             print(f"  Confidence: {header['confidence']}%")
 
             with Session() as session:
-                dup, reason = is_duplicate(session, header["invoice_number"])
+                dup, reason = is_duplicate(
+                    session,
+                    header["invoice_number"],
+                    header["po_number"],
+                    header["vendor_code"],
+                )
                 if dup:
                     print(f"\n  ⚠️  DUPLICATE — {reason} — skipped DB insert")
                     session.add(AuditLog(invoice_id=None, action="DUPLICATE_SKIPPED",
