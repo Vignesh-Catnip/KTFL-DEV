@@ -282,7 +282,21 @@ STEP 2 — Look for a line that says exactly:
   "GRN NO", "GRN No.", "GRN No", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
   Also look for "JRN NO" — this is the same as GRN NO.
 
-STEP 3 — Extract the number written NEXT to that label EXACTLY as written including spaces and dash.
+STEP 3 — Extract the number written NEXT to that label EXACTLY as written including spaces, dash and dots.
+
+STEP 4 — DIGIT COUNT CHECK (very important):
+  The GRN number ALWAYS starts with "50" and has EXACTLY 10 DIGITS in total.
+  Count the digits one by one before answering. Do NOT skip or merge any digit.
+  A dot "." or a dash "-" inside the number is just handwriting — keep it as you see it,
+  but the DIGITS around it must all be reported.
+
+  Handwriting examples (count carefully):
+    "50003563.89"  → 10 digits: 5 0 0 0 3 5 6 3 8 9   ✅ report "50003563.89"
+    "50 - 356087"  → 8 digits + dash                  ✅ report "50 - 356087"
+    "5000356389"   → 10 digits                        ✅ report "5000356389"
+
+  If your answer has FEWER than 10 digits and there is no dash in it, you have
+  MISSED a digit. Look at the handwriting again, zoom in mentally, and re-count.
 
 CRITICAL — DO NOT extract from these labels (even if the number looks similar):
   ❌ SCROLL NO  (most common mistake — this is NOT the GRN)
@@ -545,47 +559,89 @@ def invoke(llm, images, pdf_text="") -> dict:
     if not raw: raise ValueError("Ollama returned empty response")
     return extract_json(raw)
 
-def invoke_grn(llm, page_imgs: list) -> str:
+GRN_RETRY_HINT = """
+
+IMPORTANT — your previous answer was "{bad}" which cleans to "{bad_clean}"
+({n} digits). A valid GRN has EXACTLY 10 digits and starts with "50".
+You have MISSED {missing} digit(s). Look at the handwriting again VERY carefully,
+read each stroke one by one from left to right, and report ALL 10 digits.
+"""
+
+
+def grn_is_valid(cleaned: str) -> bool:
+    """Valid KTFL GRN = exactly 10 digits, starts with '50'."""
+    return len(cleaned) == 10 and cleaned.startswith("50")
+
+
+def _ask_grn_once(llm, img: str, prompt: str) -> str:
+    """Single GRN question on a single page image. Returns raw string."""
+    try:
+        content = [
+            {"type": "text",      "text": prompt},
+            {"type": "image_url", "image_url": f"data:image/png;base64,{img}"},
+        ]
+        resp = llm.invoke([HumanMessage(content=content)])
+        return (extract_json(resp.content).get("grn_number") or "").strip()
+    except Exception as e:
+        print(f"       LangChain failed: {e} — raw Ollama fallback...")
+    try:
+        payload = {
+            "model": OLLAMA_MODEL,
+            "messages": [{"role": "user", "content": prompt, "images": [img]}],
+            "stream": False, "format": "json", "think": False,
+            "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 256},
+        }
+        r = httpx.post(f"{OLLAMA_URL}/api/chat",
+                       json=payload, timeout=TIMEOUT, trust_env=False)
+        r.raise_for_status()
+        raw = (r.json().get("message", {}).get("content") or "").strip()
+        if raw:
+            return (extract_json(raw).get("grn_number") or "").strip()
+    except Exception as e2:
+        print(f"       Raw Ollama also failed: {e2}")
+    return ""
+
+
+def invoke_grn(llm, page_imgs: list, max_retry: int = 2) -> str:
     """
-    Dedicated second-pass GRN extraction.
-    Tries each page one by one until a non-empty GRN is found.
-    Returns the raw GRN string (before clean_grn).
+    Dedicated second-pass GRN extraction with digit-count validation.
+
+    For each page:
+      - ask once
+      - clean it; if it is a valid 10-digit GRN starting with "50" → accept
+      - otherwise re-ask up to `max_retry` times with a "you missed a digit" hint
+    If no page gives a valid GRN, returns the best non-empty candidate found.
     """
+    best = ""
     for page_num, img in enumerate(page_imgs, 1):
         print(f"     GRN scan page {page_num}/{len(page_imgs)}...")
-        grn = ""
-        try:
-            content = [
-                {"type": "text",      "text": GRN_PROMPT},
-                {"type": "image_url", "image_url": f"data:image/png;base64,{img}"},
-            ]
-            resp = llm.invoke([HumanMessage(content=content)])
-            result = extract_json(resp.content)
-            grn = result.get("grn_number", "")
-        except Exception as e:
-            print(f"       LangChain failed: {e} — raw Ollama fallback...")
-            try:
-                payload = {
-                    "model": OLLAMA_MODEL,
-                    "messages": [{"role":"user","content":GRN_PROMPT,"images":[img]}],
-                    "stream": False, "format": "json", "think": False,
-                    "options": {"temperature":0,"num_ctx":4096,"num_predict":256},
-                }
-                r = httpx.post(f"{OLLAMA_URL}/api/chat",
-                               json=payload, timeout=TIMEOUT, trust_env=False)
-                r.raise_for_status()
-                msg = r.json().get("message", {})
-                raw = (msg.get("content") or "").strip()
-                if raw:
-                    grn = extract_json(raw).get("grn_number", "")
-            except Exception as e2:
-                print(f"       Raw Ollama also failed: {e2}")
+        prompt = GRN_PROMPT
 
-        if grn.strip():
-            print(f"       Found GRN on page {page_num}: '{grn}'")
-            return grn.strip()
+        for attempt in range(1, max_retry + 2):   # 1 try + max_retry retries
+            grn = _ask_grn_once(llm, img, prompt)
+            if not grn:
+                break
 
-    return ""
+            cleaned = clean_grn(grn)
+            if grn_is_valid(cleaned):
+                print(f"       Found GRN on page {page_num}: '{grn}' → {cleaned} ✅")
+                return grn
+
+            print(f"       Attempt {attempt}: '{grn}' → '{cleaned}' "
+                  f"({len(cleaned)} digits) ❌ invalid")
+            if not best:
+                best = grn
+
+            if attempt <= max_retry:
+                prompt = GRN_PROMPT + GRN_RETRY_HINT.format(
+                    bad=grn, bad_clean=cleaned,
+                    n=len(cleaned), missing=max(0, 10 - len(cleaned)),
+                )
+
+    if best:
+        print(f"       ⚠️  No valid 10-digit GRN found — using best guess '{best}'")
+    return best
+
 
 def normalize(data: dict, filename: str):
     if not isinstance(data, dict): data = {}
@@ -760,7 +816,9 @@ def main():
             raw_grn  = invoke_grn(llm, all_imgs)
             grn_clean = clean_grn(raw_grn)
             header["grn_number"] = grn_clean
-            print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}'")
+            flag = "✅" if grn_is_valid(grn_clean) else "⚠️ CHECK MANUALLY"
+            print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}' "
+                  f"({len(grn_clean)} digits) {flag}")
 
             print(f"  Invoice : {header['invoice_number'] or '?'}")
             print(f"  Vendor  : {header['vendor'] or '?'}")
