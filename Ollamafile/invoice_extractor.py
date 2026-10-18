@@ -86,6 +86,7 @@ class InvoiceLine(Base):
     quantity   : Mapped[float] = mapped_column(Float, default=0)
     rate       : Mapped[float] = mapped_column(Float, default=0)
     hsn_sac    : Mapped[str]   = mapped_column(String(30), default="")
+    tax_code   : Mapped[str]   = mapped_column(String(30), default="")
     amount     : Mapped[float] = mapped_column(Float, default=0)
     invoice = relationship("Invoice", back_populates="lines")
 
@@ -516,6 +517,7 @@ def save_to_db(session, h: dict, lines: list, fname: str) -> int:
             invoice_id=inv.id, item=l["item"],
             quantity=l["quantity"], rate=l["rate"],
             hsn_sac=l["hsn_sac"], amount=l["amount"],
+            tax_code="",   # NOT NULL column — empty string default
         ))
 
     if h["invoice_number"]:
