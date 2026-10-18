@@ -2,15 +2,15 @@
 KTFL Invoice Extractor — LangChain + Ollama + PostgreSQL
 =========================================================
 Tables used:
-  - invoices        : main invoice data
+  - invoices        : main invoice data (ALWAYS pushed for every run)
   - invoice_lines   : line items
-  - invoice_master  : duplicate check (invoice_number UNIQUE)
+  - invoice_master  : master reference only (NOT used to skip invoices push)
   - audit_logs      : every action logged
   - processing_runs : RPA (unchanged)
 
 Duplicate rule:
-  invoice_master-ல invoice_number already இருந்தா → SKIP
-  இல்லைன்னா → invoices push + invoice_master add
+  invoices table → ALWAYS insert (every run creates a new record)
+  invoice_master → upsert master reference data only, does NOT block invoices push
 """
 
 import os
@@ -37,6 +37,7 @@ from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import (sessionmaker, DeclarativeBase,
                              Mapped, mapped_column, relationship)
 from sqlalchemy import String, Text, Float, DateTime, ForeignKey, JSON, Integer
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 # ============================================================
 # CONFIG
@@ -47,7 +48,7 @@ OLLAMA_MODEL  = "qwen3-vl:32b"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-MAX_PAGES    = 2
+MAX_PAGES    = 6
 IMAGE_ZOOM   = 1.4
 NUM_CTX      = 8192
 NUM_PREDICT  = 2048
@@ -153,27 +154,43 @@ def setup_db():
 
 # ── Duplicate Check ───────────────────────────────────────────
 
-def is_duplicate(session, invoice_number: str) -> tuple[bool, str]:
+def is_duplicate_in_invoices(session, invoice_number: str, po_number: str, vendor_code: str) -> tuple[bool, str]:
     """
-    invoice_master-ல invoice_number இருந்தா → DUPLICATE
-    இல்லைன்னா → NEW
+    invoices table-ல same invoice_number + po_number + vendor_code combo இருந்தா → DUPLICATE (skip)
+    இல்லைன்னா → NEW (push)
+
+    Examples:
+      INV-001 + PO-100 + V-001  (first time)  → ALLOW
+      INV-001 + PO-100 + V-001  (again)        → SKIP
+      INV-001 + PO-200 + V-001                 → ALLOW (PO changed)
+      INV-001 + PO-100 + V-002                 → ALLOW (vendor code changed)
+      INV-002 + PO-100 + V-001                 → ALLOW (new invoice)
     """
     if not invoice_number:
         return False, "No invoice number — skip duplicate check"
 
-    existing = session.scalar(
-        select(InvoiceMaster).where(
-            InvoiceMaster.invoice_number == invoice_number
-        )
-    )
+    filters = [Invoice.invoice_number == invoice_number]
+
+    # po_number match
+    if po_number:
+        filters.append(Invoice.po_number == po_number)
+    else:
+        filters.append(Invoice.po_number == None)
+
+    # vendor_code match
+    if vendor_code:
+        filters.append(Invoice.vendor_code == vendor_code)
+    else:
+        filters.append(Invoice.vendor_code == None)
+
+    existing = session.scalar(select(Invoice).where(*filters))
 
     if existing:
         return True, (
-            f"DUPLICATE: invoice_number '{invoice_number}' "
-            f"already in invoice_master (first seen: {existing.first_seen_date.date()}, "
-            f"vendor: {existing.vendor or '?'})"
+            f"DUPLICATE: invoice='{invoice_number}' po='{po_number}' vendor_code='{vendor_code}' "
+            f"already in invoices (id={existing.id})"
         )
-    return False, "New invoice — OK to push"
+    return False, "New combo — OK to push"
 
 
 # ── DB Push ───────────────────────────────────────────────────
@@ -182,7 +199,7 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
     """
     1. invoices table-ல insert
     2. invoice_lines table-ல insert
-    3. invoice_master table-ல add (duplicate prevention)
+    3. invoice_master table-ல upsert (master reference only)
     4. audit_logs table-ல log
     """
 
@@ -224,14 +241,17 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
             amount     = l["amount"],
         ))
 
-    # 3. Invoice master (duplicate prevention)
-    session.add(InvoiceMaster(
-        invoice_number  = header["invoice_number"],
-        vendor          = header["vendor"],
-        vendor_code     = header["vendor_code"],
-        po_number       = header["po_number"],
-        invoice_id      = inv.id,
-    ))
+    # 3. Invoice master — new invoice_number மட்டும் add பண்ணு, already இருந்தா skip
+    if header["invoice_number"]:
+        stmt = pg_insert(InvoiceMaster).values(
+            invoice_number  = header["invoice_number"],
+            vendor          = header["vendor"],
+            vendor_code     = header["vendor_code"],
+            po_number       = header["po_number"],
+            first_seen_date = now_utc(),
+            invoice_id      = inv.id,
+        ).on_conflict_do_nothing(index_elements=["invoice_number"])
+        session.execute(stmt)
 
     # 4. Audit log
     session.add(AuditLog(
@@ -253,6 +273,37 @@ def push_to_db(session, header: dict, lines: list, pdf_name: str) -> int:
 
 # ── Extraction Prompt ─────────────────────────────────────────
 
+GRN_PROMPT = r"""
+You are looking at ONE invoice image. Your ONLY job is to find the GRN number from the receiving/inward stamp.
+
+STEP 1 — Find the receiving stamp at the BOTTOM of the page (rubber stamp or handwritten box).
+
+STEP 2 — Look for a line that says exactly:
+  "GRN NO", "GRN No.", "GRN No", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
+
+STEP 3 — Extract the number written NEXT to that label.
+
+CRITICAL — DO NOT extract from these labels (even if the number looks similar):
+  ❌ SCROLL NO  (most common mistake — this is NOT the GRN)
+  ❌ CH NO
+  ❌ Challan No
+  ❌ E-way Bill No
+  ❌ Vehicle No
+  ❌ Gate Pass No
+  ❌ Delivery Note No
+
+STAMP EXAMPLE:
+  SCROLL NO : 020040285    ← DO NOT extract this
+  DATE      : 21/08/26
+  GRN NO    : 50 - 35689   ← EXTRACT this → "50 - 35689"
+
+If you only see SCROLL NO with no GRN NO → return {"grn_number": ""}
+If no stamp found → return {"grn_number": ""}
+
+Return ONLY this JSON, nothing else:
+{"grn_number": "<value or empty string>"}
+"""
+
 PROMPT = r"""
 You are an Indian invoice extraction engine.
 Read the invoice IMAGE. Return ONLY valid JSON. No markdown. No explanation.
@@ -263,8 +314,7 @@ AMOUNT RULES:
   Remove ₹ and commas. Keep decimal point exactly.
 
 GRN NUMBER:
-  Look for receiving stamp: "GRN", "Inward No", "INWARD NO", "MRN"
-  Extract ONLY that stamp number. NOT vehicle/challan/e-way bill numbers.
+  Set "grn_number" to "" always — it will be extracted separately.
 
 LINE ITEMS:
   Extract ONLY invoice line items with amounts. Remove duplicates.
@@ -308,6 +358,46 @@ def to_float(v) -> float:
 def clean(v) -> str:
     return str(v).strip() if v else ""
 
+def clean_po(v) -> str:
+    """PO-5100002309 → 5100002309  |  po5100002309 → 5100002309"""
+    s = clean(v)
+    # Remove common prefixes: PO-, PO, P.O., P/O, po- etc.
+    s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
+    return s
+
+def clean_grn(v) -> str:
+    """
+    OCR letter→number fix for GRN numbers.
+    S00356389   → 500356389
+    O2O26OO3    → 020260003
+    50-343863   → 50343863   (dash/space removed)
+    50 - 343863 → 50343863
+    """
+    s = clean(v)
+    if not s:
+        return s
+    # dash between digits = "00" (e.g. 50 - 343863 → 5000343863)
+    s = re.sub(r"\s*-\s*", "00", s)
+    # Remove remaining spaces and dots
+    s = re.sub(r"[\s\.]", "", s)
+    # Character-by-character OCR correction map
+    OCR_MAP = {
+        'S': '5', 's': '5',
+        'O': '0', 'o': '0',
+        'I': '1', 'l': '1',
+        'Z': '2', 'z': '2',
+        'B': '8',
+        'G': '6',
+        'T': '7',
+        'A': '4',
+        'q': '9',
+    }
+    result = ""
+    for ch in s:
+        result += OCR_MAP.get(ch, ch)
+
+    return result
+
 def extract_json(raw) -> dict:
     if isinstance(raw, list):
         raw = "".join(str(x.get("text","") if isinstance(x,dict) else x) for x in raw)
@@ -327,6 +417,17 @@ def pdf_to_images(path: Path):
     doc  = fitz.open(str(path))
     imgs = []
     zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
+    for i in range(min(doc.page_count, MAX_PAGES)):
+        pix = doc[i].get_pixmap(matrix=zoom, alpha=False)
+        imgs.append(base64.b64encode(pix.tobytes("png")).decode())
+    doc.close()
+    return imgs
+
+def pdf_all_page_images(path: Path):
+    """Return all pages (up to MAX_PAGES) as base64 PNG list."""
+    doc  = fitz.open(str(path))
+    zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
+    imgs = []
     for i in range(min(doc.page_count, MAX_PAGES)):
         pix = doc[i].get_pixmap(matrix=zoom, alpha=False)
         imgs.append(base64.b64encode(pix.tobytes("png")).decode())
@@ -440,6 +541,48 @@ def invoke(llm, images, pdf_text="") -> dict:
     if not raw: raise ValueError("Ollama returned empty response")
     return extract_json(raw)
 
+def invoke_grn(llm, page_imgs: list) -> str:
+    """
+    Dedicated second-pass GRN extraction.
+    Tries each page one by one until a non-empty GRN is found.
+    Returns the raw GRN string (before clean_grn).
+    """
+    for page_num, img in enumerate(page_imgs, 1):
+        print(f"     GRN scan page {page_num}/{len(page_imgs)}...")
+        grn = ""
+        try:
+            content = [
+                {"type": "text",      "text": GRN_PROMPT},
+                {"type": "image_url", "image_url": f"data:image/png;base64,{img}"},
+            ]
+            resp = llm.invoke([HumanMessage(content=content)])
+            result = extract_json(resp.content)
+            grn = result.get("grn_number", "")
+        except Exception as e:
+            print(f"       LangChain failed: {e} — raw Ollama fallback...")
+            try:
+                payload = {
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role":"user","content":GRN_PROMPT,"images":[img]}],
+                    "stream": False, "format": "json", "think": False,
+                    "options": {"temperature":0,"num_ctx":4096,"num_predict":256},
+                }
+                r = httpx.post(f"{OLLAMA_URL}/api/chat",
+                               json=payload, timeout=TIMEOUT, trust_env=False)
+                r.raise_for_status()
+                msg = r.json().get("message", {})
+                raw = (msg.get("content") or "").strip()
+                if raw:
+                    grn = extract_json(raw).get("grn_number", "")
+            except Exception as e2:
+                print(f"       Raw Ollama also failed: {e2}")
+
+        if grn.strip():
+            print(f"       Found GRN on page {page_num}: '{grn}'")
+            return grn.strip()
+
+    return ""
+
 def normalize(data: dict, filename: str):
     if not isinstance(data, dict): data = {}
     subtotal  = to_float(data.get("subtotal"))
@@ -476,7 +619,7 @@ def normalize(data: dict, filename: str):
         "vendor":      clean(data.get("vendor")),
         "invoice_number": clean(data.get("invoice_number")),
         "invoice_date":   format_date(clean(data.get("invoice_date"))),
-        "po_number":      clean(data.get("po_number")),
+        "po_number":      clean_po(data.get("po_number")),
         "gstin":          clean(data.get("gstin")),
         "hsn_sac":        hsn_inv,
         "vendor_code":    clean(data.get("vendor_code")),
@@ -487,7 +630,7 @@ def normalize(data: dict, filename: str):
         "igst":       round(igst,2),
         "total_tax":  round(total_tax,2),
         "total":      round(total,2),
-        "grn_number": clean(data.get("grn_number") or ""),
+        "grn_number": clean_grn(data.get("grn_number") or ""),
         "handwritten_references": clean(hw),
         "confidence": round(max(0,min(1,to_float(data.get("confidence"))))*100,1),
     }, lines
@@ -594,48 +737,60 @@ def main():
         print(f"ERROR: Ollama failed: {e}"); sys.exit(1)
 
     llm = create_llm()
-    stats = {"pushed":0, "duplicate":0, "error":0}
+    stats = {"pushed":0, "error":0}
 
     for idx, pdf in enumerate(pdfs, 1):
         t0 = time.time()
         print(f"\n[{idx}/{len(pdfs)}] {pdf.name}")
 
         try:
-            # Extract
+            # Pass 1 — main extraction (invoice fields, no GRN)
             images   = pdf_to_images(pdf)
             pdf_text = get_pdf_text(pdf)
             data     = invoke(llm, images, pdf_text)
             header, lines = normalize(data, pdf.name)
+
+            # Pass 2 — dedicated GRN extraction, scans all pages until found
+            print(f"  Extracting GRN (pass 2)...")
+            all_imgs = pdf_all_page_images(pdf)
+            raw_grn  = invoke_grn(llm, all_imgs)
+            grn_clean = clean_grn(raw_grn)
+            header["grn_number"] = grn_clean
+            print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}'")
 
             print(f"  Invoice : {header['invoice_number'] or '?'}")
             print(f"  Vendor  : {header['vendor'] or '?'}")
             print(f"  Total   : {header['total']}  GRN: {header['grn_number'] or '-'}")
 
             with Session() as session:
-                # Duplicate check via invoice_master
-                dup, reason = is_duplicate(session, header["invoice_number"])
+                # Duplicate check: same invoice_number + po_number + vendor_code in invoices table
+                dup, reason = is_duplicate_in_invoices(
+                    session,
+                    header["invoice_number"],
+                    header["po_number"],
+                    header["vendor_code"],
+                )
                 print(f"  Check   : {reason}")
 
                 if dup:
-                    print(f"  ⚠️  SKIPPED — Duplicate")
-
-                    # Log duplicate attempt in audit_logs
+                    print(f"  ⚠️  SKIPPED — same invoice+PO+VendorCode already in invoices table")
                     session.add(AuditLog(
                         invoice_id = None,
                         action     = "DUPLICATE_SKIPPED",
                         detail     = {
                             "file"           : pdf.name,
                             "invoice_number" : header["invoice_number"],
-                            "vendor"         : header["vendor"],
+                            "po_number"      : header["po_number"],
+                            "vendor_code"    : header["vendor_code"],
                             "reason"         : reason,
                         }
                     ))
                     session.commit()
-                    stats["duplicate"] += 1
+                    stats["duplicate"] = stats.get("duplicate", 0) + 1
                     create_excel(header, lines, out)
                     continue
 
-                # Push to DB
+                # Push to invoices table
                 inv_id  = push_to_db(session, header, lines, pdf.name)
                 elapsed = round(time.time()-t0, 1)
                 print(f"  ✅ DB pushed — id={inv_id}  ({elapsed}s)")
@@ -669,7 +824,7 @@ def main():
     print("\n" + "="*60)
     print("DONE")
     print(f"  ✅ Pushed to DB  : {stats['pushed']}")
-    print(f"  ⚠️  Duplicates    : {stats['duplicate']} (skipped)")
+    print(f"  ⚠️  Duplicates    : {stats.get('duplicate', 0)} (skipped)")
     print(f"  ❌ Errors        : {stats['error']}")
     print(f"  📁 Excel folder  : {out}")
     print("="*60)
