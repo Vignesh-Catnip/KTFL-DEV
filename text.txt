@@ -886,8 +886,3 @@ SELECT TOP (1000) *
 
 
 SELECT id, invoice_number, invoice_date, po_number, currency FROM invoices WHERE status = 'REVIEW' ORDER BY id
-
-
-pip install fitz httpx sqlalchemy psycopg openpyxl pymupdf --break-system-packages
-
-python invoice_extractor_final.py
