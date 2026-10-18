@@ -1,5 +1,5 @@
-""
-KTFL Invoice Extractor — LangChain + Ollama + PostgreSQL
+"""
+KTFL Invoice Extractor - LangChain + Ollama + PostgreSQL
 =========================================================
 Tables used:
   - invoices        : main invoice data (ALWAYS pushed for every run)
