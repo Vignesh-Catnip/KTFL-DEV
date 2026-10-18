@@ -52,9 +52,10 @@ DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_in
 
 MAIN_PAGES   = 2       # pages sent for main extraction (invoice data is on page 1-2)
 MAX_PAGES    = 6       # max pages scanned for GRN stamp
-IMAGE_ZOOM   = 1.2     # 1.2 = good quality + smaller payload (was 1.5 → too heavy for 6 pages)
-NUM_CTX      = 8192
-NUM_PREDICT  = 2048
+IMAGE_ZOOM   = 1.2     # 1.2 = good quality + smaller payload
+NUM_CTX      = 16384   # larger context for multi-page invoices
+NUM_PREDICT  = 4096    # was 2048 → too small, response cut off (done_reason=length)
+NUM_PREDICT_GRN = 256  # GRN response is tiny — keep small for speed
 TIMEOUT      = 900
 # ============================================================
 
@@ -552,48 +553,52 @@ def is_scanned_pdf(pdf_text: str) -> bool:
 
 def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) -> dict:
     """
-    Single reliable entry point for all Ollama calls.
+    Streams the Ollama response token-by-token and assembles the full text.
 
-    qwen3-vl quirks:
-      - think:false + format:json together → content field comes back empty
-      - Solution: NO format:json, NO think:false
-        Instead: prompt says "Return ONLY JSON", extract_json() strips <think> blocks
+    Why streaming:
+      - done_reason=length means non-stream mode cuts off at num_predict tokens
+        and returns empty content instead of the partial text
+      - Streaming collects every token as it arrives → no cutoff loss
+      - Works with qwen3-vl thinking mode (strips <think> blocks after assembly)
     """
     payload = {
         "model": OLLAMA_MODEL,
         "messages": [{"role": "user", "content": prompt_text, "images": images}],
-        "stream": False,
-        # NO "format": "json"  — causes empty content with qwen3 + think:false
-        # NO "think": False    — let model think; we strip <think> in extract_json()
+        "stream": True,   # ← KEY FIX: stream tokens, assemble full response
         "options": {
             "temperature": 0,
             "num_ctx": NUM_CTX,
             "num_predict": num_predict,
         },
     }
-    r = httpx.post(
+
+    full_text = ""
+    with httpx.stream(
+        "POST",
         f"{OLLAMA_URL}/api/chat",
         json=payload,
         timeout=TIMEOUT,
         trust_env=False,
-    )
-    r.raise_for_status()
-    resp = r.json()
+    ) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                chunk = json.loads(line)
+            except Exception:
+                continue
+            token = chunk.get("message", {}).get("content", "")
+            if token:
+                full_text += token
+            if chunk.get("done"):
+                break
 
-    # qwen3 with thinking: content may be in thinking_content + content separately
-    msg = resp.get("message", {})
-    raw = (msg.get("content") or "").strip()
+    if not full_text.strip():
+        raise ValueError("Ollama returned empty content after full stream")
 
-    # fallback: some versions put full text in thinking_content when thinking enabled
-    if not raw:
-        raw = (msg.get("thinking_content") or "").strip()
-
-    if not raw:
-        # last resort: check if done_reason gives a clue
-        done = resp.get("done_reason", "unknown")
-        raise ValueError(f"Ollama returned empty content (done_reason={done})")
-
-    return extract_json(raw)
+    return extract_json(full_text)
 
 
 def invoke_main(images: list, pdf_text: str = "") -> dict:
@@ -614,7 +619,7 @@ def invoke_grn(page_imgs: list) -> str:
         print(f"     GRN scan page {page_num}/{len(page_imgs)}...", end=" ", flush=True)
         grn = ""
         try:
-            result = ollama_call(GRN_PROMPT, [img], num_predict=128)
+            result = ollama_call(GRN_PROMPT, [img], num_predict=NUM_PREDICT_GRN)
             grn = (result.get("grn_number") or "").strip()
         except Exception as e:
             print(f"(err: {e})")
