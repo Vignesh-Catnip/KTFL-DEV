@@ -35,9 +35,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-from langchain_core.messages import HumanMessage
-from langchain_ollama import ChatOllama
-
 from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import (sessionmaker, DeclarativeBase,
                              Mapped, mapped_column, relationship)
@@ -528,80 +525,62 @@ def is_scanned_pdf(pdf_text: str) -> bool:
 
 # ── LLM ──────────────────────────────────────────────────────
 
-def create_llm(num_predict=NUM_PREDICT):
-    """Always returns a fresh LLM instance — no shared context between calls."""
-    return ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_URL,
-        temperature=0,
-        num_ctx=NUM_CTX,
-        num_predict=num_predict,
-        format="json",
-        client_kwargs={"trust_env": False},
-    )
-
-def _raw_ollama(prompt_text: str, images: list, num_predict=NUM_PREDICT) -> dict:
-    """Direct Ollama API fallback when LangChain fails."""
+def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) -> dict:
+    """
+    Single reliable entry point for all Ollama calls.
+    - Direct httpx — no LangChain wrapper (avoids think-tag JSON failures)
+    - think: false — prevents qwen3 from wrapping output in <think> blocks
+    - Fresh connection every call — zero context bleed
+    """
     payload = {
         "model": OLLAMA_MODEL,
         "messages": [{"role": "user", "content": prompt_text, "images": images}],
         "stream": False,
         "format": "json",
         "think": False,
-        "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": num_predict},
+        "options": {
+            "temperature": 0,
+            "num_ctx": NUM_CTX,
+            "num_predict": num_predict,
+        },
     }
-    r = httpx.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=TIMEOUT, trust_env=False)
+    r = httpx.post(
+        f"{OLLAMA_URL}/api/chat",
+        json=payload,
+        timeout=TIMEOUT,
+        trust_env=False,
+    )
     r.raise_for_status()
     msg = r.json().get("message", {})
     raw = (msg.get("content") or "").strip()
     if not raw:
-        raise ValueError("Ollama returned empty response")
+        raise ValueError("Ollama returned empty content")
     return extract_json(raw)
 
-def invoke_main(llm, images: list, pdf_text: str = "") -> dict:
-    """Pass 1: Extract all invoice fields except GRN."""
-    try:
-        content = [{"type": "text", "text": MAIN_PROMPT}]
-        if pdf_text:
-            content.append({"type": "text", "text": f"\nEMBEDDED TEXT (use as reference):\n{pdf_text[:3000]}"})
-        for img in images:
-            content.append({"type": "image_url", "image_url": f"data:image/png;base64,{img}"})
-        resp = llm.invoke([HumanMessage(content=content)])
-        return extract_json(resp.content)
-    except Exception as e:
-        print(f"     LangChain failed: {e} — raw Ollama fallback...")
 
-    body = MAIN_PROMPT
+def invoke_main(images: list, pdf_text: str = "") -> dict:
+    """Pass 1: Extract all invoice fields (except GRN)."""
+    prompt = MAIN_PROMPT
     if pdf_text:
-        body += f"\nEMBEDDED TEXT (use as reference):\n{pdf_text[:3000]}"
-    return _raw_ollama(body, images, NUM_PREDICT)
+        prompt += f"\n\nEMBEDDED TEXT (use as grounding reference):\n{pdf_text[:3000]}"
+    return ollama_call(prompt, images, NUM_PREDICT)
+
 
 def invoke_grn(page_imgs: list) -> str:
     """
-    Pass 2: GRN-only extraction.
-    - Fresh LLM per page (no context bleed)
+    Pass 2: GRN-only scan.
+    - One fresh Ollama call per page — no shared context
     - Scans page 1 → last page, stops at first non-empty GRN
     """
     for page_num, img in enumerate(page_imgs, 1):
         print(f"     GRN scan page {page_num}/{len(page_imgs)}...", end=" ", flush=True)
         grn = ""
         try:
-            llm = create_llm(num_predict=128)  # small output — just {"grn_number": "..."}
-            content = [
-                {"type": "text",      "text": GRN_PROMPT},
-                {"type": "image_url", "image_url": f"data:image/png;base64,{img}"},
-            ]
-            resp = llm.invoke([HumanMessage(content=content)])
-            grn  = extract_json(resp.content).get("grn_number", "")
+            result = ollama_call(GRN_PROMPT, [img], num_predict=128)
+            grn = (result.get("grn_number") or "").strip()
         except Exception as e:
-            print(f"(LangChain err: {e}) fallback...", end=" ", flush=True)
-            try:
-                result = _raw_ollama(GRN_PROMPT, [img], num_predict=128)
-                grn = result.get("grn_number", "")
-            except Exception as e2:
-                print(f"(Ollama err: {e2})")
+            print(f"(err: {e})")
 
-        grn = grn.strip()
         if grn:
             print(f"✅ GRN='{grn}'")
             return grn
@@ -783,9 +762,8 @@ def main():
             scanned  = is_scanned_pdf(pdf_text)
             print(f"  Pages: {len(images)} | {'SCANNED (image-only)' if scanned else 'TEXT PDF'}")
 
-            # ── Pass 1: Fresh LLM — main invoice fields ──
-            llm1  = create_llm()
-            data  = invoke_main(llm1, images, "" if scanned else pdf_text)
+            # ── Pass 1: main invoice fields ──
+            data  = invoke_main(images, "" if scanned else pdf_text)
             header, lines = normalize(data, pdf.name)
 
             # ── Pass 2: GRN — fresh LLM per page ──
