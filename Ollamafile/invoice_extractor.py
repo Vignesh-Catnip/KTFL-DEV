@@ -1,4 +1,4 @@
-"""
+""
 KTFL Invoice Extractor — LangChain + Ollama + PostgreSQL
 =========================================================
 Tables used:
@@ -280,8 +280,9 @@ STEP 1 — Find the receiving stamp at the BOTTOM of the page (rubber stamp or h
 
 STEP 2 — Look for a line that says exactly:
   "GRN NO", "GRN No.", "GRN No", "GRN", "Inward No", "INWARD NO", "MRN No", "MRN"
+  Also look for "JRN NO" — this is the same as GRN NO.
 
-STEP 3 — Extract the number written NEXT to that label.
+STEP 3 — Extract the number written NEXT to that label EXACTLY as written including spaces and dash.
 
 CRITICAL — DO NOT extract from these labels (even if the number looks similar):
   ❌ SCROLL NO  (most common mistake — this is NOT the GRN)
@@ -293,11 +294,11 @@ CRITICAL — DO NOT extract from these labels (even if the number looks similar)
   ❌ Delivery Note No
 
 STAMP EXAMPLE:
-  SCROLL NO : 020040285    ← DO NOT extract this
+  SCROLL NO : p002040285    ← DO NOT extract this
   DATE      : 21/08/26
-  GRN NO    : 50 - 35689   ← EXTRACT this → "50 - 35689"
+  JRN NO    : 50 - 356087   ← EXTRACT this EXACTLY → "50 - 356087"
 
-If you only see SCROLL NO with no GRN NO → return {"grn_number": ""}
+If you only see SCROLL NO with no GRN/JRN NO → return {"grn_number": ""}
 If no stamp found → return {"grn_number": ""}
 
 Return ONLY this JSON, nothing else:
@@ -361,26 +362,32 @@ def clean(v) -> str:
 def clean_po(v) -> str:
     """PO-5100002309 → 5100002309  |  po5100002309 → 5100002309"""
     s = clean(v)
-    # Remove common prefixes: PO-, PO, P.O., P/O, po- etc.
     s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
     return s
 
 def clean_grn(v) -> str:
     """
-    OCR letter→number fix for GRN numbers.
-    S00356389   → 500356389
-    O2O26OO3    → 020260003
-    50-343863   → 50343863   (dash/space removed)
-    50 - 343863 → 50343863
+    GRN number cleaner — KTFL stamp format: "50 - 356087" → "5000356087"
+
+    Rules:
+      1. OCR letter → digit fixes
+      2. dash BETWEEN DIGITS (with optional spaces) → "00"
+         e.g. "50 - 356087" → "5000356087"
+              "50-356087"   → "5000356087"
+      3. remaining spaces → remove
+      4. keep digits only
+
+    Examples:
+      "50 - 356087"  → "5000356087"   ✅
+      "50-356087"    → "5000356087"   ✅
+      "50 - 35 6087" → "5000356087"   ✅
+      "S00356389"    → "500356389"    ✅ (OCR S→5)
     """
     s = clean(v)
     if not s:
         return s
-    # dash between digits = "00" (e.g. 50 - 343863 → 5000343863)
-    s = re.sub(r"\s*-\s*", "00", s)
-    # Remove remaining spaces and dots
-    s = re.sub(r"[\s\.]", "", s)
-    # Character-by-character OCR correction map
+
+    # 1. OCR letter → digit
     OCR_MAP = {
         'S': '5', 's': '5',
         'O': '0', 'o': '0',
@@ -392,11 +399,18 @@ def clean_grn(v) -> str:
         'A': '4',
         'q': '9',
     }
-    result = ""
-    for ch in s:
-        result += OCR_MAP.get(ch, ch)
+    s = "".join(OCR_MAP.get(c, c) for c in s)
 
-    return result
+    # 2. dash BETWEEN DIGITS → "00"  (e.g. "50 - 356087" → "5000356087")
+    s = re.sub(r"(\d)\s*-\s*(\d)", r"\g<1>00\2", s)
+
+    # 3. spaces between digits → remove (OCR spacing artifact)
+    s = re.sub(r"(\d)\s+(\d)", r"\g<1>\2", s)
+
+    # 4. keep only digits
+    s = re.sub(r"[^\d]", "", s)
+
+    return s
 
 def extract_json(raw) -> dict:
     if isinstance(raw, list):
@@ -444,15 +458,6 @@ def get_pdf_text(path: Path) -> str:
     return "\n".join(parts)
 
 def format_date(raw: str) -> str:
-    """
-    எந்த format-ல இருந்தாலும் → DD.MM.YYYY
-    Examples:
-      2026-08-09     → 09.08.2026
-      09/08/2026     → 09.08.2026
-      09-Aug-26      → 09.08.2026
-      August 9, 2026 → 09.08.2026
-      09.08.2026     → 09.08.2026  (already correct)
-    """
     if not raw: return ""
     raw = str(raw).strip()
     MONTH_MAP = {
@@ -472,14 +477,13 @@ def format_date(raw: str) -> str:
             if dt.year < 100: dt = dt.replace(year=dt.year+2000)
             return dt.strftime("%d.%m.%Y")
         except: pass
-    # Pattern: 9-Aug-26 or 09-Aug-2026
     m = re.match(r"(\d{1,2})[-/\s]([A-Za-z]+)[-/\s](\d{2,4})$", raw)
     if m:
         day, mon, yr = int(m.group(1)), m.group(2).lower()[:3], int(m.group(3))
         if yr < 100: yr += 2000
         mo = MONTH_MAP.get(mon, 0)
         if mo: return f"{day:02d}.{mo:02d}.{yr}"
-    return raw  # return as-is if nothing matches
+    return raw
 
 def fix_amounts(subtotal, cgst, sgst, igst, total_tax, total):
     if total > 0 and total_tax > total:
@@ -763,7 +767,6 @@ def main():
             print(f"  Total   : {header['total']}  GRN: {header['grn_number'] or '-'}")
 
             with Session() as session:
-                # Duplicate check: same invoice_number + po_number + vendor_code in invoices table
                 dup, reason = is_duplicate_in_invoices(
                     session,
                     header["invoice_number"],
@@ -790,33 +793,25 @@ def main():
                     create_excel(header, lines, out)
                     continue
 
-                # Push to invoices table
                 inv_id  = push_to_db(session, header, lines, pdf.name)
                 elapsed = round(time.time()-t0, 1)
                 print(f"  ✅ DB pushed — id={inv_id}  ({elapsed}s)")
                 stats["pushed"] += 1
 
-            # Save Excel
             create_excel(header, lines, out)
 
         except Exception as e:
             elapsed = round(time.time()-t0, 1)
             print(f"  ❌ ERROR: {e}  ({elapsed}s)")
-
-            # Log error in audit_logs
             try:
                 with Session() as session:
                     session.add(AuditLog(
                         invoice_id = None,
                         action     = "EXTRACTION_ERROR",
-                        detail     = {
-                            "file"  : pdf.name,
-                            "error" : str(e),
-                        }
+                        detail     = {"file": pdf.name, "error": str(e)}
                     ))
                     session.commit()
             except: pass
-
             stats["error"] += 1
 
         if idx < len(pdfs): time.sleep(0.5)
