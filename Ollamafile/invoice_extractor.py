@@ -1,29 +1,26 @@
 """
-KTFL Invoice Extractor v3
-=========================
-SPEED OPTIMIZATIONS vs v2:
-  1. Main extraction: sends ONLY page 1 (not 2 pages) — halves vision tokens
-  2. GRN extraction: checks page 1 FIRST (stamp is usually page 1), stops immediately on find
-  3. Reduced NUM_PREDICT to 4096 (enough for JSON) — think:false skips reasoning
-  4. For text PDFs (Bharat Metals): uses embedded text → skips vision for main extraction
-  5. Real-time progress ticker shows elapsed seconds during model call
-
-EXPECTED TIME:
-  Scanned PDF (AB/DSK): ~60-120s (was hanging indefinitely)
-  Text PDF (Bharat):    ~20-40s  (text extraction, no vision for main)
+KTFL Invoice Extractor — FINAL
+================================
+Model  : qwen3-vl:32b (single call per PDF)
+Target : ~60-90s per scanned PDF, ~20-40s for text PDF
+Strategy:
+  - ONE Ollama call extracts invoice data + GRN stamp together
+  - Text PDF → text prompt only (no vision) → fastest path
+  - Scanned PDF → page 1 image only (not 2 pages)
+  - No LangChain overhead
+  - think:false + streaming
 """
 
 import os, base64, json, re, sys, time, threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Remove proxy env vars — Ollama is local
 for _k in ["HTTP_PROXY","HTTPS_PROXY","ALL_PROXY","http_proxy","https_proxy","all_proxy"]:
     os.environ.pop(_k, None)
 os.environ["NO_PROXY"] = "localhost,127.0.0.1"
 
-import fitz          # pip install pymupdf
-import httpx         # pip install httpx
+import fitz
+import httpx
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
@@ -40,10 +37,10 @@ OLLAMA_URL    = "http://127.0.0.1:11434"
 OLLAMA_MODEL  = "qwen3-vl:32b"
 DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-IMAGE_ZOOM    = 1.5    # higher zoom = clearer stamp text
-NUM_CTX       = 8192   # reduced context = faster
-NUM_PREDICT   = 4096   # sufficient for JSON output with think:false
-TIMEOUT       = 600    # 10 min max per call
+IMAGE_ZOOM   = 1.2
+NUM_CTX      = 16384
+NUM_PREDICT  = 8192
+TIMEOUT      = 600
 # ─────────────────────────────────────────
 
 
@@ -78,7 +75,7 @@ class Invoice(Base):
     confidence     : Mapped[float]     = mapped_column(Float, default=0)
     grn_number     : Mapped[str|None]  = mapped_column(String(100))
     scroll_number  : Mapped[str|None]  = mapped_column(String(100))
-    handwritten_refs: Mapped[str|None] = mapped_column(Text)
+    handwritten_references: Mapped[str|None] = mapped_column(Text)
     status         : Mapped[str]       = mapped_column(String(40), default="REVIEW", index=True)
     error_message  : Mapped[str|None]  = mapped_column(Text)
     created_at     : Mapped[datetime]  = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -123,7 +120,7 @@ def setup_db():
     engine  = create_engine(DB_URL, pool_pre_ping=True)
     Session = sessionmaker(bind=engine)
     Base.metadata.create_all(engine)
-    migrations = [
+    for sql in [
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS gstin VARCHAR(50)",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS hsn_sac VARCHAR(50)",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS vendor_code VARCHAR(50)",
@@ -132,100 +129,130 @@ def setup_db():
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS igst FLOAT DEFAULT 0",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS grn_number VARCHAR(100)",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS scroll_number VARCHAR(100)",
-        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS handwritten_refs TEXT",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS handwritten_references TEXT",
         "ALTER TABLE invoice_lines ADD COLUMN IF NOT EXISTS rate FLOAT DEFAULT 0",
         "ALTER TABLE invoice_lines ADD COLUMN IF NOT EXISTS hsn_sac VARCHAR(30) DEFAULT ''",
-    ]
-    with engine.connect() as conn:
-        for sql in migrations:
-            try: conn.execute(text(sql))
-            except: pass
-        conn.commit()
+    ]:
+        try:
+            with engine.connect() as c:
+                c.execute(text(sql)); c.commit()
+        except: pass
     return engine, Session
 
 
 # ══════════════════════════════════════════
-#  PROMPTS  (tuned from real invoice images)
+#  SINGLE COMBINED PROMPT
+#  (invoice fields + GRN stamp in ONE call)
 # ══════════════════════════════════════════
 
-MAIN_PROMPT = """You are an OCR engine for Indian GST invoices. Study the invoice image carefully.
+COMBINED_PROMPT = """You are an OCR engine for Indian GST invoices. Read ALL text in the image carefully.
 
-VENDOR IDENTIFICATION:
-- The vendor (seller) name is in the TOP-LEFT box / letterhead
-- Kalyani Technoforge / KTFL / KTFL Ranjangaon Plant-R1 is the BUYER — NEVER put them as vendor
-- Look for: AB Industries, DSK Engineers, Bharat Metals, etc. at the top
+=== PART A: INVOICE FIELDS ===
 
-KEY FIELDS TO FIND:
-- invoice_number: next to "Invoice No" or "Invoice No." in top table
-- invoice_date: next to "Dated" or "Date" in top table
-- po_number: next to "Buyer's Order No" or "PO No" — extract digits only (remove PO- prefix)
-- gstin: vendor's GSTIN (15 chars, starts with state code like 27...)
-- hsn_sac: HSN code from line items table (6-8 digits, e.g. 82073000, 72284000)
-- vendor_code: number next to "Vendor Code" in buyer address section (e.g. 70042)
-- subtotal: taxable value / amount before tax
-- cgst: CGST amount (if present)
-- sgst: SGST amount (if present)
-- igst: IGST amount (if present, usually 0 when CGST+SGST present)
-- total: Grand Total / final invoice amount
-- lines: each row in the goods table (NOT tax rows, NOT total row)
+VENDOR (seller at top of invoice, NOT Kalyani Technoforge / KTFL):
+  Look at the TOP-LEFT letterhead. Examples: AB Industries, DSK Engineers, Bharat Metals
 
-STAMP SECTION (bottom of page — Kalyani Technoforge stamp):
-- scroll_number: number next to "SCROLL NO" in the receiving stamp
-- grn_number: number next to "GRN NO" or "JRN NO" (NOT SCROLL NO) — often blank, put ""
+KEY FIELDS:
+  invoice_number → value next to "Invoice No" / "Invoice No."
+  invoice_date   → value next to "Dated" / "Date"
+  po_number      → value next to "Buyer's Order No" / "PO No" (digits only, remove PO- prefix)
+  gstin          → vendor 15-char GSTIN (e.g. 27FOCPK0952N1ZL)
+  hsn_sac        → HSN code from line items table (6-8 digits)
+  vendor_code    → number next to "Vendor Code" in buyer address (e.g. 70042)
+  subtotal       → taxable value before tax
+  cgst           → CGST amount
+  sgst           → SGST amount
+  igst           → IGST amount
+  total          → Grand Total / final payable amount
+  lines          → each goods row in the table (NOT tax rows, NOT total row)
 
-Output ONLY this JSON, nothing else:
-{"vendor":"","invoice_number":"","invoice_date":"","po_number":"","gstin":"","hsn_sac":"","vendor_code":"","currency":"INR","subtotal":0.0,"cgst":0.0,"sgst":0.0,"igst":0.0,"total":0.0,"scroll_number":"","grn_number":"","confidence":0.0,"lines":[{"item":"","quantity":0.0,"rate":0.0,"hsn_sac":"","amount":0.0}]}"""
+=== PART B: RECEIVING STAMP (bottom-left corner) ===
 
-MAIN_PROMPT_TEXT = """You are an Indian GST invoice data extractor.
+The stamp from Kalyani Technoforge has this structure:
+  ┌─────────────┬──────┬───────┬──────┐
+  │ SCROLL NO   │ DATE │ TIME  │ SIGN │
+  │ P002049285  │ ...  │ ...   │ ...  │
+  ├─────────────┼──────┴───────┴──────┤
+  │ JRN NO      │ DATE │ GRN PREPARED │
+  │ 50-35 6087  │ ...  │ ...          │
+  └─────────────┴──────┴──────────────┘
 
-Here is the embedded text from the invoice PDF:
+  scroll_number → number in "SCROLL NO" row (starts with P00...)
+  grn_number    → number in "JRN NO" or "GRN NO" row (starts with 50...)
+                  If JRN NO row is blank → grn_number = ""
+                  NEVER put SCROLL NO value into grn_number
+
+IMPORTANT:
+  - SCROLL NO ≠ GRN NO (they are different fields in different rows)
+  - grn_number comes ONLY from the JRN NO / GRN NO row
+
+Return ONLY this JSON (no explanation, no markdown):
+{
+  "vendor": "",
+  "invoice_number": "",
+  "invoice_date": "",
+  "po_number": "",
+  "gstin": "",
+  "hsn_sac": "",
+  "vendor_code": "",
+  "currency": "INR",
+  "subtotal": 0.0,
+  "cgst": 0.0,
+  "sgst": 0.0,
+  "igst": 0.0,
+  "total": 0.0,
+  "grn_number": "",
+  "scroll_number": "",
+  "confidence": 0.0,
+  "lines": [
+    {"item": "", "quantity": 0.0, "rate": 0.0, "hsn_sac": "", "amount": 0.0}
+  ]
+}"""
+
+COMBINED_PROMPT_TEXT = """You are extracting data from an Indian GST invoice.
+
+=== EMBEDDED TEXT FROM PDF ===
 {TEXT}
+=== END TEXT ===
 
-Extract ALL fields and return ONLY this JSON:
-- vendor: company name at top (NOT Kalyani Technoforge / KTFL)
-- invoice_number: value after "Invoice No"
-- invoice_date: value after "Dated" or "Date"
-- po_number: value after "Buyer's Order No" or "PO No" (digits only)
-- gstin: vendor's 15-char GSTIN
-- hsn_sac: HSN code from items table
-- vendor_code: number after "Vendor Code" in buyer section
-- subtotal: taxable value before tax
-- cgst, sgst, igst: tax amounts
-- total: Grand Total
-- scroll_number: number after "SCROLL NO" in stamp (if visible in text)
-- grn_number: number after "GRN NO" (usually "")
-- confidence: 0.9 (text PDF, high confidence)
-- lines: array of line items (not tax/total rows)
+Extract ALL fields. Return ONLY this JSON:
 
-Return ONLY JSON:
-{"vendor":"","invoice_number":"","invoice_date":"","po_number":"","gstin":"","hsn_sac":"","vendor_code":"","currency":"INR","subtotal":0.0,"cgst":0.0,"sgst":0.0,"igst":0.0,"total":0.0,"scroll_number":"","grn_number":"","confidence":0.9,"lines":[{"item":"","quantity":0.0,"rate":0.0,"hsn_sac":"","amount":0.0}]}"""
+RULES:
+  vendor         → company name at top-left (NOT Kalyani Technoforge / KTFL)
+  invoice_number → after "Invoice No"
+  invoice_date   → after "Dated" or "Date"
+  po_number      → after "Buyer's Order No" or "PO No" (digits only)
+  gstin          → vendor 15-char GSTIN
+  hsn_sac        → HSN/SAC code from items
+  vendor_code    → after "Vendor Code" (e.g. 70042)
+  subtotal       → taxable value before tax
+  cgst/sgst/igst → tax amounts
+  total          → Grand Total
+  scroll_number  → after "SCROLL NO" in stamp (if in text)
+  grn_number     → after "JRN NO" or "GRN NO" in stamp (NOT scroll number)
+  confidence     → 0.9
 
-GRN_PROMPT = """Look at this invoice page image. Find the RECEIVING STAMP at the bottom-left corner added by Kalyani Technoforge.
-
-The stamp has a table with these rows:
-  SCROLL NO  | DATE  | TIME  | SIGN
-  (number)   | ...   | ...   | ...
-  JRN NO     | DATE  | GRN PREPARED BY
-  (number)   | ...   | ...
-
-YOUR TASK: Find "JRN NO" or "GRN NO" row. Extract the number in that row.
-
-CRITICAL RULES:
-- SCROLL NO is NOT the GRN — ignore it completely
-- JRN NO = GRN NO (same thing, different label)
-- The GRN number starts with "50" followed by more digits (e.g. 50-35 6087, 50-343863, 5000356389)
-- If only SCROLL NO is visible and NO JRN/GRN row → return ""
-- If JRN NO row is empty → return ""
-
-Examples from real stamps:
-  SCROLL NO: P002047601 → IGNORE
-  JRN NO: 50-343863 → return "50-343863"
-
-  SCROLL NO: P002049285 → IGNORE
-  JRN NO: 50-35 6087 → return "50-35 6087"
-
-Return ONLY this JSON:
-{"grn_number":"","scroll_number":""}"""
+{
+  "vendor": "",
+  "invoice_number": "",
+  "invoice_date": "",
+  "po_number": "",
+  "gstin": "",
+  "hsn_sac": "",
+  "vendor_code": "",
+  "currency": "INR",
+  "subtotal": 0.0,
+  "cgst": 0.0,
+  "sgst": 0.0,
+  "igst": 0.0,
+  "total": 0.0,
+  "grn_number": "",
+  "scroll_number": "",
+  "confidence": 0.9,
+  "lines": [
+    {"item": "", "quantity": 0.0, "rate": 0.0, "hsn_sac": "", "amount": 0.0}
+  ]
+}"""
 
 
 # ══════════════════════════════════════════
@@ -233,40 +260,31 @@ Return ONLY this JSON:
 # ══════════════════════════════════════════
 
 class Ticker:
-    """Shows elapsed time while model is running"""
-    def __init__(self, label: str):
+    def __init__(self, label):
         self.label = label
         self._stop = False
-        self._t = None
 
     def _run(self):
         t0 = time.time()
         while not self._stop:
-            elapsed = int(time.time() - t0)
-            print(f"\r    {self.label} [{elapsed}s]...", end="", flush=True)
+            print(f"\r    ⏳ {self.label} [{int(time.time()-t0)}s]...", end="", flush=True)
             time.sleep(1)
 
     def start(self):
         self._stop = False
-        self._t = threading.Thread(target=self._run, daemon=True)
-        self._t.start()
+        threading.Thread(target=self._run, daemon=True).start()
 
-    def stop(self, suffix=""):
+    def stop(self):
         self._stop = True
-        if self._t: self._t.join(timeout=2)
-        print(f"\r    {self.label} done{suffix}      ")
+        time.sleep(1.1)
+        print(f"\r    ✅ {self.label} done                    ")
 
 
 # ══════════════════════════════════════════
-#  OLLAMA CALL
+#  OLLAMA CALL — streaming /api/generate
 # ══════════════════════════════════════════
 
-def ollama_call(prompt: str, images: list[str] | None, num_predict: int = NUM_PREDICT) -> str:
-    """
-    Stream from Ollama /api/generate.
-    images=None for text-only calls.
-    Returns raw text (caller parses JSON).
-    """
+def ollama_call(prompt: str, images: list | None, num_predict: int = NUM_PREDICT) -> str:
     payload = {
         "model":   OLLAMA_MODEL,
         "prompt":  prompt,
@@ -281,7 +299,9 @@ def ollama_call(prompt: str, images: list[str] | None, num_predict: int = NUM_PR
     if images:
         payload["images"] = images
 
-    collected = []
+    tokens = []
+    truncated = False
+
     with httpx.stream("POST", f"{OLLAMA_URL}/api/generate",
                       json=payload, timeout=TIMEOUT, trust_env=False) as r:
         r.raise_for_status()
@@ -289,19 +309,26 @@ def ollama_call(prompt: str, images: list[str] | None, num_predict: int = NUM_PR
             if not line.strip(): continue
             try: chunk = json.loads(line)
             except: continue
-            token = chunk.get("response", "")
-            if token:
-                collected.append(token)
+            t = chunk.get("response", "")
+            if t: tokens.append(t)
             if chunk.get("done"):
                 if chunk.get("done_reason") == "length":
-                    print(f"\n    ⚠️  Token limit hit (NUM_PREDICT={num_predict}) — increase it")
+                    truncated = True
                 break
-    return "".join(collected).strip()
+
+    raw = "".join(tokens).strip()
+
+    # Auto-repair truncated JSON
+    if truncated and raw:
+        opens = raw.count("{") - raw.count("}")
+        if opens > 0:
+            raw += "}" * opens
+
+    return raw
 
 
 def parse_json(raw: str) -> dict:
-    """Strip thinking blocks + markdown, parse JSON."""
-    # remove <think>...</think>
+    # Strip thinking blocks
     raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.IGNORECASE).strip()
     raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
     raw = re.sub(r"\s*```$", "", raw).strip()
@@ -311,40 +338,25 @@ def parse_json(raw: str) -> dict:
     if s >= 0 and e > s:
         try: return json.loads(raw[s:e+1])
         except: pass
-    raise ValueError(f"No JSON found. Raw (first 500 chars):\n{raw[:500]}")
+    raise ValueError(f"No JSON found. Response (first 400):\n{raw[:400]}")
 
 
 # ══════════════════════════════════════════
 #  PDF UTILITIES
 # ══════════════════════════════════════════
 
-def page_to_b64(path: Path, page_idx: int) -> str:
+def page_to_b64(path: Path, idx: int) -> str:
     doc = fitz.open(str(path))
     mat = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
-    pix = doc[page_idx].get_pixmap(matrix=mat, alpha=False)
+    pix = doc[idx].get_pixmap(matrix=mat, alpha=False)
     doc.close()
     return base64.b64encode(pix.tobytes("png")).decode()
 
-def pages_to_b64(path: Path, indices: list[int]) -> list[str]:
+def get_page_texts(path: Path) -> list[str]:
     doc = fitz.open(str(path))
-    mat = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
-    imgs = []
-    for i in indices:
-        if i < doc.page_count:
-            pix = doc[i].get_pixmap(matrix=mat, alpha=False)
-            imgs.append(base64.b64encode(pix.tobytes("png")).decode())
+    out = [pg.get_text("text").strip() for pg in doc]
     doc.close()
-    return imgs
-
-def get_text_pages(path: Path) -> list[str]:
-    """Return text per page. Empty string for scanned pages."""
-    doc = fitz.open(str(path))
-    pages = []
-    for pg in doc:
-        t = pg.get_text("text").strip()
-        pages.append(t if len(t) > 50 else "")
-    doc.close()
-    return pages
+    return out
 
 def page_count(path: Path) -> int:
     doc = fitz.open(str(path))
@@ -354,82 +366,40 @@ def page_count(path: Path) -> int:
 
 
 # ══════════════════════════════════════════
-#  EXTRACTION — MAIN INVOICE
+#  EXTRACTION — ONE CALL
 # ══════════════════════════════════════════
 
-def extract_main(path: Path, text_pages: list[str]) -> dict:
+def extract(path: Path) -> dict:
     """
-    Extract invoice header + line items.
-    Strategy:
-      - If page 1 has embedded text → use text prompt (fast, no vision)
-      - Else → use page 1 image (vision call)
+    Single Ollama call: extracts invoice fields + GRN stamp together.
+    Text PDF → text prompt (fastest).
+    Scanned PDF → page 1 image only.
     """
-    full_text = "\n\n".join(t for t in text_pages[:2] if t)
+    texts = get_page_texts(path)
+    full_text = "\n\n".join(t for t in texts[:2] if len(t) > 50)
     is_scanned = len(full_text.strip()) < 50
 
-    tick = Ticker("Extracting invoice data")
+    tick = Ticker("Extracting (invoice + GRN)")
     tick.start()
     try:
-        if not is_scanned and full_text:
-            # TEXT PATH: no image needed — much faster
-            prompt = MAIN_PROMPT_TEXT.replace("{TEXT}", full_text[:3000])
-            raw = ollama_call(prompt, images=None, num_predict=NUM_PREDICT)
+        if not is_scanned:
+            # TEXT PATH — fastest, no image
+            prompt = COMBINED_PROMPT_TEXT.replace("{TEXT}", full_text[:3000])
+            raw = ollama_call(prompt, images=None)
         else:
-            # VISION PATH: send page 1 only (was sending 2 pages before)
+            # VISION PATH — page 1 only (stamp is on page 1)
             img = page_to_b64(path, 0)
-            raw = ollama_call(MAIN_PROMPT, images=[img], num_predict=NUM_PREDICT)
+            raw = ollama_call(COMBINED_PROMPT, images=[img])
     finally:
         tick.stop()
 
     if not raw:
-        raise ValueError("Ollama returned empty response for main extraction")
+        raise ValueError(
+            "Empty response from Ollama.\n"
+            "Fix: run  ollama run qwen3-vl:32b  once to warm up, then retry."
+        )
+
     return parse_json(raw), is_scanned
-
-
-# ══════════════════════════════════════════
-#  EXTRACTION — GRN STAMP
-# ══════════════════════════════════════════
-
-def extract_grn(path: Path, total_pages: int) -> tuple[str, str]:
-    """
-    Scan each page for GRN stamp.
-    Returns (grn_number, scroll_number).
-    Stops at first page where GRN is found.
-    Priority: page 1 (stamps are almost always on page 1).
-    """
-    # scan order: 1, 2, 3, ... (stamps are usually page 1)
-    scan_order = list(range(min(total_pages, 6)))
-
-    for i in scan_order:
-        tick = Ticker(f"GRN scan page {i+1}/{min(total_pages,6)}")
-        tick.start()
-        try:
-            img = page_to_b64(path, i)
-            raw = ollama_call(GRN_PROMPT, images=[img], num_predict=512)
-        finally:
-            tick.stop()
-
-        if not raw:
-            print(f"    Page {i+1}: (empty response)")
-            continue
-        try:
-            data = parse_json(raw)
-            grn    = (data.get("grn_number") or "").strip()
-            scroll = (data.get("scroll_number") or "").strip()
-            if grn:
-                print(f"    ✅ Page {i+1}: GRN='{grn}' SCROLL='{scroll}'")
-                return grn, scroll
-            elif scroll:
-                print(f"    Page {i+1}: Only SCROLL='{scroll}' (GRN not found yet)")
-                # keep scanning but remember scroll
-                _scroll_found = scroll
-            else:
-                print(f"    Page {i+1}: (no stamp found)")
-        except Exception as e:
-            print(f"    Page {i+1}: parse error — {e}")
-
-    # Return scroll if found, GRN empty
-    return "", getattr(extract_grn, '_scroll_found', '')
 
 
 # ══════════════════════════════════════════
@@ -451,27 +421,24 @@ def clean_po(v) -> str:
     return re.sub(r"^(PO|P\.O\.?|P/O)[\-/\s]*", "", s, flags=re.IGNORECASE).strip()
 
 def clean_grn(v) -> str:
-    """Normalize GRN: fix OCR errors"""
     s = clean(v)
     if not s: return s
-    # dash between digits = "00" (e.g. "50-35 6087" → "5000356087")
-    # BUT only when dash separates number groups
-    s = re.sub(r"(\d)\s*-\s*(\d)", r"\g<1>00\2", s)
-    s = re.sub(r"[\s\.]", "", s)
-    # OCR character corrections
+    # "50-35 6087" → remove spaces/dashes between digit groups
+    # dash between digits → "00" only if it's a separator (e.g. 50-35 → 5035)
+    s = re.sub(r"(\d)\s*-\s*(\d)", r"\g<1>\2", s)   # remove dash: 50-35 → 5035
+    s = re.sub(r"\s", "", s)
     OCR = {'S':'5','s':'5','O':'0','o':'0','I':'1','l':'1',
            'Z':'2','z':'2','B':'8','G':'6','T':'7','A':'4','q':'9'}
-    result = "".join(OCR.get(c, c) for c in s)
-    return result
+    return "".join(OCR.get(c, c) for c in s)
 
 def fmt_date(raw: str) -> str:
     if not raw: return ""
     raw = raw.strip()
-    MONTHS = {"jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,
-              "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12}
+    MN = {"jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,
+          "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12}
     for fmt in ["%d.%m.%Y","%d/%m/%Y","%Y-%m-%d","%d-%m-%Y",
-                "%d-%m-%y","%d/%m/%y","%d %b %Y","%d %B %Y","%b %d, %Y",
-                "%d-%b-%y","%d/%b/%Y"]:
+                "%d-%m-%y","%d/%m/%y","%d %b %Y","%d %B %Y",
+                "%b %d, %Y","%d-%b-%y","%d/%b/%Y"]:
         try:
             dt = datetime.strptime(raw, fmt)
             if dt.year < 100: dt = dt.replace(year=dt.year+2000)
@@ -481,11 +448,11 @@ def fmt_date(raw: str) -> str:
     if m:
         d, mn, y = int(m.group(1)), m.group(2).lower()[:3], int(m.group(3))
         if y < 100: y += 2000
-        mo = MONTHS.get(mn, 0)
+        mo = MN.get(mn, 0)
         if mo: return f"{d:02d}.{mo:02d}.{y}"
     return raw
 
-def normalize(data: dict, filename: str, grn_raw: str, scroll_raw: str) -> tuple[dict, list]:
+def normalize(data: dict, fname: str) -> tuple[dict, list]:
     sub  = to_f(data.get("subtotal"))
     cgst = to_f(data.get("cgst"))
     sgst = to_f(data.get("sgst"))
@@ -496,13 +463,6 @@ def normalize(data: dict, filename: str, grn_raw: str, scroll_raw: str) -> tuple
     if sub == 0 and tot > 0: sub = round(tot - ttax, 2)
 
     hsn_top = clean(data.get("hsn_sac"))
-
-    # merge GRN: model might find it in main extraction too
-    grn_from_main = clean(data.get("grn_number"))
-    scroll_from_main = clean(data.get("scroll_number"))
-    final_grn    = clean_grn(grn_raw or grn_from_main)
-    final_scroll = clean(scroll_raw or scroll_from_main)
-
     seen, lines = set(), []
     for row in (data.get("lines") or []):
         if not isinstance(row, dict): continue
@@ -518,7 +478,7 @@ def normalize(data: dict, filename: str, grn_raw: str, scroll_raw: str) -> tuple
         lines.append({"item": item, "quantity": qty, "rate": rate, "hsn_sac": hsn, "amount": amt})
 
     header = {
-        "filename":      filename,
+        "filename":      fname,
         "vendor":        clean(data.get("vendor")),
         "invoice_number":clean(data.get("invoice_number")),
         "invoice_date":  fmt_date(clean(data.get("invoice_date"))),
@@ -533,8 +493,9 @@ def normalize(data: dict, filename: str, grn_raw: str, scroll_raw: str) -> tuple
         "igst":          round(igst, 2),
         "total_tax":     round(ttax, 2),
         "total":         round(tot, 2),
-        "grn_number":    final_grn,
-        "scroll_number": final_scroll,
+        "grn_number":    clean_grn(data.get("grn_number") or ""),
+        "scroll_number": clean(data.get("scroll_number") or ""),
+        "handwritten_references": "",
         "confidence":    round(max(0.0, min(1.0, to_f(data.get("confidence")))) * 100, 1),
     }
     return header, lines
@@ -544,14 +505,11 @@ def normalize(data: dict, filename: str, grn_raw: str, scroll_raw: str) -> tuple
 #  DB OPERATIONS
 # ══════════════════════════════════════════
 
-def is_duplicate(session, inv_no: str, po_no: str, vendor: str) -> tuple[bool, str]:
-    if not inv_no: return False, "No invoice number — skip dup check"
-    existing = session.scalar(
-        select(Invoice).where(Invoice.invoice_number == inv_no)
-    )
-    if existing:
-        return True, f"Invoice {inv_no} already in DB (id={existing.id})"
-    return False, "New invoice"
+def is_duplicate(session, inv_no: str) -> tuple[bool, str]:
+    if not inv_no: return False, "No invoice number"
+    row = session.scalar(select(InvoiceMaster).where(InvoiceMaster.invoice_number == inv_no))
+    if row: return True, f"Already in DB (first seen {row.first_seen_date.date()})"
+    return False, "New"
 
 def save_to_db(session, h: dict, lines: list, fname: str) -> int:
     inv = Invoice(
@@ -564,7 +522,8 @@ def save_to_db(session, h: dict, lines: list, fname: str) -> int:
         tax=h["total_tax"], total=h["total"],
         confidence=h["confidence"] / 100,
         grn_number=h["grn_number"],
-        scroll_number=h.get("scroll_number", ""),
+        scroll_number=h["scroll_number"],
+        handwritten_references=h["handwritten_references"],
         status="REVIEW",
     )
     session.add(inv); session.flush()
@@ -576,7 +535,6 @@ def save_to_db(session, h: dict, lines: list, fname: str) -> int:
             hsn_sac=l["hsn_sac"], amount=l["amount"],
         ))
 
-    # Upsert master record
     if h["invoice_number"]:
         session.execute(
             pg_insert(InvoiceMaster).values(
@@ -590,15 +548,14 @@ def save_to_db(session, h: dict, lines: list, fname: str) -> int:
         invoice_id=inv.id, action="EXTRACTED",
         detail={"file": fname, "model": OLLAMA_MODEL,
                 "total": h["total"], "grn": h["grn_number"],
-                "scroll": h.get("scroll_number",""),
-                "confidence": h["confidence"]},
+                "scroll": h["scroll_number"], "confidence": h["confidence"]},
     ))
     session.commit()
     return inv.id
 
 
 # ══════════════════════════════════════════
-#  EXCEL OUTPUT
+#  EXCEL
 # ══════════════════════════════════════════
 
 def save_excel(h: dict, lines: list, out_dir: Path):
@@ -608,18 +565,16 @@ def save_excel(h: dict, lines: list, out_dir: Path):
     wb  = Workbook()
     alt = PatternFill("solid", fgColor="EBF3FB")
 
-    def hdr_style(ws, row_n, hex_color):
-        fill = PatternFill("solid", fgColor=hex_color)
+    def hdr(ws, row_n, color):
+        fill = PatternFill("solid", fgColor=color)
         for c in ws[row_n]:
             c.fill = fill
             c.font = Font(bold=True, color="FFFFFF", size=10)
             c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    # Sheet 1 — header fields
-    ws1 = wb.active; ws1.title = "Invoice Header"
-    ws1.append(["Field", "Value"])
-    hdr_style(ws1, 1, "1F4E79")
-    rows = [
+    ws1 = wb.active; ws1.title = "Invoice Data"
+    ws1.append(["Field", "Value"]); hdr(ws1, 1, "1F4E79")
+    fields = [
         ("File Name",         h["filename"]),
         ("Vendor",            h["vendor"]),
         ("Invoice Number",    h["invoice_number"]),
@@ -636,10 +591,10 @@ def save_excel(h: dict, lines: list, out_dir: Path):
         ("Total Tax",         h["total_tax"]),
         ("Invoice Total",     h["total"]),
         ("GRN Number",        h["grn_number"]),
-        ("Scroll Number",     h.get("scroll_number","")),
+        ("Scroll Number",     h["scroll_number"]),
         ("AI Confidence %",   h["confidence"]),
     ]
-    for i, (f, v) in enumerate(rows):
+    for i, (f, v) in enumerate(fields):
         ws1.append([f, v])
         if i % 2 == 1:
             for c in ws1[i+2]: c.fill = alt
@@ -647,10 +602,9 @@ def save_excel(h: dict, lines: list, out_dir: Path):
     ws1.column_dimensions["B"].width = 60
     ws1.freeze_panes = "A2"
 
-    # Sheet 2 — line items
     ws2 = wb.create_sheet("Line Items")
     ws2.append(["Sl.No", "Description", "Qty", "Rate", "HSN/SAC", "Amount"])
-    hdr_style(ws2, 1, "145A32")
+    hdr(ws2, 1, "145A32")
     for i, l in enumerate(lines, 1):
         ws2.append([i, l["item"], l["quantity"], l["rate"], l["hsn_sac"], l["amount"]])
         if i % 2 == 0:
@@ -673,10 +627,8 @@ def main():
     out_dir = Path(OUTPUT_FOLDER)
 
     if not in_dir.exists():
-        print(f"\nERROR: Input folder not found:\n  {in_dir}\nPlease update PDF_FOLDER in the script.")
-        sys.exit(1)
+        print(f"\nERROR: Input folder not found: {in_dir}"); sys.exit(1)
 
-    # Collect PDFs (unique names only)
     seen, pdfs = set(), []
     for p in sorted(in_dir.iterdir()):
         if p.is_file() and p.suffix.lower() == ".pdf":
@@ -684,103 +636,71 @@ def main():
                 seen.add(p.name.lower()); pdfs.append(p)
 
     if not pdfs:
-        print(f"\nERROR: No PDF files found in:\n  {in_dir}")
-        sys.exit(1)
+        print("ERROR: No PDF files found"); sys.exit(1)
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print("\n" + "═"*65)
-    print("  KTFL Invoice Extractor v3")
+    print("\n" + "═"*62)
+    print("  KTFL Invoice Extractor — Final")
     print(f"  Model  : {OLLAMA_MODEL}")
-    print(f"  PDFs   : {len(pdfs)} files")
-    print(f"  Input  : {in_dir}")
-    print(f"  Output : {out_dir}")
-    print("═"*65)
+    print(f"  PDFs   : {len(pdfs)}")
+    print(f"  Calls  : 1 per PDF (invoice + GRN together)")
+    print("═"*62)
 
-    # ── Check Ollama ──────────────────────────────
-    print("\n[1/3] Checking Ollama connection...")
+    # Ollama check
+    print("\n  Checking Ollama...")
     try:
         r = httpx.get(f"{OLLAMA_URL}/api/tags", timeout=10, trust_env=False)
         r.raise_for_status()
         models = [m["name"] for m in r.json().get("models", [])]
-        match = next((m for m in models if OLLAMA_MODEL.split(":")[0] in m), None)
+        match = next((m for m in models if "qwen3-vl" in m.lower()), None)
         if not match:
-            print(f"  ERROR: Model '{OLLAMA_MODEL}' not found!")
-            print(f"  Available models: {models}")
-            sys.exit(1)
-        print(f"  ✅ Ollama OK — model ready: {match}")
-    except httpx.ConnectError:
-        print(f"  ERROR: Cannot connect to Ollama at {OLLAMA_URL}")
-        print("  Make sure: ollama serve (is running)")
-        sys.exit(1)
+            print(f"  ERROR: qwen3-vl not found. Available: {models}"); sys.exit(1)
+        print(f"  ✅ Ollama OK — {match}")
     except Exception as e:
-        print(f"  ERROR: {e}"); sys.exit(1)
+        print(f"  ERROR: Cannot reach Ollama: {e}"); sys.exit(1)
 
-    # ── Check DB ──────────────────────────────────
-    print("\n[2/3] Connecting to database...")
+    # DB check
+    print("\n  Connecting to DB...")
     try:
         engine, Session = setup_db()
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        print(f"  ✅ DB OK — {DB_URL.split('@')[-1]}")
+        with engine.connect() as c: c.execute(text("SELECT 1"))
+        print(f"  ✅ DB OK")
     except Exception as e:
-        print(f"  ERROR: DB connection failed: {e}")
-        sys.exit(1)
+        print(f"  ERROR: DB failed: {e}"); sys.exit(1)
 
-    print(f"\n[3/3] Processing {len(pdfs)} PDF(s)...\n")
-
+    print()
     stats = {"ok": 0, "dup": 0, "err": 0}
-    start_all = time.time()
+    t_all = time.time()
 
     for idx, pdf in enumerate(pdfs, 1):
-        t0  = time.time()
-        pc  = page_count(pdf)
-        print(f"{'─'*65}")
-        print(f"  [{idx}/{len(pdfs)}] {pdf.name}")
-        print(f"        Pages : {pc}")
+        t0 = time.time()
+        pc = page_count(pdf)
+        print(f"{'─'*62}")
+        print(f"  [{idx}/{len(pdfs)}] {pdf.name}  ({pc} pages)")
 
         try:
-            # ── Pass 1: extract invoice data ───────────────
-            text_pages = get_text_pages(pdf)
-            is_scanned = all(len(t) < 50 for t in text_pages[:2])
-            print(f"        Type  : {'Scanned image PDF' if is_scanned else 'Text-embedded PDF'}")
+            # ONE call — gets everything
+            data, is_scanned = extract(pdf)
+            header, lines = normalize(data, pdf.name)
 
-            print(f"\n  ◆ Pass 1 — Invoice Extraction")
-            data, _ = extract_main(pdf, text_pages)
+            print(f"  {'Scanned' if is_scanned else 'Text'} PDF")
+            print(f"  Vendor   : {header['vendor'] or '⚠ not found'}")
+            print(f"  Invoice  : {header['invoice_number'] or '⚠ not found'}")
+            print(f"  Date     : {header['invoice_date'] or '⚠ not found'}")
+            print(f"  PO       : {header['po_number'] or '⚠ not found'}")
+            print(f"  Total    : ₹{header['total']:,.2f}  (CGST:{header['cgst']} SGST:{header['sgst']} IGST:{header['igst']})")
+            print(f"  GRN      : {header['grn_number'] or '(not found)'}")
+            print(f"  Scroll   : {header['scroll_number'] or '(not found)'}")
+            print(f"  Items    : {len(lines)}")
+            print(f"  Confidence: {header['confidence']}%")
 
-            # ── Pass 2: GRN stamp ──────────────────────────
-            print(f"\n  ◆ Pass 2 — GRN Stamp Search")
-            grn_raw, scroll_raw = extract_grn(pdf, pc)
-
-            # ── Normalize ──────────────────────────────────
-            header, lines = normalize(data, pdf.name, grn_raw, scroll_raw)
-
-            elapsed = round(time.time() - t0, 1)
-            print(f"\n  ┌{'─'*45}")
-            print(f"  │ Vendor   : {header['vendor'] or '⚠ NOT FOUND'}")
-            print(f"  │ Invoice  : {header['invoice_number'] or '⚠ NOT FOUND'}")
-            print(f"  │ Date     : {header['invoice_date'] or '⚠ NOT FOUND'}")
-            print(f"  │ PO No    : {header['po_number'] or '⚠ NOT FOUND'}")
-            print(f"  │ GSTIN    : {header['gstin'] or '⚠ NOT FOUND'}")
-            print(f"  │ Total    : ₹{header['total']:,.2f}")
-            print(f"  │ CGST     : ₹{header['cgst']:,.2f}  SGST: ₹{header['sgst']:,.2f}  IGST: ₹{header['igst']:,.2f}")
-            print(f"  │ GRN No   : {header['grn_number'] or '(not found)'}")
-            print(f"  │ Scroll   : {header['scroll_number'] or '(not found)'}")
-            print(f"  │ Items    : {len(lines)}")
-            print(f"  │ Confidence: {header['confidence']}%")
-            print(f"  └{'─'*45}")
-
-            # ── DB save ────────────────────────────────────
             with Session() as session:
-                dup, reason = is_duplicate(
-                    session, header["invoice_number"],
-                    header["po_number"], header["vendor"])
-
+                dup, reason = is_duplicate(session, header["invoice_number"])
                 if dup:
-                    print(f"\n  ⚠️  SKIPPED: {reason}")
+                    print(f"\n  ⚠️  DUPLICATE — {reason} — skipped DB insert")
                     session.add(AuditLog(invoice_id=None, action="DUPLICATE_SKIPPED",
-                        detail={"file": pdf.name,
-                                "invoice_number": header["invoice_number"]}))
+                        detail={"file": pdf.name, "invoice_number": header["invoice_number"]}))
                     session.commit()
                     stats["dup"] += 1
                 else:
@@ -788,17 +708,15 @@ def main():
                     print(f"\n  ✅ Saved to DB — id={inv_id}")
                     stats["ok"] += 1
 
-            # ── Excel save ─────────────────────────────────
             xls = save_excel(header, lines, out_dir)
-            print(f"  📄 Excel: {xls.name}")
+            print(f"  📄 Excel : {xls.name}")
 
         except Exception as e:
-            elapsed = round(time.time() - t0, 1)
-            print(f"\n  ❌ FAILED ({elapsed}s): {e}")
+            print(f"\n  ❌ ERROR: {e}")
             import traceback; traceback.print_exc()
             try:
                 with Session() as s:
-                    s.add(AuditLog(invoice_id=None, action="EXTRACTION_ERROR",
+                    s.add(AuditLog(invoice_id=None, action="ERROR",
                         detail={"file": pdf.name, "error": str(e)}))
                     s.commit()
             except: pass
@@ -806,14 +724,14 @@ def main():
 
         print(f"  ⏱  {round(time.time()-t0, 1)}s\n")
 
-    total_time = round(time.time() - start_all, 0)
-    print("═"*65)
-    print(f"  COMPLETED in {int(total_time//60)}m {int(total_time%60)}s")
-    print(f"  ✅ Extracted : {stats['ok']}")
-    print(f"  ⚠️  Duplicates: {stats['dup']} (skipped)")
-    print(f"  ❌ Errors    : {stats['err']}")
-    print(f"  📁 Excel     : {out_dir}")
-    print("═"*65)
+    total = round(time.time() - t_all, 0)
+    print("═"*62)
+    print(f"  COMPLETED — {int(total//60)}m {int(total%60)}s total")
+    print(f"  ✅ Extracted  : {stats['ok']}")
+    print(f"  ⚠️  Duplicates : {stats['dup']} (skipped)")
+    print(f"  ❌ Errors     : {stats['err']}")
+    print(f"  📁 Excel      : {out_dir}")
+    print("═"*62)
 
 
 if __name__ == "__main__":
