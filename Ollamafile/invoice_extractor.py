@@ -435,16 +435,36 @@ def extract_json(raw) -> dict:
     if isinstance(raw, list):
         raw = "".join(str(x.get("text", "") if isinstance(x, dict) else x) for x in raw)
     text = str(raw).strip()
+
+    # Strip qwen3 thinking blocks (may span hundreds of lines)
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
-    text = re.sub(r"^```(?:json)?", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"```$", "", text).strip()
-    try: return json.loads(text)
-    except: pass
+    # Strip markdown code fences
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text).strip()
+
+    # Direct parse
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # Find outermost {...} block
     s, e = text.find("{"), text.rfind("}")
     if s >= 0 and e > s:
-        try: return json.loads(text[s:e+1])
-        except: pass
-    raise ValueError(f"No valid JSON in response: {text[:200]}")
+        try:
+            return json.loads(text[s:e+1])
+        except Exception:
+            pass
+
+    # Try to find any JSON-like block after stripping leading text
+    m = re.search(r'\{[\s\S]*\}', text)
+    if m:
+        try:
+            return json.loads(m.group())
+        except Exception:
+            pass
+
+    raise ValueError(f"No valid JSON found. Raw (first 300 chars): {text[:300]}")
 
 def format_date(raw: str) -> str:
     if not raw: return ""
@@ -533,16 +553,18 @@ def is_scanned_pdf(pdf_text: str) -> bool:
 def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) -> dict:
     """
     Single reliable entry point for all Ollama calls.
-    - Direct httpx — no LangChain wrapper (avoids think-tag JSON failures)
-    - think: false — prevents qwen3 from wrapping output in <think> blocks
-    - Fresh connection every call — zero context bleed
+
+    qwen3-vl quirks:
+      - think:false + format:json together → content field comes back empty
+      - Solution: NO format:json, NO think:false
+        Instead: prompt says "Return ONLY JSON", extract_json() strips <think> blocks
     """
     payload = {
         "model": OLLAMA_MODEL,
         "messages": [{"role": "user", "content": prompt_text, "images": images}],
         "stream": False,
-        "format": "json",
-        "think": False,
+        # NO "format": "json"  — causes empty content with qwen3 + think:false
+        # NO "think": False    — let model think; we strip <think> in extract_json()
         "options": {
             "temperature": 0,
             "num_ctx": NUM_CTX,
@@ -556,10 +578,21 @@ def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) 
         trust_env=False,
     )
     r.raise_for_status()
-    msg = r.json().get("message", {})
+    resp = r.json()
+
+    # qwen3 with thinking: content may be in thinking_content + content separately
+    msg = resp.get("message", {})
     raw = (msg.get("content") or "").strip()
+
+    # fallback: some versions put full text in thinking_content when thinking enabled
     if not raw:
-        raise ValueError("Ollama returned empty content")
+        raw = (msg.get("thinking_content") or "").strip()
+
+    if not raw:
+        # last resort: check if done_reason gives a clue
+        done = resp.get("done_reason", "unknown")
+        raise ValueError(f"Ollama returned empty content (done_reason={done})")
+
     return extract_json(raw)
 
 
