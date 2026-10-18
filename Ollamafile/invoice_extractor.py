@@ -33,10 +33,10 @@ OLLAMA_URL    = "http://127.0.0.1:11434"
 OLLAMA_MODEL  = "qwen3-vl:32b"
 DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-IMAGE_ZOOM   = 1.2
-NUM_CTX      = 16384
-NUM_PREDICT  = 16384   # ← MUST be large — qwen3 thinking tokens eat budget
-TIMEOUT      = 900
+IMAGE_ZOOM   = 1.0     # ← reduced: smaller image = fewer tokens = faster
+NUM_CTX      = 32768   # ← doubled: 6-page scanned PDF needs more context
+NUM_PREDICT  = 4096    # ← enough for JSON output only (think:false cuts thinking)
+TIMEOUT      = 600
 # ─────────────────────────────────────────
 
 
@@ -140,63 +140,16 @@ def setup_db():
 #  PROMPTS
 # ══════════════════════════════════════════
 
-COMBINED_PROMPT = """You are an OCR engine for Indian GST invoices. Read ALL text carefully.
+COMBINED_PROMPT = """Extract data from this Indian GST invoice image. Return ONLY JSON, no explanation.
 
-=== PART A: INVOICE FIELDS ===
+vendor=top-left company (NOT Kalyani/KTFL). invoice_number=after "Invoice No". invoice_date=after "Dated"/"Date". po_number=after "Buyer's Order No"/"PO No" digits only. gstin=vendor 15-char GSTIN. hsn_sac=HSN code. vendor_code=after "Vendor Code". subtotal=taxable value. cgst/sgst/igst=tax amounts. total=Grand Total. lines=goods rows only.
 
-VENDOR = company name in TOP-LEFT letterhead (NOT Kalyani Technoforge / KTFL)
-Examples: AB Industries, DSK Engineers, Bharat Metals
+Stamp (bottom-left box from Kalyani Technoforge):
+  SCROLL NO row → scroll_number (starts P00...)
+  JRN NO / GRN NO row → grn_number (starts 50...)
+  NEVER put SCROLL NO value into grn_number.
 
-FIELDS:
-  invoice_number → next to "Invoice No" / "Invoice No."
-  invoice_date   → next to "Dated" / "Date"
-  po_number      → next to "Buyer's Order No" / "PO No" (digits only, no PO- prefix)
-  gstin          → vendor 15-char GSTIN (e.g. 27FOCPK0952N1ZL)
-  hsn_sac        → HSN code in items table (6-8 digits)
-  vendor_code    → number next to "Vendor Code" in buyer address
-  subtotal       → taxable value before tax
-  cgst           → CGST amount
-  sgst           → SGST amount
-  igst           → IGST amount
-  total          → Grand Total / final amount
-  lines          → each goods row (NOT tax rows, NOT total row)
-
-=== PART B: RECEIVING STAMP ===
-
-Look for a rubber stamp box in the bottom-left (or any corner). It belongs to Kalyani Technoforge.
-The stamp has rows:
-  Row 1: SCROLL NO  → value starts with P00...   (e.g. P002049285)
-  Row 2: JRN NO or GRN NO → value starts with 50  (e.g. 50-35 6087 or 5000356389)
-
-RULES:
-  scroll_number → ONLY from SCROLL NO row
-  grn_number    → ONLY from JRN NO or GRN NO row (starts with 50)
-  NEVER copy SCROLL NO into grn_number — they are DIFFERENT fields
-
-If stamp is not visible → grn_number = "" and scroll_number = ""
-
-Return ONLY this JSON (no explanation, no markdown, no extra text):
-{
-  "vendor": "",
-  "invoice_number": "",
-  "invoice_date": "",
-  "po_number": "",
-  "gstin": "",
-  "hsn_sac": "",
-  "vendor_code": "",
-  "currency": "INR",
-  "subtotal": 0.0,
-  "cgst": 0.0,
-  "sgst": 0.0,
-  "igst": 0.0,
-  "total": 0.0,
-  "grn_number": "",
-  "scroll_number": "",
-  "confidence": 0.0,
-  "lines": [
-    {"item": "", "quantity": 0.0, "rate": 0.0, "hsn_sac": "", "amount": 0.0}
-  ]
-}"""
+{"vendor":"","invoice_number":"","invoice_date":"","po_number":"","gstin":"","hsn_sac":"","vendor_code":"","currency":"INR","subtotal":0.0,"cgst":0.0,"sgst":0.0,"igst":0.0,"total":0.0,"grn_number":"","scroll_number":"","confidence":0.0,"lines":[{"item":"","quantity":0.0,"rate":0.0,"hsn_sac":"","amount":0.0}]}"""
 
 COMBINED_PROMPT_TEXT = """You are extracting data from an Indian GST invoice (text extracted from PDF).
 
@@ -389,46 +342,23 @@ def extract(path: Path) -> tuple[dict, bool]:
         finally:
             tick.stop()
     else:
-        # ── VISION PATH: try page 1 first ───────────────
-        tick = Ticker("Extracting page 1")
+        # ── VISION PATH: pages 1+2 together (one shot, no retry) ──
+        total = page_count(path)
+        page_indices = [0, 1] if total >= 2 else [0]
+        label = f"Extracting pages {'+'.join(str(i+1) for i in page_indices)}"
+        tick = Ticker(label)
         tick.start()
         try:
-            imgs = pages_to_b64(path, [0])
+            imgs = pages_to_b64(path, page_indices)
             raw = ollama_call(COMBINED_PROMPT, images=imgs)
         finally:
             tick.stop()
 
-        # If empty or no JSON → retry with pages 1+2
-        if not raw or "{" not in raw:
-            print(f"    ⚠️  Page 1 gave empty response — retrying with pages 1+2")
-            tick2 = Ticker("Extracting pages 1+2 (retry)")
-            tick2.start()
-            try:
-                total = page_count(path)
-                idx = [0, 1] if total >= 2 else [0]
-                imgs = pages_to_b64(path, idx)
-                raw = ollama_call(COMBINED_PROMPT, images=imgs)
-            finally:
-                tick2.stop()
-
-        # Still empty → try page 1 alone with higher token budget
-        if not raw or "{" not in raw:
-            print(f"    ⚠️  Still empty — retrying page 1 with extended token budget")
-            tick3 = Ticker("Extracting (extended budget)")
-            tick3.start()
-            try:
-                imgs = pages_to_b64(path, [0])
-                raw = ollama_call(COMBINED_PROMPT, images=imgs, num_predict=NUM_PREDICT * 2)
-            finally:
-                tick3.stop()
-
     if not raw or "{" not in raw:
         raise ValueError(
-            "All retries gave empty response from Ollama.\n"
-            "Possible causes:\n"
-            "  1. Ollama not loaded — run: ollama run qwen3-vl:32b\n"
-            "  2. VRAM full — restart Ollama\n"
-            "  3. PDF is blank / unreadable"
+            f"Empty response from Ollama for {path.name}.\n"
+            "Fix: restart Ollama and try again.\n"
+            "  cmd: taskkill /f /im ollama.exe && ollama serve"
         )
 
     return parse_json(raw), is_scanned
