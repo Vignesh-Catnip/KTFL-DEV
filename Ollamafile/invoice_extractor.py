@@ -53,10 +53,10 @@ DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_in
 MAIN_PAGES   = 2       # pages sent for main extraction (invoice data is on page 1-2)
 MAX_PAGES    = 6       # max pages scanned for GRN stamp
 IMAGE_ZOOM   = 1.2     # 1.2 = good quality + smaller payload
-NUM_CTX      = 16384   # larger context for multi-page invoices
-NUM_PREDICT  = 4096    # was 2048 → too small, response cut off (done_reason=length)
-NUM_PREDICT_GRN = 256  # GRN response is tiny — keep small for speed
-TIMEOUT      = 900
+NUM_CTX         = 16384  # larger context for multi-page invoices
+NUM_PREDICT     = 8192   # thinking tokens + JSON output — must be large enough
+NUM_PREDICT_GRN = 512    # GRN response is tiny
+TIMEOUT         = 900
 # ============================================================
 
 
@@ -553,29 +553,32 @@ def is_scanned_pdf(pdf_text: str) -> bool:
 
 def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) -> dict:
     """
-    Streams the Ollama response token-by-token and assembles the full text.
+    Uses /api/generate (not /api/chat) with streaming.
 
-    Why streaming:
-      - done_reason=length means non-stream mode cuts off at num_predict tokens
-        and returns empty content instead of the partial text
-      - Streaming collects every token as it arrives → no cutoff loss
-      - Works with qwen3-vl thinking mode (strips <think> blocks after assembly)
+    Why /api/generate:
+      - /api/chat with qwen3 thinking mode: <think> tokens consume num_predict budget,
+        leaving no room for actual JSON output → done_reason=length → empty content
+      - /api/generate separates thinking from response internally and streams
+        only the final response tokens → JSON always complete
+      - images passed as base64 list in "images" field (same format, works for VL models)
     """
     payload = {
-        "model": OLLAMA_MODEL,
-        "messages": [{"role": "user", "content": prompt_text, "images": images}],
-        "stream": True,   # ← KEY FIX: stream tokens, assemble full response
+        "model":  OLLAMA_MODEL,
+        "prompt": prompt_text,
+        "images": images,           # base64 list — same as /api/chat images
+        "stream": True,
+        "think":  False,            # disable extended thinking to save tokens
         "options": {
-            "temperature": 0,
-            "num_ctx": NUM_CTX,
-            "num_predict": num_predict,
+            "temperature":  0,
+            "num_ctx":      NUM_CTX,
+            "num_predict":  num_predict,
         },
     }
 
     full_text = ""
     with httpx.stream(
         "POST",
-        f"{OLLAMA_URL}/api/chat",
+        f"{OLLAMA_URL}/api/generate",
         json=payload,
         timeout=TIMEOUT,
         trust_env=False,
@@ -589,14 +592,19 @@ def ollama_call(prompt_text: str, images: list, num_predict: int = NUM_PREDICT) 
                 chunk = json.loads(line)
             except Exception:
                 continue
-            token = chunk.get("message", {}).get("content", "")
+            token = chunk.get("response", "")   # /api/generate uses "response" not "content"
             if token:
                 full_text += token
             if chunk.get("done"):
+                done_reason = chunk.get("done_reason", "")
+                if done_reason == "length":
+                    print(f"\n  ⚠️  WARNING: response truncated (done_reason=length). "
+                          f"Increase NUM_PREDICT (currently {num_predict})")
                 break
 
-    if not full_text.strip():
-        raise ValueError("Ollama returned empty content after full stream")
+    full_text = full_text.strip()
+    if not full_text:
+        raise ValueError("Ollama /api/generate returned empty response")
 
     return extract_json(full_text)
 
