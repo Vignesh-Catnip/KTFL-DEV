@@ -50,8 +50,9 @@ OLLAMA_MODEL  = "qwen3-vl:32b"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 DB_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-MAX_PAGES    = 6       # max pages to send for main extraction
-IMAGE_ZOOM   = 1.5     # higher = better OCR on scanned PDFs
+MAIN_PAGES   = 2       # pages sent for main extraction (invoice data is on page 1-2)
+MAX_PAGES    = 6       # max pages scanned for GRN stamp
+IMAGE_ZOOM   = 1.2     # 1.2 = good quality + smaller payload (was 1.5 → too heavy for 6 pages)
 NUM_CTX      = 8192
 NUM_PREDICT  = 2048
 TIMEOUT      = 900
@@ -496,8 +497,12 @@ def fix_amounts(subtotal, cgst, sgst, igst, total_tax, total):
 
 # ── PDF → Images ──────────────────────────────────────────────
 
-def pdf_to_images(path: Path, max_pages=MAX_PAGES) -> list[str]:
-    """Convert PDF pages to base64 PNG images."""
+def pdf_to_images(path: Path, max_pages: int = MAIN_PAGES) -> list[str]:
+    """
+    Convert PDF pages to base64 PNG images.
+    main extraction → MAIN_PAGES (default 2) — invoice header+lines fit on page 1-2
+    GRN scan       → called with max_pages=MAX_PAGES to check all pages
+    """
     doc  = fitz.open(str(path))
     zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM)
     imgs = []
@@ -756,19 +761,26 @@ def main():
         print(f"\n[{idx}/{len(pdfs)}] {pdf.name}")
 
         try:
-            # ── PDF → images + text ──
-            images   = pdf_to_images(pdf, MAX_PAGES)
-            pdf_text = get_pdf_text(pdf)
-            scanned  = is_scanned_pdf(pdf_text)
-            print(f"  Pages: {len(images)} | {'SCANNED (image-only)' if scanned else 'TEXT PDF'}")
+            # ── PDF info ──
+            pdf_text   = get_pdf_text(pdf)
+            scanned    = is_scanned_pdf(pdf_text)
+            total_pages = fitz.open(str(pdf)).page_count
 
-            # ── Pass 1: main invoice fields ──
-            data  = invoke_main(images, "" if scanned else pdf_text)
+            # Pass 1 images: page 1+2 only (invoice header + line items fit here)
+            main_imgs  = pdf_to_images(pdf, max_pages=min(MAIN_PAGES, total_pages))
+            # GRN scan images: ALL pages (stamp can be anywhere)
+            grn_imgs   = pdf_to_images(pdf, max_pages=min(MAX_PAGES, total_pages))
+
+            print(f"  Total pages: {total_pages} | Main extraction: {len(main_imgs)} pages | GRN scan: {len(grn_imgs)} pages")
+            print(f"  Type: {'SCANNED (image-only)' if scanned else 'TEXT PDF'}")
+
+            # ── Pass 1: main invoice fields (page 1-2 only) ──
+            data  = invoke_main(main_imgs, "" if scanned else pdf_text)
             header, lines = normalize(data, pdf.name)
 
-            # ── Pass 2: GRN — fresh LLM per page ──
+            # ── Pass 2: GRN — scan all pages, fresh call per page ──
             print(f"  GRN pass 2:")
-            raw_grn   = invoke_grn(images)   # fresh LLM created per page inside
+            raw_grn   = invoke_grn(grn_imgs)
             grn_clean = clean_grn(raw_grn)
             header["grn_number"] = grn_clean
             print(f"    GRN raw='{raw_grn}' → clean='{grn_clean}'")
