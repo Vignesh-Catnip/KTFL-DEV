@@ -25,3 +25,7 @@ PDFs: 3 | Model: qwen3-vl:32b
 ====================================================================
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
+
+
+
+curl -X POST http://localhost:11434/api/generate -H "Content-Type: application/json" -d "{\"model\":\"qwen3-vl:32b\",\"prompt\":\"say hello\",\"stream\":false}" 
