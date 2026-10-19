@@ -5,7 +5,7 @@ KTFL MIRO Extractor — Vision + SAP + Validation + GST mapping → PostgreSQL
 PDFs: 3 | Model: qwen3-vl:32b
 ====================================================================
   PostgreSQL ready ✅
-  ⚠️  GST master not found: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx — tax-code mapping will be skipped
+  GST master loaded ✅ (61 tax codes)
   SAP SQL Server ready ✅ (ktfldlsqldb.kalyanicorp.com/BRONZE_DB)
 
 [1/3] 20260927104329623.pdf
@@ -25,7 +25,3 @@ PDFs: 3 | Model: qwen3-vl:32b
 ====================================================================
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
-
-
-
-curl -X POST http://localhost:11434/api/generate -H "Content-Type: application/json" -d "{\"model\":\"qwen3-vl:32b\",\"prompt\":\"say hello\",\"stream\":false}" 

@@ -61,7 +61,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 # ============================================================
 PDF_FOLDER    = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Input-pdf"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
-GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx"
+GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST RATE.xlsx"
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 MODEL_VLM      = "qwen3-vl:32b"
