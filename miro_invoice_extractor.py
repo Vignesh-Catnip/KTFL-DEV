@@ -66,7 +66,7 @@ GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx"
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 MODEL_VLM      = "qwen3-vl:32b"
 OLLAMA_URL     = OLLAMA_API_URL.rsplit("/api/", 1)[0]   # "http://localhost:11434" — for /api/tags
-PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.24:5432/miro_invoice"
+PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
 # SAP Data Lake (SQL Server) — read only.
 SAP_SERVER    = "ktfldlsqldb.kalyanicorp.com"   # SSMS-la connect aana hostname (10.7.11.21)
