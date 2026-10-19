@@ -42,4 +42,7 @@ PDFs: 3 | Model: qwen3-vl:32b
   ⏭️  Duplicate: 0   💥 Errors: 2
 ====================================================================
 
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python -c "import pyodbc; print(pyodbc.drivers())"
+['SQL Server']
+
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
