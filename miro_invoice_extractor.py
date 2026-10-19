@@ -27,8 +27,8 @@ SAP columns used:
          XBLNR_MKPF=Vendor invoice ref, BUDAT_MKPF=GRN posting date, SMBLN=Reversal doc
 
 Install:
-  pip install pymupdf httpx openpyxl langchain-ollama sqlalchemy "psycopg[binary]" pyodbc
-  + "ODBC Driver 17 (or 18) for SQL Server"
+  pip install pymupdf httpx openpyxl sqlalchemy "psycopg[binary]" pyodbc
+  + "ODBC Driver 17 for SQL Server" (Microsoft installer; one-time reboot the first time)
 Run:
   set SAP_DB_PASSWORD=********
   python miro_invoice_extractor.py
@@ -50,9 +50,6 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-from langchain_core.messages import HumanMessage
-from langchain_ollama import ChatOllama
-
 from sqlalchemy import (create_engine, text, select, bindparam, String, Text, Float,
                         DateTime, ForeignKey, JSON, Integer, Boolean)
 from sqlalchemy.engine import URL
@@ -66,16 +63,17 @@ PDF_FOLDER    = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Input-pdf"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx"
 
-OLLAMA_URL    = "http://127.0.0.1:11434"
-OLLAMA_MODEL  = "qwen3-vl:32b"
-PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.21:5432/miro_invoice"
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+MODEL_VLM      = "qwen3-vl:32b"
+OLLAMA_URL     = OLLAMA_API_URL.rsplit("/api/", 1)[0]   # "http://localhost:11434" — for /api/tags
+PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.24:5432/miro_invoice"
 
 # SAP Data Lake (SQL Server) — read only.
 SAP_SERVER    = "ktfldlsqldb.kalyanicorp.com"   # SSMS-la connect aana hostname (10.7.11.21)
 SAP_DATABASE  = "BRONZE_DB"
 SAP_USER      = "automation_reader"
 SAP_PASSWORD  = "Qwerty_12345"
-SAP_DRIVER    = "ODBC Driver 17 for SQL Server"
+SAP_DRIVER    = "SQL Server"   # confirmed installed on the client machine (pyodbc.drivers())
 SAP_CLIENT    = "150"        # GST_RATE master is client 150
 GRN_MOVEMENT_TYPES = ("101", "105")                  # goods receipt against PO
 
@@ -264,6 +262,9 @@ def setup_pg():
 
 
 def setup_sap():
+    """Connects via pyodbc + Microsoft ODBC Driver 17 for SQL Server.
+    Install on the machine running this script: pip install pyodbc
+    + download/install "ODBC Driver 17 for SQL Server" (needs a one-time reboot)."""
     if not SAP_PASSWORD:
         print("  ⚠️  SAP_DB_PASSWORD not set — SAP fallback disabled")
         return None
@@ -551,31 +552,22 @@ def snap_gst_rate(rate: float, component=False) -> float:
 
 
 # ── LLM ──────────────────────────────────────────────────────
+# Uses Ollama's /api/generate endpoint directly (single prompt + images, no chat history).
 
 def create_llm():
-    return ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_URL, temperature=0,
-                      num_ctx=NUM_CTX, num_predict=NUM_PREDICT, format="json",
-                      client_kwargs={"trust_env": False})
+    return None   # kept so call sites (ask(llm, ...)) don't need to change; unused now
 
 def _raw_ollama(prompt: str, images: list, num_predict=NUM_PREDICT) -> dict:
-    payload = {"model": OLLAMA_MODEL,
-               "messages": [{"role": "user", "content": prompt, "images": images}],
-               "stream": False, "format": "json", "think": False,
+    payload = {"model": MODEL_VLM, "prompt": prompt, "images": images,
+               "stream": False, "format": "json",
                "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": num_predict}}
-    r = httpx.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=TIMEOUT, trust_env=False)
+    r = httpx.post(OLLAMA_API_URL, json=payload, timeout=TIMEOUT, trust_env=False)
     r.raise_for_status()
-    msg = r.json().get("message", {})
-    raw = (msg.get("content") or msg.get("thinking") or "").strip()
+    raw = (r.json().get("response") or "").strip()
     if not raw: raise ValueError("Ollama returned empty response")
     return extract_json(raw)
 
 def ask(llm, prompt: str, images: list, num_predict=NUM_PREDICT) -> dict:
-    try:
-        content = [{"type": "text", "text": prompt}] + [
-            {"type": "image_url", "image_url": f"data:image/png;base64,{i}"} for i in images]
-        return extract_json(llm.invoke([HumanMessage(content=content)]).content)
-    except Exception as e:
-        print(f"     LangChain failed ({e}) — raw Ollama fallback")
     return _raw_ollama(prompt, images, num_predict)
 
 def invoke_main(llm, images, text_layer) -> dict:
@@ -1059,7 +1051,7 @@ def push_to_db(session, h: dict, lines: list, notes: list) -> int:
     action = {"RED_FLAG": "RED_FLAG_MULTI_PO", "REVIEW": "NEEDS_REVIEW",
               "MATCHED": "MATCHED_READY_FOR_MIRO"}[status]
     session.add(AuditLog(invoice_id=inv.id, action=action,
-                         detail={"file": h["filename"], "model": OLLAMA_MODEL, "sap_notes": notes,
+                         detail={"file": h["filename"], "model": MODEL_VLM, "sap_notes": notes,
                                  "field_sources": h["field_sources"], "po_list": h["po_list"],
                                  "validation": h["validation_errors"],
                                  "gst": {"percent": h["gst_percent"], "nature": h["gst_nature"],
@@ -1175,7 +1167,7 @@ def main():
 
     print("=" * 68)
     print("KTFL MIRO Extractor — Vision + SAP + Validation + GST mapping → PostgreSQL")
-    print(f"PDFs: {len(pdfs)} | Model: {OLLAMA_MODEL}")
+    print(f"PDFs: {len(pdfs)} | Model: {MODEL_VLM}")
     print("=" * 68)
 
     _, Session = setup_pg()
@@ -1186,8 +1178,8 @@ def main():
         print(f"  ⚠️  SAP connect failed ({e}) — continuing vision-only"); sap = None
 
     r = httpx.get(f"{OLLAMA_URL}/api/tags", timeout=10, trust_env=False)
-    if OLLAMA_MODEL not in [m["name"] for m in r.json().get("models", [])]:
-        print(f"ERROR: {OLLAMA_MODEL} not installed"); sys.exit(1)
+    if MODEL_VLM not in [m["name"] for m in r.json().get("models", [])]:
+        print(f"ERROR: {MODEL_VLM} not installed"); sys.exit(1)
 
     llm = create_llm()
     stats = {"MATCHED": 0, "REVIEW": 0, "RED_FLAG": 0, "duplicate": 0, "error": 0}
