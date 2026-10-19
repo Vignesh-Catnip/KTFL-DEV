@@ -901,3 +901,6 @@ SELECT TOP (1000) [MANDT]
       ,[XBLNR_MKPF]
   FROM [BRONZE_DB].[dbo].[MSEG] where XBLNR_MKPF ='428/26-27' AND EBELN='8100007531' AND SGTXT is not null
 
+
+https://go.microsoft.com/fwlink/?linkid=2249004
+
