@@ -886,3 +886,18 @@ SELECT TOP (1000) *
 
 
 SELECT id, invoice_number, invoice_date, po_number, currency FROM invoices WHERE status = 'REVIEW' ORDER BY id
+
+
+SELECT TOP (1000) [MANDT]
+      ,[MBLNR]
+      ,[WERKS]
+      ,[WAERS]
+      ,[DMBTR]
+      ,[MENGE]
+      ,[MEINS]
+      ,[EBELN]
+      ,[EBELP]
+      ,[SGTXT]
+      ,[XBLNR_MKPF]
+  FROM [BRONZE_DB].[dbo].[MSEG] where XBLNR_MKPF ='428/26-27' AND EBELN='8100007531' AND SGTXT is not null
+
