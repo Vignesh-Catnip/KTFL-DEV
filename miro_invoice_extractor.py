@@ -70,13 +70,13 @@ OLLAMA_URL    = "http://127.0.0.1:11434"
 OLLAMA_MODEL  = "qwen3-vl:32b"
 PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
 
-# SAP Data Lake (SQL Server) — read only. Password MUST come from the environment.
-SAP_SERVER    = os.getenv("SAP_DB_SERVER", "10.7.11.21")
-SAP_DATABASE  = os.getenv("SAP_DB_NAME", "BRONZE_DB")
-SAP_USER      = os.getenv("SAP_DB_USER", "automation_reader")
-SAP_PASSWORD  = os.getenv("SAP_DB_PASSWORD", "")
-SAP_DRIVER    = os.getenv("SAP_ODBC_DRIVER", "ODBC Driver 17 for SQL Server")
-SAP_CLIENT    = os.getenv("SAP_MANDT", "150")        # GST_RATE master is client 150
+# SAP Data Lake (SQL Server) — read only.
+SAP_SERVER    = "10.7.11.21"
+SAP_DATABASE  = "BRONZE_DB"
+SAP_USER      = "automation_reader"
+SAP_PASSWORD  = "Qwerty_12345"
+SAP_DRIVER    = "ODBC Driver 17 for SQL Server"
+SAP_CLIENT    = "150"        # GST_RATE master is client 150
 GRN_MOVEMENT_TYPES = ("101", "105")                  # goods receipt against PO
 
 KTFL_GSTIN_PREFIXES = ("27AABCK0618A",)              # buyer's own GSTIN -> never the vendor's
