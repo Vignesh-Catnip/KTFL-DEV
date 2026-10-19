@@ -1,48 +1,127 @@
 
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python -c "import pyodbc; print(pyodbc.drivers())"
+['SQL Server']
+
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py
 ====================================================================
 KTFL MIRO Extractor — Vision + SAP + Validation + GST mapping → PostgreSQL
 PDFs: 3 | Model: qwen3-vl:32b
 ====================================================================
-  PostgreSQL ready ✅
-  ⚠️  GST master not found: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx — tax-code mapping will be skipped
-  ⚠️  SAP connect failed ((pyodbc.InterfaceError) ('IM002', '[IM002] [Microsoft][ODBC Driver Manager] Data source name not found and no default driver specified (0) (SQLDriverConnect)')
-(Background on this error at: https://sqlalche.me/e/20/rvf5)) — continuing vision-only
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+    with util.safe_reraise():
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\impl.py", line 175, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\default.py", line 629, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\psycopg\connection.py", line 118, in connect
+    raise last_ex.with_traceback(None)
+psycopg.errors.ConnectionTimeout: connection timeout expired
 
-[1/3] 20260927104329623.pdf
-     LangChain failed (No valid JSON in response) — raw Ollama fallback
-  ❌ ERROR: Expecting ',' delimiter: line 1 column 2045 (char 2044)
+The above exception was the direct cause of the following exception:
 
-[2/3] 20260927104419615.pdf
-     LangChain failed (No valid JSON in response) — raw Ollama fallback
-  ❌ ERROR: Expecting ',' delimiter: line 1 column 2045 (char 2044)
-
-[3/3] 5000356389.pdf
-     LangChain failed (No valid JSON in response) — raw Ollama fallback
-  GRN pass...
-     LangChain failed (No valid JSON in response) — raw Ollama fallback
-     LangChain failed (No valid JSON in response) — raw Ollama fallback
-     GRN page 1: '5003563892' → 5003563892 ✅
-  SAP cross-check / fallback...
-    • SAP disabled — no cross-check done
-    • No input tax code in GST master for 9.0%+9.0% (total 18.0%) CGST_SGST
-  Invoice BM/26-27/1328 | PO 5100002309 | GRN 5003563892 | Plant - | HSN 72284000 | GST 9.0%+9.0% → - | Total 217144.0
-  STATUS: ⚠️  REVIEW
-    ▫️  MISSING  Vendor code missing
-    ▫️  MISSING  Plant missing
-    ▫️  MISSING  GST tax code missing
-    ⚠️  DOUBT    SAP not checked — status cannot be confirmed
-  → PG id=63 status=REVIEW (230.2s)
-  📄 Excel: BM_26-27_1328.xlsx
-
-====================================================================
-  ✅ MATCHED : 0   (all fields filled & matched with SAP)
-  ⚠️  REVIEW  : 1   (something missing / mismatch / doubt)
-  🔴 RED FLAG: 0   (invoice has multiple POs)
-  ⏭️  Duplicate: 0   💥 Errors: 2
-====================================================================
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python -c "import pyodbc; print(pyodbc.drivers())"
-['SQL Server']
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py", line 1269, in <module>
+    main()
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py", line 1173, in main
+    _, Session = setup_pg()
+                 ^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py", line 254, in setup_pg
+    Base.metadata.create_all(engine)
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\sql\schema.py", line 5924, in create_all
+    bind._run_ddl_visitor(
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 3251, in _run_ddl_visitor
+    with self.begin() as conn:
+  File "C:\Program Files\Python312\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 3241, in begin
+    with self.connect() as conn:
+         ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 2440, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+    with util.safe_reraise():
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\impl.py", line 175, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\default.py", line 629, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\psycopg\connection.py", line 118, in connect
+    raise last_ex.with_traceback(None)
+sqlalchemy.exc.OperationalError: (psycopg.errors.ConnectionTimeout) connection timeout expired
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
