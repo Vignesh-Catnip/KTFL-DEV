@@ -63,7 +63,7 @@ PDF_FOLDER    = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Input-pdf"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx"
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
+OLLAMA_API_URL = "http://127.0.0.1:11434/api/generate"
 MODEL_VLM      = "qwen3-vl:32b"
 OLLAMA_URL     = OLLAMA_API_URL.rsplit("/api/", 1)[0]   # "http://localhost:11434" — for /api/tags
 PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.24:5432/miro_invoice"
