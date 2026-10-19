@@ -1,2 +1,64 @@
-56	"20260927104419615.pdf"	"AB INDUSTRIES"	"AB2627143"	"20.08.2026"	"8100007309"			"INR"	154310	27775.8	182085.8	0.95	"REVIEW"		"2026-10-18 18:35:12.163538+05:30"	"2026-10-18 18:35:12.163538+05:30"	"27FOCPK0952N1ZL"	"82073000"	"700646"	13887.9	13887.9	0	"500035689"	"MM122E9355 LR N 6021"		
-57	"5000356389.pdf"	"BHARAT METALS 26-27"	"BM/26-27/1328"	"20.08.2026"	"5100002309"			"INR"	184020	33123.6	217144	0.9	"REVIEW"		"2026-10-18 18:37:03.309919+05:30"	"2026-10-18 18:37:03.309919+05:30"	"27AABCK0618A1Z7"	"72284000"		16561.8	16561.8	0	"50035689"	"21-8-26"		
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py
+====================================================================
+KTFL MIRO Extractor — Vision + SAP + Validation + GST mapping → PostgreSQL
+PDFs: 2 | Model: qwen3-vl:32b
+====================================================================
+  PostgreSQL ready ✅
+  ⚠️  GST master not found: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx — tax-code mapping will be skipped
+  ⚠️  SAP connect failed (No module named 'pyodbc') — continuing vision-only
+
+[1/2] 20260927104419615.pdf
+     LangChain failed (No valid JSON in response) — raw Ollama fallback
+  ❌ ERROR: Expecting ',' delimiter: line 1 column 2045 (char 2044)
+
+[2/2] 5000356389.pdf
+     LangChain failed (No valid JSON in response) — raw Ollama fallback
+  GRN pass...
+     LangChain failed (No valid JSON in response) — raw Ollama fallback
+     LangChain failed (No valid JSON in response) — raw Ollama fallback
+     GRN page 1: '5003563892' → 5003563892 ✅
+  SAP cross-check / fallback...
+    • SAP disabled — no cross-check done
+    • No input tax code in GST master for 9.0%+9.0% (total 18.0%) CGST_SGST
+  Invoice BM/26-27/1328 | PO 5100002309 | GRN 5003563892 | Plant - | HSN 72284000 | GST 9.0%+9.0% → - | Total 217144.0
+  STATUS: ⚠️  REVIEW
+    ▫️  MISSING  Vendor code missing
+    ▫️  MISSING  Plant missing
+    ▫️  MISSING  GST tax code missing
+    ⚠️  DOUBT    SAP not checked — status cannot be confirmed
+  → PG id=62 status=REVIEW (228.7s)
+  📄 Excel: BM_26-27_1328.xlsx
+
+====================================================================
+  ✅ MATCHED : 0   (all fields filled & matched with SAP)
+  ⚠️  REVIEW  : 1   (something missing / mismatch / doubt)
+  🔴 RED FLAG: 0   (invoice has multiple POs)
+  ⏭️  Duplicate: 0   💥 Errors: 1
+====================================================================
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
