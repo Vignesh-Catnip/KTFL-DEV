@@ -68,10 +68,10 @@ GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST_RATE.xlsx"
 
 OLLAMA_URL    = "http://127.0.0.1:11434"
 OLLAMA_MODEL  = "qwen3-vl:32b"
-PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
+PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.21:5432/miro_invoice"
 
 # SAP Data Lake (SQL Server) — read only.
-SAP_SERVER    = "10.7.11.21"
+SAP_SERVER    = "ktfldlsqldb.kalyanicorp.com"   # SSMS-la connect aana hostname (10.7.11.21)
 SAP_DATABASE  = "BRONZE_DB"
 SAP_USER      = "automation_reader"
 SAP_PASSWORD  = "Qwerty_12345"
@@ -140,6 +140,7 @@ class Invoice(Base):
     # --- validation ---
     validation_status: Mapped[str|None] = mapped_column(String(20), index=True)  # OK / WARN / FAIL
     validation_errors: Mapped[dict]     = mapped_column(JSON, default=dict)
+    dedupe_key:     Mapped[str|None] = mapped_column(String(220), index=True)
     field_sources:     Mapped[dict]     = mapped_column(JSON, default=dict)
     status:         Mapped[str]      = mapped_column(String(40), default="REVIEW", index=True)
     error_message:  Mapped[str|None] = mapped_column(Text)
@@ -225,6 +226,19 @@ MIGRATIONS = [
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS tax_code_match BOOLEAN",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS validation_status VARCHAR(20)",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS validation_errors JSON",
+    "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(220)",
+    # backfill dedupe_key for any old rows that don't have it yet, so the unique index below
+    # does not fail on pre-existing real duplicates (keeps the earliest row's key, nulls the rest)
+    """UPDATE invoices SET dedupe_key =
+         UPPER(REGEXP_REPLACE(COALESCE(invoice_number,''), '\\s+', '', 'g')) || '::' ||
+         UPPER(REGEXP_REPLACE(COALESCE(po_number,''), '\\s+', '', 'g'))
+       WHERE dedupe_key IS NULL AND invoice_number IS NOT NULL AND invoice_number <> ''""",
+    """UPDATE invoices SET dedupe_key = NULL
+       WHERE id NOT IN (SELECT MIN(id) FROM invoices WHERE dedupe_key IS NOT NULL GROUP BY dedupe_key)
+         AND dedupe_key IS NOT NULL""",
+    # one invoice_number+po_number combo can exist in the table only once from here on
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_invoices_dedupe_key ON invoices (dedupe_key) "
+    "WHERE dedupe_key IS NOT NULL",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS field_sources JSON",
     "ALTER TABLE invoice_lines ADD COLUMN IF NOT EXISTS rate FLOAT DEFAULT 0",
     "ALTER TABLE invoice_lines ADD COLUMN IF NOT EXISTS hsn_sac VARCHAR(50)",
@@ -980,14 +994,28 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
 
 # ── PG push ──────────────────────────────────────────────────
 
+def norm_key(s: str) -> str:
+    """Uppercase + strip ALL whitespace, so OCR spacing noise never defeats the duplicate check.
+    'BM/26-27/1328' and 'BM / 26-27 / 1328' both become 'BM/26-27/1328'."""
+    return re.sub(r"\s+", "", (s or "")).upper()
+
+def make_dedupe_key(h: dict) -> str | None:
+    """invoice_number + po_number is the real-world duplicate (same invoice billed against the
+    same PO). vendor_code is NOT used — it is very often missing/blank and would let true
+    duplicates through. Falls back to vendor NAME when no PO was found at all."""
+    inv = norm_key(h["invoice_number"])
+    if not inv:
+        return None
+    po = norm_key(h["po_number"]) or norm_key(h["vendor"])
+    return f"{inv}::{po}"
+
 def is_duplicate(session, h) -> tuple[bool, str]:
-    if not h["invoice_number"]:
+    key = make_dedupe_key(h)
+    if not key:
         return False, "No invoice number — duplicate check skipped"
-    f = [Invoice.invoice_number == h["invoice_number"],
-         (Invoice.po_number == h["po_number"]) if h["po_number"] else Invoice.po_number.is_(None),
-         (Invoice.vendor_code == h["vendor_code"]) if h["vendor_code"] else Invoice.vendor_code.is_(None)]
-    ex = session.scalar(select(Invoice).where(*f))
-    return (True, f"DUPLICATE of id={ex.id}") if ex else (False, "New — OK to push")
+    ex = session.scalar(select(Invoice).where(Invoice.dedupe_key == key))
+    return (True, f"DUPLICATE of id={ex.id} (same invoice+PO already in invoices table)") \
+           if ex else (False, "New — OK to push")
 
 def push_to_db(session, h: dict, lines: list, notes: list) -> int:
     status = h["validation_status"]          # MATCHED / REVIEW / RED_FLAG
@@ -1013,6 +1041,7 @@ def push_to_db(session, h: dict, lines: list, notes: list) -> int:
         validation_status=h["validation_status"], validation_errors=h["validation_errors"],
         field_sources=h["field_sources"], status=status,
         error_message="; ".join(problems) or None,
+        dedupe_key=make_dedupe_key(h),
     )
     session.add(inv); session.flush()
     for l in lines:
@@ -1209,9 +1238,21 @@ def main():
                                            "reason": reason}))
                     s.commit(); stats["duplicate"] += 1
                 else:
-                    inv_id = push_to_db(s, header, lines, notes)
-                    stats[st] += 1
-                    print(f"  → PG id={inv_id} status={st} ({round(time.time()-t0,1)}s)")
+                    try:
+                        inv_id = push_to_db(s, header, lines, notes)
+                        stats[st] += 1
+                        print(f"  → PG id={inv_id} status={st} ({round(time.time()-t0,1)}s)")
+                    except Exception as e:
+                        # race / stale-read safety net: the unique index on dedupe_key caught it
+                        s.rollback()
+                        if "ux_invoices_dedupe_key" in str(e) or "dedupe_key" in str(e):
+                            print(f"  ⚠️  SKIPPED — duplicate caught at DB level (unique index)")
+                            s.add(AuditLog(action="DUPLICATE_SKIPPED",
+                                           detail={"file": pdf.name, "invoice": header["invoice_number"],
+                                                   "reason": "unique index ux_invoices_dedupe_key"}))
+                            s.commit(); stats["duplicate"] += 1
+                        else:
+                            raise
             create_excel(header, lines, notes, out)
 
         except Exception as e:
