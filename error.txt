@@ -1,5 +1,5 @@
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\miro_invoice_extractor.py
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py
 ====================================================================
 KTFL MIRO Extractor — Vision + SAP + Validation + GST mapping → PostgreSQL
 PDFs: 3 | Model: qwen3-vl:32b
@@ -9,22 +9,75 @@ PDFs: 3 | Model: qwen3-vl:32b
   SAP SQL Server ready ✅ (ktfldlsqldb.kalyanicorp.com/BRONZE_DB)
 
 [1/3] 20260927104329623.pdf
+    ⚠️  Ollama raw response keys: ['model', 'created_at', 'response', 'thinking', 'done', 'done_reason', 'context', 'total_duration', 'load_duration', 'prompt_eval_count', 'prompt_eval_duration', 'eval_count', 'eval_duration']
   ❌ ERROR: Ollama returned empty response
 
 [2/3] 20260927104419615.pdf
+    ⚠️  Ollama raw response keys: ['model', 'created_at', 'response', 'thinking', 'done', 'done_reason', 'context', 'total_duration', 'load_duration', 'prompt_eval_count', 'prompt_eval_duration', 'eval_count', 'eval_duration']
   ❌ ERROR: Ollama returned empty response
 
 [3/3] 5000356389.pdf
-  ❌ ERROR: Ollama returned empty response
-
-====================================================================
-  ✅ MATCHED : 0   (all fields filled & matched with SAP)
-  ⚠️  REVIEW  : 0   (something missing / mismatch / doubt)
-  🔴 RED FLAG: 0   (invoice has multiple POs)
-  ⏭️  Duplicate: 0   💥 Errors: 3
-====================================================================
-
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py", line 1275, in <module>
+    main()
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py", line 1198, in main
+    header, lines = normalize(invoke_main(llm, images, pdf_text(pdf)), pdf.name)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py", line 581, in invoke_main
+    return ask(llm, prompt, images)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py", line 577, in ask
+    return _raw_ollama(prompt, images, num_predict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py", line 566, in _raw_ollama
+    r = httpx.post(OLLAMA_API_URL, json=payload, timeout=TIMEOUT, trust_env=False)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_api.py", line 304, in post
+    return request(
+           ^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_api.py", line 109, in request
+    return client.request(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\http11.py", line 136, in handle_request
+    raise exc
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_sync\http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\httpcore\_backends\sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+^C
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
-
-
-ping catnip-dev-2
