@@ -25,3 +25,6 @@ PDFs: 3 | Model: qwen3-vl:32b
 ====================================================================
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
+
+
+ping catnip-dev-2
