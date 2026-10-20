@@ -1,37 +1,24 @@
 """
-KTFL MIRO Invoice Extractor
+KTFL MIRO Invoice Extractor  (FIXED: Ollama /api/chat + think=False)
 Vision (Ollama) -> SAP SQL Server fallback -> Validation -> GST tax-code mapping -> PostgreSQL
 =============================================================================================
 Flow per PDF:
   1. Vision pass   : invoice header + line items                       (qwen3-vl)
   2. Vision pass   : GRN number from receiving stamp                   (10-digit validated)
-  3. SAP fallback  : BRONZE_DB (EKKO / EKPO / MSEG) on 10.7.11.21
-                     - fills ONLY the fields vision left empty
-                     - plant (WERKS) and HSN (EKPO.STAWN) always come from SAP
-                     - every field tagged with its source: VISION / SAP_EKKO / SAP_EKPO / SAP_MSEG
-  4. GST mapping   : GST % printed on the invoice -> SAP tax code from the GST_RATE master
-                     (9% + 9% CGST/SGST -> I3,  IGST 18% -> I8, ...)  table gst_tax_codes
-  5. Status        : RED_FLAG - invoice linked to more than one PO
-                     MATCHED  - every field filled AND everything agrees with SAP
-                     REVIEW   - something missing, mismatched or doubtful
-  6. Validation    : arithmetic, GST split, SAP match, formats -> validation_errors JSON
+  3. SAP fallback  : BRONZE_DB (EKKO / EKPO / MSEG)
+  4. GST mapping   : GST % on invoice -> SAP tax code (GST_RATE master)
+  5. Status        : RED_FLAG / MATCHED / REVIEW
+  6. Validation    : arithmetic, GST split, SAP match, formats
   7. PostgreSQL    : invoices, invoice_lines, invoice_master, gst_tax_codes, audit_logs
-  8. Excel per invoice (red = problem, yellow = filled from SAP)
-
-SAP columns used:
-  EKKO : EBELN=PO, LIFNR=Vendor, WAERS=Currency, BEDAT=PO date, BUKRS=Company code
-  EKPO : EBELN/EBELP, TXZ01=Item text, WERKS=PLANT, STAWN=HSN code, MENGE/MEINS=Qty/UoM,
-         NETPR/PEINH=Price, NETWR/BRTWR=Net/Gross value, MWSKZ=Tax code, LOEKZ=Deletion flag
-  MSEG : MBLNR=GRN, MJAHR=Year, BWART=Movement type, EBELN/EBELP=PO, LIFNR=Vendor,
-         WERKS=PLANT, MENGE/MEINS=Qty/UoM, DMBTR=Amount, WAERS=Currency, MWSKZ=Tax code,
-         XBLNR_MKPF=Vendor invoice ref, BUDAT_MKPF=GRN posting date, SMBLN=Reversal doc
+  8. Excel per invoice
 
 Install:
   pip install pymupdf httpx openpyxl sqlalchemy "psycopg[binary]" pyodbc
-  + "ODBC Driver 17 for SQL Server" (Microsoft installer; one-time reboot the first time)
-Run:
+
+Run (passwords from environment variables, NOT hard-coded):
   set SAP_DB_PASSWORD=********
-  python miro_invoice_extractor.py
+  set PG_PASSWORD=********
+  python invoice_extractor_fixed.py
 """
 
 import os
@@ -63,28 +50,32 @@ PDF_FOLDER    = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Input-pdf"
 OUTPUT_FOLDER = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Output-Excel"
 GST_RATE_XLSX = r"C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\GST RATE.xlsx"
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-MODEL_VLM      = "qwen3-vl:32b"
-OLLAMA_URL     = OLLAMA_API_URL.rsplit("/api/", 1)[0]   # "http://localhost:11434" — for /api/tags
-PG_URL        = "postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice"
+OLLAMA_URL   = "http://127.0.0.1:11434"
+MODEL_VLM    = "qwen3-vl:32b"
+
+PG_USER      = "appuser"
+PG_PASSWORD  = "appuser123"
+PG_HOST      = "10.7.11.22:5432"
+PG_DB        = "miro_invoice"
+PG_URL       = f"postgresql+psycopg://{PG_USER}:{PG_PASSWORD}@{PG_HOST}/{PG_DB}"
 
 # SAP Data Lake (SQL Server) — read only.
-SAP_SERVER    = "ktfldlsqldb.kalyanicorp.com"   # SSMS-la connect aana hostname (10.7.11.21)
+SAP_SERVER    = "ktfldlsqldb.kalyanicorp.com"
 SAP_DATABASE  = "BRONZE_DB"
 SAP_USER      = "automation_reader"
 SAP_PASSWORD  = "Qwerty_12345"
-SAP_DRIVER    = "SQL Server"   # confirmed installed on the client machine (pyodbc.drivers())
-SAP_CLIENT    = "150"        # GST_RATE master is client 150
-GRN_MOVEMENT_TYPES = ("101", "105")                  # goods receipt against PO
+SAP_DRIVER    = "SQL Server"
+SAP_CLIENT    = "150"
+GRN_MOVEMENT_TYPES = ("101", "105")
 
-KTFL_GSTIN_PREFIXES = ("27AABCK0618A",)              # buyer's own GSTIN -> never the vendor's
-AMOUNT_TOLERANCE    = 0.02                           # 2% invoice vs GRN value
-ROUND_TOLERANCE     = 1.0                            # ₹1 rounding slack on arithmetic checks
+KTFL_GSTIN_PREFIXES = ("27AABCK0618A",)
+AMOUNT_TOLERANCE    = 0.02
+ROUND_TOLERANCE     = 1.0
 
 MAX_PAGES   = 6
 IMAGE_ZOOM  = 1.4
 NUM_CTX     = 8192
-NUM_PREDICT = 2048
+NUM_PREDICT = 4096
 TIMEOUT     = 900
 # ============================================================
 
@@ -118,7 +109,6 @@ class Invoice(Base):
     confidence:     Mapped[float]    = mapped_column(Float, default=0)
     grn_number:     Mapped[str|None] = mapped_column(String(100))
     handwritten_references: Mapped[str|None] = mapped_column(Text)
-    # --- plant / SAP enrichment ---
     plant_code:     Mapped[str|None] = mapped_column(String(20))
     plant_source:   Mapped[str|None] = mapped_column(String(20))
     po_date:        Mapped[str|None] = mapped_column(String(30))
@@ -127,16 +117,14 @@ class Invoice(Base):
     po_list:        Mapped[str|None] = mapped_column(Text)
     multi_po_flag:  Mapped[bool]     = mapped_column(Boolean, default=False)
     red_flag_reason: Mapped[str|None] = mapped_column(Text)
-    # --- GST ---
-    gst_percent:      Mapped[float|None] = mapped_column(Float)        # total, e.g. 18
-    gst_percent_component: Mapped[float|None] = mapped_column(Float)   # per half, e.g. 9
-    gst_nature:       Mapped[str|None]   = mapped_column(String(20))   # CGST_SGST / IGST / NIL
-    gst_tax_code:     Mapped[str|None]   = mapped_column(String(10))   # I3, I8, ...
+    gst_percent:      Mapped[float|None] = mapped_column(Float)
+    gst_percent_component: Mapped[float|None] = mapped_column(Float)
+    gst_nature:       Mapped[str|None]   = mapped_column(String(20))
+    gst_tax_code:     Mapped[str|None]   = mapped_column(String(10))
     gst_tax_code_desc:Mapped[str|None]   = mapped_column(String(120))
-    sap_tax_code:     Mapped[str|None]   = mapped_column(String(10))   # MWSKZ from PO
+    sap_tax_code:     Mapped[str|None]   = mapped_column(String(10))
     tax_code_match:   Mapped[bool|None]  = mapped_column(Boolean)
-    # --- validation ---
-    validation_status: Mapped[str|None] = mapped_column(String(20), index=True)  # OK / WARN / FAIL
+    validation_status: Mapped[str|None] = mapped_column(String(20), index=True)
     validation_errors: Mapped[dict]     = mapped_column(JSON, default=dict)
     dedupe_key:     Mapped[str|None] = mapped_column(String(220), index=True)
     field_sources:     Mapped[dict]     = mapped_column(JSON, default=dict)
@@ -164,18 +152,17 @@ class InvoiceLine(Base):
     invoice = relationship("Invoice", back_populates="lines")
 
 class GstTaxCode(Base):
-    """GST_RATE.xlsx master — SAP tax codes with their parsed rate."""
     __tablename__ = "gst_tax_codes"
     id:          Mapped[int]      = mapped_column(primary_key=True)
     client:      Mapped[str]      = mapped_column(String(10))
     procedure:   Mapped[str|None] = mapped_column(String(20))
     tax_code:    Mapped[str]      = mapped_column(String(10))
-    tax_type:    Mapped[str|None] = mapped_column(String(5))    # V = input, A = output
+    tax_type:    Mapped[str|None] = mapped_column(String(5))
     description: Mapped[str|None] = mapped_column(String(160))
-    rate:        Mapped[float]    = mapped_column(Float, default=0)   # TOTAL GST %  (9+9 = 18)
-    rate_component: Mapped[float] = mapped_column(Float, default=0)   # PER-HALF %   (9+9 =  9)
-    nature:      Mapped[str|None] = mapped_column(String(20))   # CGST_SGST / IGST / OTHER
-    category:    Mapped[str|None] = mapped_column(String(20))   # INPUT/IMPORT/ND/RCM/ISD/OUTPUT/EXPORT/TCS
+    rate:        Mapped[float]    = mapped_column(Float, default=0)
+    rate_component: Mapped[float] = mapped_column(Float, default=0)
+    nature:      Mapped[str|None] = mapped_column(String(20))
+    category:    Mapped[str|None] = mapped_column(String(20))
     __table_args__ = ()
 
 class InvoiceMaster(Base):
@@ -225,8 +212,6 @@ MIGRATIONS = [
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS validation_status VARCHAR(20)",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS validation_errors JSON",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(220)",
-    # backfill dedupe_key for any old rows that don't have it yet, so the unique index below
-    # does not fail on pre-existing real duplicates (keeps the earliest row's key, nulls the rest)
     """UPDATE invoices SET dedupe_key =
          UPPER(REGEXP_REPLACE(COALESCE(invoice_number,''), '\\s+', '', 'g')) || '::' ||
          UPPER(REGEXP_REPLACE(COALESCE(po_number,''), '\\s+', '', 'g'))
@@ -234,7 +219,6 @@ MIGRATIONS = [
     """UPDATE invoices SET dedupe_key = NULL
        WHERE id NOT IN (SELECT MIN(id) FROM invoices WHERE dedupe_key IS NOT NULL GROUP BY dedupe_key)
          AND dedupe_key IS NOT NULL""",
-    # one invoice_number+po_number combo can exist in the table only once from here on
     "CREATE UNIQUE INDEX IF NOT EXISTS ux_invoices_dedupe_key ON invoices (dedupe_key) "
     "WHERE dedupe_key IS NOT NULL",
     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS field_sources JSON",
@@ -250,6 +234,8 @@ MIGRATIONS = [
 
 
 def setup_pg():
+    if not PG_PASSWORD:
+        print("  ⚠️  PG_PASSWORD env variable not set  (set PG_PASSWORD=...)")
     engine = create_engine(PG_URL)
     Base.metadata.create_all(engine)
     with engine.connect() as conn:
@@ -262,11 +248,8 @@ def setup_pg():
 
 
 def setup_sap():
-    """Connects via pyodbc + Microsoft ODBC Driver 17 for SQL Server.
-    Install on the machine running this script: pip install pyodbc
-    + download/install "ODBC Driver 17 for SQL Server" (needs a one-time reboot)."""
     if not SAP_PASSWORD:
-        print("  ⚠️  SAP_DB_PASSWORD not set — SAP fallback disabled")
+        print("  ⚠️  SAP_DB_PASSWORD env variable not set — SAP fallback disabled")
         return None
     url = URL.create("mssql+pyodbc", username=SAP_USER, password=SAP_PASSWORD,
                      host=SAP_SERVER, database=SAP_DATABASE,
@@ -278,17 +261,9 @@ def setup_sap():
     return eng
 
 
-# ── GST master: load GST_RATE.xlsx into PostgreSQL ───────────
+# ── GST master ───────────────────────────────────────────────
 
 def parse_gst_description(desc: str):
-    """
-    Returns (rate_total, rate_component, nature, category)
-
-    'Input CGST+SGST @ 9%+9%'  -> 18.0,  9.0, CGST_SGST, INPUT   (I3)
-    'Input CGST+SGST @ 6%+6%'  -> 12.0,  6.0, CGST_SGST, INPUT   (I2)
-    'Input IGST  18%'          -> 18.0, 18.0, IGST,      INPUT   (I8)
-    'ND - Input IGST with 12%' -> 12.0, 12.0, IGST,      ND      (not used)
-    """
     d = (desc or "").strip()
     u = d.upper()
 
@@ -303,7 +278,7 @@ def parse_gst_description(desc: str):
     else:                                           category = "OTHER"
 
     if "CGST" in u or "SGST" in u:
-        nature = "CGST_SGST" if ("+" in u or "CGST+SGST" in u or "SGST/CGST" in u) else "CGST_SGST"
+        nature = "CGST_SGST"
     elif "IGST" in u:
         nature = "IGST"
     else:
@@ -311,12 +286,12 @@ def parse_gst_description(desc: str):
 
     nums = [float(x) for x in re.findall(r"(\d+(?:\.\d+)?)\s*%", d)]
     if category == "TCS":
-        rate = comp = (nums[-1] if nums else 0.0)   # don't add TCS% into the GST%
+        rate = comp = (nums[-1] if nums else 0.0)
     elif nature == "CGST_SGST" and len(nums) >= 2:
-        comp = round(nums[0], 2)                    # 9
-        rate = round(nums[0] + nums[1], 2)          # 9 + 9 = 18
+        comp = round(nums[0], 2)
+        rate = round(nums[0] + nums[1], 2)
     elif nature == "CGST_SGST" and len(nums) == 1:
-        comp = round(nums[0], 2)                    # "Input SGST/CGST 0 %"
+        comp = round(nums[0], 2)
         rate = round(nums[0] * 2, 2) if nums[0] else 0.0
     else:
         rate = comp = round(nums[0], 2) if nums else 0.0
@@ -362,16 +337,7 @@ def load_gst_master(Session, xlsx_path: str) -> int:
     return n
 
 
-def pick_tax_code(Session, gst_total: float, gst_component: float, nature: str,
-                  is_import=False, is_rcm=False):
-    """
-    Invoice GST % -> SAP tax code row (purchase / input codes only).
-
-    The invoice may print either half (CGST 9% + SGST 9%) or the total (18%), so BOTH are
-    matched:  9  -> I3 (CGST+SGST @9%+9%)   and   18 -> I3 as well.
-    IGST 18% -> I8.  Only tax_type 'V' and category INPUT (or IMPORT / RCM) are considered,
-    so ND- / RCM- / ISD / Output codes never get picked by accident.
-    """
+def pick_tax_code(Session, gst_total, gst_component, nature, is_import=False, is_rcm=False):
     if nature == "NIL" or gst_total is None:
         return None
     category = "IMPORT" if is_import else ("RCM" if is_rcm else "INPUT")
@@ -476,7 +442,7 @@ def clean_grn(v) -> str:
     ocr = {'S':'5','s':'5','O':'0','o':'0','I':'1','l':'1','Z':'2','z':'2',
            'B':'8','G':'6','T':'7','A':'4','q':'9'}
     s = "".join(ocr.get(c, c) for c in s)
-    m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", s)       # "50 - 343863" -> pad to 10 digits
+    m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", s)
     if m:
         a, b = m.group(1), m.group(2)
         return a + "0" * max(0, 10 - len(a) - len(b)) + b
@@ -540,36 +506,49 @@ def fix_amounts(sub, cgst, sgst, igst, tax, total):
     if total == 0: total = round(sub + tax, 2)
     return sub, cgst, sgst, igst, tax, total
 
-GST_STANDARD_RATES  = (0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18, 28)   # total GST
-GST_COMPONENT_RATES = (0, 0.05, 0.125, 0.5, 0.75, 1.5, 2.5, 3, 3.75, 6, 9, 14)  # one half
+GST_STANDARD_RATES  = (0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18, 28)
+GST_COMPONENT_RATES = (0, 0.05, 0.125, 0.5, 0.75, 1.5, 2.5, 3, 3.75, 6, 9, 14)
 
-def snap_gst_rate(rate: float, component=False) -> float:
-    """17.96 -> 18 ; 8.97 -> 9 (component). Anything farther than 0.4% away is left alone."""
+def snap_gst_rate(rate, component=False):
     if rate is None: return None
     table = GST_COMPONENT_RATES if component else GST_STANDARD_RATES
     best = min(table, key=lambda r: abs(r - rate))
     return float(best) if abs(best - rate) <= 0.4 else round(rate, 2)
 
 
-# ── LLM ──────────────────────────────────────────────────────
-# Uses Ollama's /api/generate endpoint directly (single prompt + images, no chat history).
+# ── LLM (FIXED) ──────────────────────────────────────────────
+# /api/chat + think=False  (same payload style that worked in ectract.py)
+# qwen3-vl is a "thinking" model: without think=False the tokens get spent on
+# thinking and the answer comes back empty.
 
 def create_llm():
-    return None   # kept so call sites (ask(llm, ...)) don't need to change; unused now
+    return None   # kept so call sites don't change
+
+def _post_chat(prompt: str, images: list, num_predict: int, use_format: bool) -> dict:
+    payload = {
+        "model": MODEL_VLM,
+        "messages": [{"role": "user", "content": prompt, "images": images}],
+        "stream": False,
+        "think": False,
+        "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": num_predict},
+    }
+    if use_format:
+        payload["format"] = "json"
+    r = httpx.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=TIMEOUT, trust_env=False)
+    r.raise_for_status()
+    return r.json()
 
 def _raw_ollama(prompt: str, images: list, num_predict=NUM_PREDICT) -> dict:
-    # NOTE: "format":"json" removed — qwen3-vl returns empty when format is forced.
-    # extract_json() parses the JSON block from free-text response instead.
-    payload = {"model": MODEL_VLM, "prompt": prompt, "images": images,
-               "stream": False,
-               "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": num_predict}}
-    r = httpx.post(OLLAMA_API_URL, json=payload, timeout=TIMEOUT, trust_env=False)
-    r.raise_for_status()
-    data = r.json()
-    raw = (data.get("response") or "").strip()
+    data = _post_chat(prompt, images, num_predict, use_format=True)
+    msg = data.get("message", {}) or {}
+    raw = (msg.get("content") or msg.get("thinking") or "").strip()
     if not raw:
-        # Log the full Ollama response to help debug future empty-response issues
-        print(f"    ⚠️  Ollama raw response keys: {list(data.keys())}")
+        # retry once without forced JSON format
+        data = _post_chat(prompt, images, num_predict, use_format=False)
+        msg = data.get("message", {}) or {}
+        raw = (msg.get("content") or msg.get("thinking") or "").strip()
+    if not raw:
+        print(f"    ⚠️  Ollama empty. keys={list(data.keys())} done_reason={data.get('done_reason')}")
         raise ValueError("Ollama returned empty response")
     return extract_json(raw)
 
@@ -586,7 +565,8 @@ def invoke_grn(llm, images, max_retry=2) -> str:
         prompt = GRN_PROMPT
         for _ in range(max_retry + 1):
             try: grn = clean(ask(llm, prompt, [img], 256).get("grn_number"))
-            except Exception: grn = ""
+            except Exception as e:
+                print(f"     GRN page {pno} error: {e}"); grn = ""
             if not grn: break
             c = clean_grn(grn)
             if grn_is_valid(c):
@@ -623,7 +603,7 @@ def normalize(data: dict, filename: str):
 
     gstin = clean(data.get("gstin")).upper().replace(" ", "")
     if any(gstin.startswith(p) for p in KTFL_GSTIN_PREFIXES):
-        gstin = ""                                   # buyer's own GSTIN — not the vendor's
+        gstin = ""
 
     po_all = [clean_po(p) for p in re.split(r"[,;/\s]+", clean(data.get("po_numbers_all"))) if p]
 
@@ -674,7 +654,6 @@ MSEG_COLS = """MBLNR, MJAHR, BWART, EBELN, EBELP, LIFNR, WERKS, MENGE, MEINS, ER
                DMBTR, WAERS, MWSKZ, XBLNR_MKPF, BUDAT_MKPF, SGTXT, SMBLN"""
 
 def sap_enrich(sap_engine, header: dict, lines: list) -> list:
-    """Fill the fields vision left empty, always resolve plant + HSN, run the multi-PO check."""
     notes = []
     if sap_engine is None:
         return ["SAP disabled — no cross-check done"]
@@ -702,7 +681,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         grn    = header["grn_number"]
         vcode  = strip_zeros(header["vendor_code"])
 
-        # 1) GR lines by GRN (MSEG.MBLNR)
         grn_rows = []
         if grn:
             grn_rows = _q(conn, f"SELECT {MSEG_COLS} FROM dbo.MSEG m "
@@ -710,7 +688,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             if not grn_rows:
                 notes.append(f"GRN {grn} NOT found in MSEG")
 
-        # 2) GR lines by vendor invoice reference (MSEG.XBLNR_MKPF)
         inv_rows = []
         if inv_no:
             inv_rows = _q(conn, f"""SELECT {MSEG_COLS} FROM dbo.MSEG m
@@ -722,7 +699,7 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             if vendors:
                 inv_rows = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in vendors]
 
-        gr_rows = [r for r in (grn_rows + inv_rows) if not clean(r.get("SMBLN"))]   # drop reversals
+        gr_rows = [r for r in (grn_rows + inv_rows) if not clean(r.get("SMBLN"))]
         if len(gr_rows) < len(grn_rows + inv_rows):
             notes.append("Some GR lines ignored (reversed documents)")
 
@@ -740,7 +717,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             src["grn_amount"] = "SAP_MSEG"
             fill("sap_tax_code", clean(gr_rows[0].get("MWSKZ")), "SAP_MSEG")
 
-        # 3) PO resolution + MULTI-PO CHECK
         sap_pos = sorted({clean(r["EBELN"]) for r in gr_rows if clean(r["EBELN"])})
         if not is_valid_po(header["po_number"]) and sap_pos:
             header["po_number"] = ""
@@ -758,7 +734,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             notes.append("No PO found (vision + SAP)")
             return notes
 
-        # 4) PO header (EKKO)
         ekko = _q(conn, f"SELECT EBELN, LIFNR, WAERS, BEDAT, BUKRS FROM dbo.EKKO k "
                         f"WHERE k.EBELN IN :pos {_mandt('k')}", pos=all_pos, **base)
         main = next((r for r in ekko if clean(r["EBELN"]) == header["po_number"]),
@@ -771,7 +746,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         else:
             notes.append(f"PO {header['po_number']} NOT found in EKKO")
 
-        # 5) PO items (EKPO) — plant, HSN (STAWN), tax code, and line items if vision got none
         ekpo = _q(conn, f"""SELECT EBELN, EBELP, TXZ01, MATNR, WERKS, STAWN, MENGE, MEINS,
                                    NETPR, PEINH, NETWR, BRTWR, MWSKZ
                             FROM dbo.EKPO p
@@ -789,7 +763,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             if len(plants) > 1:
                 notes.append(f"PO spans multiple plants: {sorted(plants)}")
 
-        # line items from SAP when vision found none
         if not lines:
             rows = [r for r in gr_rows if clean(r["MBLNR"]) == header["grn_number"]] or gr_rows
             for r in rows:
@@ -814,13 +787,11 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                                   "plant_code": clean(p["WERKS"]), "source": "SAP_EKPO"})
             if lines: notes.append(f"{len(lines)} line items filled from SAP")
         else:
-            # vision lines: stamp plant + HSN from the PO where they are blank
             for l in lines:
                 if not l["plant_code"]: l["plant_code"] = header["plant_code"]
                 if not l["hsn_sac"] and ekpo:
                     l["hsn_sac"] = re.sub(r"[^\d]", "", clean(ekpo[0].get("STAWN")))
 
-        # 6) GR value vs invoice taxable value
         if header["grn_amount"] and header["subtotal"]:
             if abs(header["grn_amount"] - header["subtotal"]) > header["subtotal"] * AMOUNT_TOLERANCE:
                 notes.append(f"Amount gap: invoice subtotal {header['subtotal']} "
@@ -833,11 +804,6 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
 # ── Validation + GST tax-code mapping ────────────────────────
 
 def compute_gst(header: dict) -> None:
-    """
-    Work out the GST percentage actually charged on the invoice.
-      gst_percent_component = what is printed per half  (CGST 9%  -> 9)
-      gst_percent           = the total                 (9 + 9    -> 18)
-    """
     sub, cgst, sgst, igst = header["subtotal"], header["cgst"], header["sgst"], header["igst"]
     tax_total = round(cgst + sgst + igst, 2) or header["total_tax"]
 
@@ -848,15 +814,14 @@ def compute_gst(header: dict) -> None:
 
     pct = comp = None
     if sub > 0 and tax_total > 0:
-        pct = snap_gst_rate(round(tax_total / sub * 100, 2))        # 18
+        pct = snap_gst_rate(round(tax_total / sub * 100, 2))
         if nature == "CGST_SGST":
             comp = snap_gst_rate(round(max(cgst, sgst) / sub * 100, 2), component=True) \
-                   if (cgst or sgst) else round(pct / 2, 2)         # 9
+                   if (cgst or sgst) else round(pct / 2, 2)
         else:
             comp = pct
     elif header["gst_rate_printed"] > 0:
         r = snap_gst_rate(header["gst_rate_printed"])
-        # a printed "9%" on a CGST+SGST invoice means 9 per half = 18 total
         if nature == "CGST_SGST" and r and r <= 14:
             comp, pct = r, snap_gst_rate(r * 2)
         else:
@@ -870,7 +835,6 @@ def compute_gst(header: dict) -> None:
 
 
 def apply_tax_code(Session, header: dict, notes: list) -> None:
-    """GST % from the invoice  ->  tax code from the GST master  ->  invoices.gst_tax_code"""
     compute_gst(header)
     pct, comp, nature = header["gst_percent"], header["gst_percent_component"], header["gst_nature"]
     if pct is None:
@@ -898,7 +862,6 @@ def apply_tax_code(Session, header: dict, notes: list) -> None:
 
 GSTIN_RE = re.compile(r"^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z][A-Z0-9]$")
 
-# Fields that must ALL be present before an invoice can be called MATCHED
 MANDATORY_FIELDS = [("invoice_number", "Invoice number"), ("invoice_date", "Invoice date"),
                     ("vendor", "Vendor"), ("vendor_code", "Vendor code"),
                     ("po_number", "PO number"), ("grn_number", "GRN number"),
@@ -906,17 +869,8 @@ MANDATORY_FIELDS = [("invoice_number", "Invoice number"), ("invoice_date", "Invo
                     ("gst_tax_code", "GST tax code")]
 
 def validate(header: dict, lines: list, sap_on: bool) -> None:
-    """
-    Decide the invoice status:
-
-      RED_FLAG : one invoice linked to more than one PO           -> must be checked by a human
-      MATCHED  : every mandatory field filled, arithmetic correct,
-                 and everything agrees with SAP                   -> ready for MIRO
-      REVIEW   : anything missing, any mismatch, any doubt        -> needs a look
-    """
     missing, mismatches, doubts = [], [], []
 
-    # 1. mandatory fields present?
     for key, label in MANDATORY_FIELDS:
         if not header.get(key):
             missing.append(f"{label} missing")
@@ -931,7 +885,6 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
     if header["gstin"] and not GSTIN_RE.match(header["gstin"]):
         doubts.append(f"Vendor GSTIN format looks wrong: {header['gstin']}")
 
-    # 2. arithmetic on the invoice itself
     sub, cgst, sgst, igst = header["subtotal"], header["cgst"], header["sgst"], header["igst"]
     tax, total = header["total_tax"], header["total"]
     if total <= 0: missing.append("Invoice total is zero")
@@ -947,7 +900,6 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
     if header["gst_percent"] is not None and header["gst_percent"] not in GST_STANDARD_RATES:
         doubts.append(f"Non-standard GST rate {header['gst_percent']}%")
 
-    # 3. line items vs header
     if not lines:
         doubts.append("No line items extracted")
     else:
@@ -955,7 +907,6 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
         if sub > 0 and abs(line_sum - sub) > max(ROUND_TOLERANCE, sub * AMOUNT_TOLERANCE):
             doubts.append(f"Line items total {line_sum} != taxable value {sub}")
 
-    # 4. agreement with SAP
     if sap_on:
         mismatches += header.get("sap_mismatches", [])
         if not header["po_date"]:
@@ -974,7 +925,6 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
     if header["confidence"] and header["confidence"] < 60:
         doubts.append(f"Low AI confidence {header['confidence']}%")
 
-    # 5. final status
     if header["multi_po_flag"]:
         status = "RED_FLAG"
     elif missing or mismatches or doubts:
@@ -993,21 +943,16 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
 # ── PG push ──────────────────────────────────────────────────
 
 def norm_key(s: str) -> str:
-    """Uppercase + strip ALL whitespace, so OCR spacing noise never defeats the duplicate check.
-    'BM/26-27/1328' and 'BM / 26-27 / 1328' both become 'BM/26-27/1328'."""
     return re.sub(r"\s+", "", (s or "")).upper()
 
-def make_dedupe_key(h: dict) -> str | None:
-    """invoice_number + po_number is the real-world duplicate (same invoice billed against the
-    same PO). vendor_code is NOT used — it is very often missing/blank and would let true
-    duplicates through. Falls back to vendor NAME when no PO was found at all."""
+def make_dedupe_key(h: dict):
     inv = norm_key(h["invoice_number"])
     if not inv:
         return None
     po = norm_key(h["po_number"]) or norm_key(h["vendor"])
     return f"{inv}::{po}"
 
-def is_duplicate(session, h) -> tuple[bool, str]:
+def is_duplicate(session, h):
     key = make_dedupe_key(h)
     if not key:
         return False, "No invoice number — duplicate check skipped"
@@ -1016,7 +961,7 @@ def is_duplicate(session, h) -> tuple[bool, str]:
            if ex else (False, "New — OK to push")
 
 def push_to_db(session, h: dict, lines: list, notes: list) -> int:
-    status = h["validation_status"]          # MATCHED / REVIEW / RED_FLAG
+    status = h["validation_status"]
     problems = (h["validation_errors"].get("missing", []) +
                 h["validation_errors"].get("mismatch", []) +
                 h["validation_errors"].get("red_flag", []))
@@ -1068,11 +1013,11 @@ def push_to_db(session, h: dict, lines: list, notes: list) -> int:
 
 # ── Excel ────────────────────────────────────────────────────
 
-RED   = PatternFill("solid", fgColor="FF9999")   # red flag / mismatch
-AMBER = PatternFill("solid", fgColor="FFE0A3")   # review
-GREEN = PatternFill("solid", fgColor="C6EFCE")   # matched
+RED   = PatternFill("solid", fgColor="FF9999")
+AMBER = PatternFill("solid", fgColor="FFE0A3")
+GREEN = PatternFill("solid", fgColor="C6EFCE")
 ALT   = PatternFill("solid", fgColor="EBF3FB")
-SAPF  = PatternFill("solid", fgColor="FFF2CC")   # yellow = filled from SAP
+SAPF  = PatternFill("solid", fgColor="FFF2CC")
 STATUS_FILL = {"MATCHED": GREEN, "REVIEW": AMBER, "RED_FLAG": RED}
 
 def create_excel(h, lines, notes, out_folder):
@@ -1186,6 +1131,7 @@ def main():
     r = httpx.get(f"{OLLAMA_URL}/api/tags", timeout=10, trust_env=False)
     if MODEL_VLM not in [m["name"] for m in r.json().get("models", [])]:
         print(f"ERROR: {MODEL_VLM} not installed"); sys.exit(1)
+    print("  Ollama OK ✅")
 
     llm = create_llm()
     stats = {"MATCHED": 0, "REVIEW": 0, "RED_FLAG": 0, "duplicate": 0, "error": 0}
@@ -1195,6 +1141,7 @@ def main():
         print(f"\n[{idx}/{len(pdfs)}] {pdf.name}")
         try:
             images = pdf_images(pdf)
+            print("  Main extraction...")
             header, lines = normalize(invoke_main(llm, images, pdf_text(pdf)), pdf.name)
 
             print("  GRN pass...")
@@ -1241,10 +1188,9 @@ def main():
                         stats[st] += 1
                         print(f"  → PG id={inv_id} status={st} ({round(time.time()-t0,1)}s)")
                     except Exception as e:
-                        # race / stale-read safety net: the unique index on dedupe_key caught it
                         s.rollback()
                         if "ux_invoices_dedupe_key" in str(e) or "dedupe_key" in str(e):
-                            print(f"  ⚠️  SKIPPED — duplicate caught at DB level (unique index)")
+                            print("  ⚠️  SKIPPED — duplicate caught at DB level (unique index)")
                             s.add(AuditLog(action="DUPLICATE_SKIPPED",
                                            detail={"file": pdf.name, "invoice": header["invoice_number"],
                                                    "reason": "unique index ux_invoices_dedupe_key"}))
