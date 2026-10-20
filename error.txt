@@ -11,34 +11,70 @@ PDFs: 3 | Model: qwen3-vl:32b
 
 [1/3] 20260927104329623.pdf
   Main extraction...
-  ❌ ERROR: Expecting ',' delimiter: line 1 column 2043 (char 2042)
+  GRN pass...
+     GRN page 1: '50-343863' → 5000343863 ✅
+  SAP cross-check / fallback...
+    • grn_date ← SAP_MSEG: 05.08.2026
+    • plant_code OVERWRITTEN by SAP_MSEG: 'RANJANGAONPLANTRI' → '2002'
+    • 🔴 Invoice linked to 4 POs: 6100017367, 8100007531, 8300000553, 8300000656
+    • MISMATCH vendor_code: invoice='70042' vs SAP='310612'
+    • po_date ← SAP_EKKO: 10.07.2026
+    • plant_code OVERWRITTEN by SAP_EKPO: '2002' → '2020'
+    • sap_tax_code ← SAP_EKPO: I3
+    • PO spans multiple plants: ['2020', '2022']
+    • Amount gap: invoice subtotal 64240.0 vs GRN value 45270.0
+    • MISMATCH subtotal: invoice='64240.0' vs SAP='45270.0'
+    • GST 9.0%+9.0% (total 18.0%) CGST_SGST → tax code I3 (Input CGST+SGST @ 9%+9%)
+  Invoice 428/26-27 | PO 8100007531 | GRN 5000343863 | Plant 2020 | HSN 82073000 | GST 9.0%+9.0% → I3 | Total 75803.2
+  STATUS: 🔴 RED FLAG
+    🔴 Invoice linked to 4 POs: 6100017367, 8100007531, 8300000553, 8300000656
+    ❌ MISMATCH vendor_code: invoice='70042' vs SAP='310612'
+    ❌ MISMATCH subtotal: invoice='64240.0' vs SAP='45270.0'
+    ❌ MISMATCH GRN value 45270.0 != invoice taxable value 64240.0
+    ⚠️  DOUBT    Vendor GSTIN format looks wrong: 27ABRP19475K1ZQ
+  → PG id=68 status=RED_FLAG (50.4s)
+  📄 Excel: 428_26-27.xlsx
 
 [2/3] 20260927104419615.pdf
   Main extraction...
-  ❌ ERROR: Expecting ',' delimiter: line 1 column 2043 (char 2042)
+  GRN pass...
+     GRN page 1: '5005768976' → 5005768976 ✅
+  SAP cross-check / fallback...
+    • GRN 5005768976 (read from stamp) NOT found in MSEG — looking it up by invoice no / PO / line items
+    • GRN 5005768976 (stamp) → 5000356087 taken from SAP (invoice AB2627143 / PO 8100007309)
+    • grn_date ← SAP_MSEG: 21.08.2026
+    • plant_code OVERWRITTEN by SAP_MSEG: 'R1' → '2002'
+    • po_date ← SAP_EKKO: 26.06.2026
+    • sap_tax_code ← SAP_EKPO: I3
+    • GST 9.0%+9.0% (total 18.0%) CGST_SGST → tax code I3 (Input CGST+SGST @ 9%+9%)
+  Invoice AB2627143 | PO 8100007309 | GRN 5000356087 | Plant 2002 | HSN 82073000 | GST 9.0%+9.0% → I3 | Total 182085.8
+  STATUS: ✅ MATCHED
+  → PG id=69 status=MATCHED (47.5s)
+  📄 Excel: AB2627143.xlsx
 
 [3/3] 5000356389.pdf
   Main extraction...
   GRN pass...
      GRN page 1: '5003563892' → 5003563892 ✅
   SAP cross-check / fallback...
-    • GRN 5003563892 NOT found in MSEG
+    • GRN 5003563892 (read from stamp) NOT found in MSEG — looking it up by invoice no / PO / line items
+    • GRN 5003563892 (stamp) → 5000356389 taken from SAP (invoice BM/26-27/1328 / PO 5100002309)
     • grn_date ← SAP_MSEG: 22.08.2026
     • plant_code ← SAP_MSEG: 2002
     • vendor_code ← SAP_EKKO: 500023
     • po_date ← SAP_EKKO: 18.08.2026
     • sap_tax_code ← SAP_EKPO: I3
     • GST 9.0%+9.0% (total 18.0%) CGST_SGST → tax code I3 (Input CGST+SGST @ 9%+9%)
-  Invoice BM/26-27/1328 | PO 5100002309 | GRN 5003563892 | Plant 2002 | HSN 72284000 | GST 9.0%+9.0% → I3 | Total 217144.0
+  Invoice BM/26-27/1328 | PO 5100002309 | GRN 5000356389 | Plant 2002 | HSN 72284000 | GST 9.0%+9.0% → I3 | Total 217144.0
   STATUS: ✅ MATCHED
-  → PG id=67 status=MATCHED (47.9s)
+  → PG id=70 status=MATCHED (46.2s)
   📄 Excel: BM_26-27_1328.xlsx
 
 ====================================================================
-  ✅ MATCHED : 1   (all fields filled & matched with SAP)
+  ✅ MATCHED : 2   (all fields filled & matched with SAP)
   ⚠️  REVIEW  : 0   (something missing / mismatch / doubt)
-  🔴 RED FLAG: 0   (invoice has multiple POs)
-  ⏭️  Duplicate: 0   💥 Errors: 2
+  🔴 RED FLAG: 1   (invoice has multiple POs)
+  ⏭️  Duplicate: 0   💥 Errors: 0
 ====================================================================
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\invoice_extractor.py
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile>
