@@ -74,8 +74,9 @@ ROUND_TOLERANCE     = 1.0
 
 MAX_PAGES   = 6
 IMAGE_ZOOM  = 1.4
-NUM_CTX     = 8192
-NUM_PREDICT = 4096
+MAIN_PAGES  = 3        # pages sent for the main (header + lines) pass; delivery notes / e-way bill are not needed
+NUM_CTX     = 16384
+NUM_PREDICT = 6144
 TIMEOUT     = 900
 # ============================================================
 
@@ -472,8 +473,30 @@ def extract_json(raw) -> dict:
     except Exception: pass
     s, e = t.find("{"), t.rfind("}")
     if s >= 0 and e > s:
-        return json.loads(t[s:e + 1])
-    raise ValueError("No valid JSON in response")
+        try: return json.loads(t[s:e + 1])
+        except Exception: pass
+    return repair_json(t)
+
+def repair_json(t: str) -> dict:
+    """The model output was cut off or has a broken comma (e.g. 'Expecting , delimiter').
+    Walk back to the last complete object and close the open brackets, so the header and
+    every line item that WAS completed are still kept."""
+    s = t.find("{")
+    if s < 0:
+        raise ValueError("No valid JSON in response")
+    body = t[s:]
+    cuts = [m.end() for m in re.finditer(r"[}\]]", body)]
+    for end in reversed(cuts[-80:]):
+        cand = body[:end].rstrip().rstrip(",")
+        for closer in ("", "}", "]}", "}]}", "]}}"):
+            try:
+                out = json.loads(cand + closer)
+                if isinstance(out, dict):
+                    print("     ⚠️  JSON was cut/broken — repaired (some trailing line items may be missing)")
+                    return out
+            except Exception:
+                continue
+    raise ValueError("No valid JSON in response (repair failed)")
 
 def pdf_images(path: Path):
     doc = fitz.open(str(path)); zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM); out = []
@@ -557,7 +580,13 @@ def ask(llm, prompt: str, images: list, num_predict=NUM_PREDICT) -> dict:
 
 def invoke_main(llm, images, text_layer) -> dict:
     prompt = PROMPT + ("\nOCR TEXT (may be noisy):\n" + text_layer[:2000] if text_layer else "")
-    return ask(llm, prompt, images)
+    pages = images[:MAIN_PAGES]
+    try:
+        return ask(llm, prompt, pages)
+    except Exception as e:
+        print(f"     main pass failed ({e}) — retrying with first 2 pages, short output...")
+        short = prompt + "\nIMPORTANT: keep it compact. At most 25 line items, item text max 40 characters."
+        return ask(llm, short, images[:2])
 
 def invoke_grn(llm, images, max_retry=2) -> str:
     best = ""
@@ -627,6 +656,7 @@ def normalize(data: dict, filename: str):
         "gst_percent": None, "gst_nature": "", "gst_tax_code": "", "gst_tax_code_desc": "",
         "sap_tax_code": "", "tax_code_match": None,
         "gst_percent_component": None, "sap_mismatches": [], "sap_checked": False,
+        "grn_in_sap": False,
         "validation_status": "", "validation_errors": {},
     }
     if header["plant_code"]:
@@ -681,32 +711,96 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         grn    = header["grn_number"]
         vcode  = strip_zeros(header["vendor_code"])
 
+        # ---- helpers for GRN resolution ---------------------------------------------------
+        def live(rows):
+            """drop reversed documents; prefer rows that carry item text (SGTXT) — same as the
+            manual check:  XBLNR_MKPF = invoice AND EBELN = PO AND SGTXT is not null"""
+            rows = [r for r in rows if not clean(r.get("SMBLN"))]
+            txt = [r for r in rows if clean(r.get("SGTXT"))]
+            return txt or rows
+
+        def by_grn(rows):
+            g = {}
+            for r in rows:
+                g.setdefault(clean(r["MBLNR"]), []).append(r)
+            return g
+
+        def score(rows, use_po=True):
+            """How well a GR document matches THIS invoice: line amounts, taxable value, PO."""
+            sc = 0.0
+            amts = [to_float(r["DMBTR"]) for r in rows]
+            for l in lines:
+                if l["amount"] and any(abs(l["amount"] - a) <= ROUND_TOLERANCE for a in amts):
+                    sc += 1
+            sub = header["subtotal"]
+            if sub and abs(sum(amts) - sub) <= max(ROUND_TOLERANCE, sub * AMOUNT_TOLERANCE):
+                sc += 5
+            if use_po and is_valid_po(header["po_number"]) and \
+               any(clean(r["EBELN"]) == header["po_number"] for r in rows):
+                sc += 3
+            return sc
+
+        # 1) GR lines for the GRN the vision pass read from the stamp
         grn_rows = []
         if grn:
-            grn_rows = _q(conn, f"SELECT {MSEG_COLS} FROM dbo.MSEG m "
-                                f"WHERE m.MBLNR = :grn {_mandt('m')}", grn=grn, **base)
+            grn_rows = live(_q(conn, f"SELECT {MSEG_COLS} FROM dbo.MSEG m "
+                                     f"WHERE m.MBLNR = :grn {_mandt('m')}", grn=grn, **base))
             if not grn_rows:
-                notes.append(f"GRN {grn} NOT found in MSEG")
+                notes.append(f"GRN {grn} (read from stamp) NOT found in MSEG — "
+                             f"looking it up by invoice no / PO / line items")
 
+        # 2) GR lines by vendor invoice reference (MSEG.XBLNR_MKPF) — spaces ignored
         inv_rows = []
         if inv_no:
             inv_rows = _q(conn, f"""SELECT {MSEG_COLS} FROM dbo.MSEG m
-                                    WHERE UPPER(LTRIM(RTRIM(m.XBLNR_MKPF))) = :inv
+                                    WHERE UPPER(REPLACE(LTRIM(RTRIM(m.XBLNR_MKPF)),' ','')) = :inv
                                       AND m.BWART IN :bwart {_mandt('m')}""",
-                          inv=inv_no.upper().strip(), bwart=list(GRN_MOVEMENT_TYPES), **base)
-            vendors = {strip_zeros(r["LIFNR"]) for r in grn_rows if r["LIFNR"]} or \
-                      ({vcode} if vcode else set())
-            if vendors:
-                inv_rows = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in vendors]
+                          inv=norm_key(inv_no), bwart=list(GRN_MOVEMENT_TYPES), **base)
+            if vcode:   # printed vendor code is only a hint — never let it wipe out the result
+                same_vendor = [r for r in inv_rows if strip_zeros(r["LIFNR"]) == vcode]
+                if same_vendor: inv_rows = same_vendor
+            inv_rows = live(inv_rows)
+        inv_groups = by_grn(inv_rows)
 
-        gr_rows = [r for r in (grn_rows + inv_rows) if not clean(r.get("SMBLN"))]
-        if len(gr_rows) < len(grn_rows + inv_rows):
-            notes.append("Some GR lines ignored (reversed documents)")
+        # 3) decide which GRN is the right one
+        groups = dict(inv_groups)
+        resolved = None
+        if grn_rows and (not groups or grn in groups):
+            resolved = (grn, grn_rows)                      # stamp GRN confirmed by SAP
+        else:
+            if not groups:                                  # no invoice-ref match → try by PO
+                pos_try = sorted(set(header["po_numbers_printed"]) |
+                                 ({header["po_number"]} if is_valid_po(header["po_number"]) else set()))
+                if pos_try:
+                    po_rows = live(_q(conn, f"""SELECT {MSEG_COLS} FROM dbo.MSEG m
+                                                WHERE m.EBELN IN :pos AND m.BWART IN :bwart
+                                                {_mandt('m')}""",
+                                      pos=pos_try, bwart=list(GRN_MOVEMENT_TYPES), **base))
+                    groups = by_grn(po_rows)
+            best = max(groups.items(), key=lambda kv: (score(kv[1]), len(kv[1])), default=None)
+            ok = bool(best) and (bool(inv_groups) or score(best[1], use_po=False) >= 1)
+            if ok and grn_rows and score(grn_rows, use_po=False) >= score(best[1], use_po=False):
+                ok = False                                  # stamp GRN fits the invoice at least as well
+            if ok:
+                resolved = best
+                if len(groups) > 1:
+                    notes.append(f"Several GRNs found {sorted(groups)} — picked {best[0]} "
+                                 f"(best match on line amounts / taxable value / PO)")
+            elif grn_rows:
+                resolved = (grn, grn_rows)
 
-        if not grn and inv_rows:
-            grns = sorted({clean(r["MBLNR"]) for r in inv_rows})
-            fill("grn_number", grns[0], "SAP_MSEG")
-            if len(grns) > 1: notes.append(f"Multiple GRNs for this invoice: {grns}")
+        gr_rows = []
+        if resolved:
+            new_grn, gr_rows = resolved
+            header["grn_in_sap"] = True
+            if new_grn != grn:
+                notes.append(f"GRN {grn or '(not read)'} (stamp) → {new_grn} taken from SAP "
+                             f"(invoice {inv_no} / PO {header['po_number'] or '?'})")
+                header["grn_number"] = new_grn
+                src["grn_number"] = "SAP_MSEG"
+        else:
+            notes.append(f"No GRN found in SAP for invoice {inv_no or '?'} / "
+                         f"PO {header['po_number'] or '?'}")
 
         if gr_rows:
             fill("grn_date", fmt_sap_date(gr_rows[0]["BUDAT_MKPF"]), "SAP_MSEG")
@@ -717,7 +811,8 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
             src["grn_amount"] = "SAP_MSEG"
             fill("sap_tax_code", clean(gr_rows[0].get("MWSKZ")), "SAP_MSEG")
 
-        sap_pos = sorted({clean(r["EBELN"]) for r in gr_rows if clean(r["EBELN"])})
+        # all POs this invoice touches in SAP (any GRN) → multi-PO red flag
+        sap_pos = sorted({clean(r["EBELN"]) for r in (gr_rows + inv_rows) if clean(r["EBELN"])})
         if not is_valid_po(header["po_number"]) and sap_pos:
             header["po_number"] = ""
             fill("po_number", sap_pos[0], "SAP_MSEG")
@@ -911,8 +1006,9 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
         mismatches += header.get("sap_mismatches", [])
         if not header["po_date"]:
             mismatches.append(f"PO {header['po_number'] or '?'} not found in SAP (EKKO)")
-        if not header["grn_date"]:
-            mismatches.append(f"GRN {header['grn_number'] or '?'} not found in SAP (MSEG)")
+        if not header["grn_in_sap"]:
+            mismatches.append(f"GRN {header['grn_number'] or '?'} not found in SAP (MSEG) "
+                              f"by stamp, invoice no, PO or line items")
         if header["grn_amount"] and sub and \
            abs(header["grn_amount"] - sub) > sub * AMOUNT_TOLERANCE:
             mismatches.append(f"GRN value {header['grn_amount']} != invoice taxable value {sub}")
