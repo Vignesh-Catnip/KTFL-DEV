@@ -7,7 +7,7 @@ Flow per PDF:
   2. Vision pass   : GRN number from receiving stamp                   (10-digit validated)
   3. SAP fallback  : BRONZE_DB (EKKO / EKPO / MSEG)
   4. GST mapping   : GST % on invoice -> SAP tax code (GST_RATE master)
-  5. Status        : RED_FLAG / MATCHED / REVIEW
+  5. Status        : MANUAL (multi-PO in SAP) / REVIEW (mismatch) / MATCHED (full match)
   6. Validation    : arithmetic, GST split, SAP match, formats
   7. PostgreSQL    : invoices, invoice_lines, invoice_master, gst_tax_codes, audit_logs
   8. Excel per invoice
@@ -685,7 +685,7 @@ def normalize(data: dict, filename: str):
         "gst_percent": None, "gst_nature": "", "gst_tax_code": "", "gst_tax_code_desc": "",
         "sap_tax_code": "", "tax_code_match": None,
         "gst_percent_component": None, "sap_mismatches": [], "sap_checked": False,
-        "grn_in_sap": False,
+        "grn_in_sap": False, "line_mismatches": [], "gr_lines_checked": 0,
         "validation_status": "", "validation_errors": {},
     }
     if header["plant_code"]:
@@ -900,10 +900,17 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         all_pos = sorted(set(sap_pos) | set(header["po_numbers_printed"]) |
                          ({header["po_number"]} if is_valid_po(header["po_number"]) else set()))
         header["po_list"] = ", ".join(all_pos)
-        if len(all_pos) > 1:
+        if len(sap_pos) > 1:
+            # SAP itself links this invoice to more than one PO -> cannot be auto-matched
             header["multi_po_flag"] = True
-            header["red_flag_reason"] = f"Invoice linked to {len(all_pos)} POs: {header['po_list']}"
-            notes.append("🔴 " + header["red_flag_reason"])
+            header["red_flag_reason"] = (f"SAP links this invoice to {len(sap_pos)} POs "
+                                         f"({', '.join(sap_pos)}) — manual check needed")
+            notes.append("🛑 MANUAL: " + header["red_flag_reason"])
+        elif len(all_pos) > 1:
+            # several POs printed on the invoice but SAP has only one -> a mismatch to review
+            msg = (f"Invoice prints POs {', '.join(all_pos)} but SAP GR is only for "
+                   f"{', '.join(sap_pos) or 'none'}")
+            header["sap_mismatches"].append(msg); notes.append("MISMATCH " + msg)
 
         if not all_pos:
             notes.append("No PO found (vision + SAP)")
@@ -975,6 +982,37 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                 if not l["plant_code"]: l["plant_code"] = header["plant_code"]
                 if not l["hsn_sac"] and ekpo:
                     l["hsn_sac"] = re.sub(r"[^\d]", "", clean(ekpo[0].get("STAWN")))
+
+        # ---- line-by-line check: invoice quantity / amount  vs  SAP goods receipt ----------------
+        vision_lines = [l for l in lines if l.get("source") == "VISION"]
+        if gr_rows and vision_lines:
+            gp_rows = [r for r in gr_rows if clean(r["EBELN"]) == header["po_number"]] or gr_rows
+            used = set()
+            for l in vision_lines:
+                q, a = l["quantity"], l["amount"]
+                if not q and not a:
+                    continue
+                hit = None
+                for i, r in enumerate(gp_rows):
+                    if i in used: continue
+                    rq, rv = to_float(r["MENGE"]), to_float(r["DMBTR"])
+                    if q and abs(rq - q) > 0.001: continue
+                    if a and rv > 0 and abs(rv - a) > ROUND_TOLERANCE: continue   # zero-value GR (job-work): qty only
+                    hit = i; break
+                if hit is None:
+                    header["line_mismatches"].append(
+                        f"Line '{l['item'][:35]}' qty {q:g} / amount {a:,.2f} not found in SAP GR "
+                        f"(GRN {header['grn_number']})")
+                else:
+                    used.add(hit)
+            header["gr_lines_checked"] = len(vision_lines)
+            extra = [r for i, r in enumerate(gp_rows) if i not in used and to_float(r["MENGE"]) > 0]
+            if extra:
+                notes.append(f"{len(extra)} SAP GR rows are not matched to any invoice line "
+                             f"(e.g. {clean(extra[0]['SGTXT'])[:30]} qty {to_float(extra[0]['MENGE']):g})")
+            for m in header["line_mismatches"]: notes.append("MISMATCH " + m)
+            if not header["line_mismatches"]:
+                notes.append(f"All {len(vision_lines)} invoice lines match SAP GR (qty and amount)")
 
         if header["grn_amount"] and header["subtotal"]:
             if abs(header["grn_amount"] - header["subtotal"]) > header["subtotal"] * AMOUNT_TOLERANCE:
@@ -1093,6 +1131,7 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
 
     if sap_on:
         mismatches += header.get("sap_mismatches", [])
+        mismatches += header.get("line_mismatches", [])
         if not header["po_date"]:
             mismatches.append(f"PO {header['po_number'] or '?'} not found in SAP (EKKO)")
         if not header["grn_in_sap"]:
@@ -1111,7 +1150,7 @@ def validate(header: dict, lines: list, sap_on: bool) -> None:
         doubts.append(f"Low AI confidence {header['confidence']}%")
 
     if header["multi_po_flag"]:
-        status = "RED_FLAG"
+        status = "MANUAL"          # SAP has more than one PO for this invoice
     elif missing or mismatches or doubts:
         status = "REVIEW"
     else:
@@ -1184,7 +1223,7 @@ def push_to_db(session, h: dict, lines: list, notes: list) -> int:
             invoice_number=h["invoice_number"], vendor=h["vendor"], vendor_code=h["vendor_code"],
             po_number=h["po_number"], first_seen_date=now_utc(), invoice_id=inv.id,
         ).on_conflict_do_nothing(index_elements=["invoice_number"]))
-    action = {"RED_FLAG": "RED_FLAG_MULTI_PO", "REVIEW": "NEEDS_REVIEW",
+    action = {"MANUAL": "MANUAL_MULTI_PO", "REVIEW": "NEEDS_REVIEW",
               "MATCHED": "MATCHED_READY_FOR_MIRO"}[status]
     session.add(AuditLog(invoice_id=inv.id, action=action,
                          detail={"file": h["filename"], "model": MODEL_VLM, "sap_notes": notes,
@@ -1203,7 +1242,7 @@ AMBER = PatternFill("solid", fgColor="FFE0A3")
 GREEN = PatternFill("solid", fgColor="C6EFCE")
 ALT   = PatternFill("solid", fgColor="EBF3FB")
 SAPF  = PatternFill("solid", fgColor="FFF2CC")
-STATUS_FILL = {"MATCHED": GREEN, "REVIEW": AMBER, "RED_FLAG": RED}
+STATUS_FILL = {"MATCHED": GREEN, "REVIEW": AMBER, "MANUAL": RED}
 
 def create_excel(h, lines, notes, out_folder):
     Path(out_folder).mkdir(parents=True, exist_ok=True)
@@ -1221,7 +1260,7 @@ def create_excel(h, lines, notes, out_folder):
     ws.append(["Field", "Value", "Source"]); hdr(ws, "1F4E79")
     rows = [("File Name","filename"),("STATUS","validation_status"),
             ("Vendor","vendor"),("Invoice Number","invoice_number"),("Invoice Date","invoice_date"),
-            ("PO Number","po_number"),("All POs","po_list"),("Multi-PO Red Flag","multi_po_flag"),
+            ("PO Number","po_number"),("All POs","po_list"),("Multiple POs in SAP (Manual)","multi_po_flag"),
             ("Red Flag Reason","red_flag_reason"),("PO Date","po_date"),
             ("Vendor GSTIN","gstin"),("Vendor Code","vendor_code"),
             ("Plant","plant_code"),("Plant Source","plant_source"),
@@ -1270,7 +1309,7 @@ def create_excel(h, lines, notes, out_folder):
     ws3 = wb.create_sheet("Status Check")
     ws3.append(["Type", "Message"]); hdr(ws3, "7F1D1D")
     ve = h["validation_errors"]
-    for kind, items, fill_ in (("RED FLAG", ve.get("red_flag", []), RED),
+    for kind, items, fill_ in (("MANUAL", ve.get("red_flag", []), RED),
                                ("MISSING",  ve.get("missing", []),  AMBER),
                                ("MISMATCH", ve.get("mismatch", []), RED),
                                ("DOUBT",    ve.get("doubt", []),    AMBER)):
@@ -1278,7 +1317,7 @@ def create_excel(h, lines, notes, out_folder):
             ws3.append([kind, m])
             for c in ws3[ws3.max_row]: c.fill = fill_
     if ws3.max_row == 1:
-        ws3.append(["MATCHED", "All fields filled and matched with SAP — ready for MIRO"])
+        ws3.append(["MATCHED", "All fields and line qty/amount match SAP — ready for MIRO"])
         for c in ws3[2]: c.fill = GREEN
     ws3.column_dimensions["A"].width = 12; ws3.column_dimensions["B"].width = 100
 
@@ -1286,7 +1325,7 @@ def create_excel(h, lines, notes, out_folder):
     ws4.append(["Notes"]); hdr(ws4, "7F6000")
     for n in notes or ["-"]:
         ws4.append([n])
-        if n.startswith(("🔴", "MISMATCH", "Amount gap", "Tax-code mismatch")):
+        if n.startswith(("🛑", "🔴", "MISMATCH", "Amount gap", "Tax-code mismatch")):
             ws4[ws4.max_row][0].fill = RED
     ws4.column_dimensions["A"].width = 110
     wb.save(path)
@@ -1319,7 +1358,7 @@ def main():
     print("  Ollama OK ✅")
 
     llm = create_llm()
-    stats = {"MATCHED": 0, "REVIEW": 0, "RED_FLAG": 0, "duplicate": 0, "error": 0}
+    stats = {"MATCHED": 0, "REVIEW": 0, "MANUAL": 0, "duplicate": 0, "error": 0}
 
     for idx, pdf in enumerate(pdfs, 1):
         t0 = time.time()
@@ -1345,7 +1384,7 @@ def main():
             for n in notes: print(f"    • {n}")
 
             st = header["validation_status"]
-            mark = {"MATCHED": "✅ MATCHED", "REVIEW": "⚠️  REVIEW", "RED_FLAG": "🔴 RED FLAG"}[st]
+            mark = {"MATCHED": "✅ MATCHED", "REVIEW": "⚠️  REVIEW", "MANUAL": "🛑 MANUAL"}[st]
             gst_show = (f"{header['gst_percent_component']}%+{header['gst_percent_component']}%"
                         if header["gst_nature"] == "CGST_SGST" else f"{header['gst_percent']}%")
             print(f"  Invoice {header['invoice_number'] or '?'} | PO {header['po_number'] or '?'} "
@@ -1354,7 +1393,7 @@ def main():
                   f"{header['gst_tax_code'] or '-'} | Total {header['total']}")
             print(f"  STATUS: {mark}")
             ve = header["validation_errors"]
-            for m in ve["red_flag"]: print(f"    🔴 {m}")
+            for m in ve["red_flag"]: print(f"    🛑 {m}")
             for m in ve["missing"]:  print(f"    ▫️  MISSING  {m}")
             for m in ve["mismatch"]: print(f"    ❌ MISMATCH {m}")
             for m in ve["doubt"]:    print(f"    ⚠️  DOUBT    {m}")
@@ -1395,9 +1434,9 @@ def main():
             except Exception: pass
 
     print("\n" + "=" * 68)
-    print(f"  ✅ MATCHED : {stats['MATCHED']}   (all fields filled & matched with SAP)")
-    print(f"  ⚠️  REVIEW  : {stats['REVIEW']}   (something missing / mismatch / doubt)")
-    print(f"  🔴 RED FLAG: {stats['RED_FLAG']}   (invoice has multiple POs)")
+    print(f"  ✅ MATCHED : {stats['MATCHED']}   (everything incl. line qty/amount matches SAP)")
+    print(f"  ⚠️  REVIEW  : {stats['REVIEW']}   (amount / quantity / field does not match SAP)")
+    print(f"  🛑 MANUAL  : {stats['MANUAL']}   (SAP has multiple POs for the invoice — check by hand)")
     print(f"  ⏭️  Duplicate: {stats['duplicate']}   💥 Errors: {stats['error']}")
     print("=" * 68)
 
