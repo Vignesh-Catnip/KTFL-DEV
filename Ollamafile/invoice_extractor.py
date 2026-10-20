@@ -789,28 +789,37 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                              f"looking it up by invoice no / PO / line items")
 
         # 2) GR lines by vendor invoice reference (MSEG.XBLNR_MKPF) — spaces ignored
-        inv_rows = []
+        inv_rows, inv_all = [], []
         if inv_no:
-            inv_rows = _q(conn, f"""SELECT {MSEG_COLS} FROM dbo.MSEG m
-                                    WHERE UPPER(REPLACE(LTRIM(RTRIM(m.XBLNR_MKPF)),' ','')) = :inv
-                                      AND m.BWART IN :bwart {_mandt('m')}""",
-                          inv=norm_key(inv_no), bwart=list(GRN_MOVEMENT_TYPES), **base)
-            if vcode:   # printed vendor code is only a hint — never let it wipe out the result
-                same_vendor = [r for r in inv_rows if strip_zeros(r["LIFNR"]) == vcode]
-                if same_vendor: inv_rows = same_vendor
-            inv_rows = live(inv_rows)
+            raw = _q(conn, f"""SELECT {MSEG_COLS} FROM dbo.MSEG m
+                               WHERE UPPER(REPLACE(LTRIM(RTRIM(m.XBLNR_MKPF)),' ','')) = :inv
+                                 AND m.BWART IN :bwart {_mandt('m')}""",
+                     inv=norm_key(inv_no), bwart=list(GRN_MOVEMENT_TYPES), **base)
+            raw = [r for r in raw if not clean(r.get("SMBLN"))]          # drop reversed documents
 
-            # Same invoice no is used by many vendors. Anchor on the invoice's PO (the manual check:
-            # XBLNR_MKPF = invoice AND EBELN = PO) and keep only that PO's vendor.
-            if is_valid_po(header["po_number"]):
-                own_rows = [r for r in inv_rows if clean(r["EBELN"]) == header["po_number"]]
-                ov = {strip_zeros(r["LIFNR"]) for r in own_rows if clean(r["LIFNR"])}
-                if own_rows and ov:
-                    kept = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in ov]
-                    if len(kept) < len(inv_rows):
-                        notes.append(f"Ignored {len(inv_rows) - len(kept)} SAP rows with the same invoice no "
-                                     f"but another vendor (PO {header['po_number']} vendor {sorted(ov)} kept)")
-                    inv_rows = kept
+            # The same invoice no (e.g. "428/26-27") is used by many vendors. The vendor is taken from
+            # the PO header (EKKO.LIFNR) of the invoice's own PO — MSEG.LIFNR is often blank, so it
+            # must not be used for this. Every PO of THAT vendor stays in (=> multi-PO detection).
+            po_vendor = {}
+            pos_raw = sorted({clean(r["EBELN"]) for r in raw if clean(r["EBELN"])} |
+                             ({header["po_number"]} if is_valid_po(header["po_number"]) else set()))
+            if pos_raw:
+                for r in _q(conn, f"SELECT EBELN, LIFNR FROM dbo.EKKO k WHERE k.EBELN IN :pos "
+                                  f"{_mandt('k')}", pos=pos_raw, **base):
+                    po_vendor[clean(r["EBELN"])] = strip_zeros(r["LIFNR"])
+            own_v = po_vendor.get(header["po_number"], "") if is_valid_po(header["po_number"]) else ""
+            if not own_v:
+                own_v = next((strip_zeros(r["LIFNR"]) for r in raw
+                              if clean(r["EBELN"]) == header["po_number"] and clean(r["LIFNR"])), "")
+            if own_v:
+                inv_all = [r for r in raw if po_vendor.get(clean(r["EBELN"]), "") == own_v]
+                if len(inv_all) < len(raw):
+                    other = sorted({clean(r["EBELN"]) for r in raw} - {clean(r["EBELN"]) for r in inv_all})
+                    notes.append(f"Ignored {len(raw) - len(inv_all)} SAP rows with the same invoice no but "
+                                 f"another vendor's PO ({', '.join(other)}); vendor {own_v} kept")
+            else:
+                inv_all = raw
+            inv_rows = live(inv_all)       # rows used to pick the GRN (item-text rows preferred)
         inv_groups = by_grn(inv_rows)
 
         def po_ok(rows):
@@ -879,20 +888,8 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                 notes.append("GR value not compared with invoice (GR lines have zero value, e.g. job-work)")
             fill("sap_tax_code", clean(gp[0].get("MWSKZ")), "SAP_MSEG")
 
-        # The same invoice number (e.g. "428/26-27") is used by MANY vendors. Keep only the rows of
-        # the vendor that owns the matched GRN, otherwise other vendors' POs cause a false RED_FLAG.
-        if gr_rows:
-            gv = {strip_zeros(r["LIFNR"]) for r in gr_rows if clean(r["LIFNR"])}
-            if gv:
-                same = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in gv]
-                dropped = len(inv_rows) - len(same)
-                if dropped:
-                    notes.append(f"Ignored {dropped} SAP rows with the same invoice no but another "
-                                 f"vendor (vendor {sorted(gv)} kept)")
-                inv_rows = same
-
         # all POs this invoice touches in SAP (same vendor, any GRN) → multi-PO red flag
-        sap_pos = sorted({clean(r["EBELN"]) for r in (gr_rows + inv_rows) if clean(r["EBELN"])})
+        sap_pos = sorted({clean(r["EBELN"]) for r in (gr_rows + inv_all) if clean(r["EBELN"])})
         if not is_valid_po(header["po_number"]) and sap_pos:
             header["po_number"] = ""
             fill("po_number", sap_pos[0], "SAP_MSEG")
