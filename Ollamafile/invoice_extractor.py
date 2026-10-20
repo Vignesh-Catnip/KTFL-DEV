@@ -74,7 +74,9 @@ ROUND_TOLERANCE     = 1.0
 
 MAX_PAGES   = 6
 IMAGE_ZOOM  = 1.4
-MAIN_PAGES  = 3        # pages sent for the main (header + lines) pass; delivery notes / e-way bill are not needed
+MAIN_PAGES  = 2        # pages sent for the main (header + lines) pass; delivery notes / e-way bill are not needed
+GRN_PAGES   = 3        # pages scanned for the receiving stamp (bottom half only, higher zoom = faster + clearer)
+GRN_ZOOM    = 2.0
 NUM_CTX     = 16384
 NUM_PREDICT = 6144
 TIMEOUT     = 900
@@ -500,8 +502,19 @@ def repair_json(t: str) -> dict:
 
 def pdf_images(path: Path):
     doc = fitz.open(str(path)); zoom = fitz.Matrix(IMAGE_ZOOM, IMAGE_ZOOM); out = []
-    for i in range(min(doc.page_count, MAX_PAGES)):
+    for i in range(min(doc.page_count, MAIN_PAGES)):
         out.append(base64.b64encode(doc[i].get_pixmap(matrix=zoom, alpha=False).tobytes("png")).decode())
+    doc.close(); return out
+
+def pdf_grn_images(path: Path):
+    """Bottom 55% of the first pages only — that is where the KTFL receiving stamp sits.
+    Half the pixels of a full page => faster, and the larger zoom makes the handwriting clearer."""
+    doc = fitz.open(str(path)); out = []
+    for i in range(min(doc.page_count, GRN_PAGES)):
+        pg = doc[i]; r = pg.rect
+        clip = fitz.Rect(0, r.height * 0.45, r.width, r.height)
+        pix = pg.get_pixmap(matrix=fitz.Matrix(GRN_ZOOM, GRN_ZOOM), clip=clip, alpha=False)
+        out.append(base64.b64encode(pix.tobytes("png")).decode())
     doc.close(); return out
 
 def pdf_text(path: Path) -> str:
@@ -553,6 +566,7 @@ def _post_chat(prompt: str, images: list, num_predict: int, use_format: bool) ->
         "messages": [{"role": "user", "content": prompt, "images": images}],
         "stream": False,
         "think": False,
+        "keep_alive": "30m",          # keep the 32B model loaded between PDFs (no reload delay)
         "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": num_predict},
     }
     if use_format:
@@ -593,7 +607,7 @@ def invoke_grn(llm, images, max_retry=2) -> str:
     for pno, img in enumerate(images, 1):
         prompt = GRN_PROMPT
         for _ in range(max_retry + 1):
-            try: grn = clean(ask(llm, prompt, [img], 256).get("grn_number"))
+            try: grn = clean(ask(llm, prompt, [img], 96).get("grn_number"))
             except Exception as e:
                 print(f"     GRN page {pno} error: {e}"); grn = ""
             if not grn: break
@@ -604,6 +618,21 @@ def invoke_grn(llm, images, max_retry=2) -> str:
             prompt = GRN_PROMPT + GRN_RETRY_HINT.format(bad=grn, bad_clean=c, n=len(c))
     return best
 
+
+def fix_gstin(g: str) -> str:
+    """Fix OCR confusion by position: 27ABRP19475K1ZQ -> 27ABRPI9475K1ZQ.
+    GSTIN = 2 digits + 5 letters + 4 digits + 1 letter + 1 alnum + 'Z' + 1 alnum."""
+    if len(g) != 15:
+        return g
+    to_digit  = {"O": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2", "G": "6"}
+    to_letter = {"0": "O", "1": "I", "5": "S", "8": "B", "2": "Z", "6": "G"}
+    out = []
+    for i, ch in enumerate(g):
+        if i in (0, 1, 7, 8, 9, 10):      out.append(to_digit.get(ch, ch))
+        elif i in (2, 3, 4, 5, 6, 11):    out.append(to_letter.get(ch, ch))
+        elif i == 13:                     out.append("Z")
+        else:                             out.append(ch)
+    return "".join(out)
 
 def normalize(data: dict, filename: str):
     data = data if isinstance(data, dict) else {}
@@ -630,7 +659,7 @@ def normalize(data: dict, filename: str):
     hw = data.get("handwritten_references") or ""
     if isinstance(hw, list): hw = ", ".join(map(str, hw))
 
-    gstin = clean(data.get("gstin")).upper().replace(" ", "")
+    gstin = fix_gstin(clean(data.get("gstin")).upper().replace(" ", ""))
     if any(gstin.startswith(p) for p in KTFL_GSTIN_PREFIXES):
         gstin = ""
 
@@ -728,12 +757,19 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         def score(rows, use_po=True):
             """How well a GR document matches THIS invoice: line amounts, taxable value, PO."""
             sc = 0.0
-            amts = [to_float(r["DMBTR"]) for r in rows]
+            amts  = [to_float(r["DMBTR"]) for r in rows]
+            qtys  = [to_float(r["MENGE"]) for r in rows]
+            texts = [re.sub(r"[^A-Z0-9]", "", clean(r.get("SGTXT")).upper()) for r in rows]
             for l in lines:
+                item = re.sub(r"[^A-Z0-9]", "", l["item"].upper())
                 if l["amount"] and any(abs(l["amount"] - a) <= ROUND_TOLERANCE for a in amts):
-                    sc += 1
+                    sc += 1                                  # line value = GR value
+                if l["quantity"] and any(abs(l["quantity"] - q) < 0.001 for q in qtys):
+                    sc += 0.5                                # same quantity (job-work GRs have 0 value)
+                if item and any(len(t) >= 6 and (t in item or item in t) for t in texts):
+                    sc += 2                                  # same item text
             sub = header["subtotal"]
-            if sub and abs(sum(amts) - sub) <= max(ROUND_TOLERANCE, sub * AMOUNT_TOLERANCE):
+            if sub and sum(amts) and abs(sum(amts) - sub) <= max(ROUND_TOLERANCE, sub * AMOUNT_TOLERANCE):
                 sc += 5
             if use_po and is_valid_po(header["po_number"]) and \
                any(clean(r["EBELN"]) == header["po_number"] for r in rows):
@@ -743,8 +779,11 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         # 1) GR lines for the GRN the vision pass read from the stamp
         grn_rows = []
         if grn:
+            # only goods-receipt movements (101/105): the same material doc can also carry
+            # consumption lines (e.g. 543 for job-work) that are not part of the invoice
             grn_rows = live(_q(conn, f"SELECT {MSEG_COLS} FROM dbo.MSEG m "
-                                     f"WHERE m.MBLNR = :grn {_mandt('m')}", grn=grn, **base))
+                                     f"WHERE m.MBLNR = :grn AND m.BWART IN :bwart {_mandt('m')}",
+                               grn=grn, bwart=list(GRN_MOVEMENT_TYPES), **base))
             if not grn_rows:
                 notes.append(f"GRN {grn} (read from stamp) NOT found in MSEG — "
                              f"looking it up by invoice no / PO / line items")
@@ -760,12 +799,32 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                 same_vendor = [r for r in inv_rows if strip_zeros(r["LIFNR"]) == vcode]
                 if same_vendor: inv_rows = same_vendor
             inv_rows = live(inv_rows)
+
+            # Same invoice no is used by many vendors. Anchor on the invoice's PO (the manual check:
+            # XBLNR_MKPF = invoice AND EBELN = PO) and keep only that PO's vendor.
+            if is_valid_po(header["po_number"]):
+                own_rows = [r for r in inv_rows if clean(r["EBELN"]) == header["po_number"]]
+                ov = {strip_zeros(r["LIFNR"]) for r in own_rows if clean(r["LIFNR"])}
+                if own_rows and ov:
+                    kept = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in ov]
+                    if len(kept) < len(inv_rows):
+                        notes.append(f"Ignored {len(inv_rows) - len(kept)} SAP rows with the same invoice no "
+                                     f"but another vendor (PO {header['po_number']} vendor {sorted(ov)} kept)")
+                    inv_rows = kept
         inv_groups = by_grn(inv_rows)
+
+        def po_ok(rows):
+            """GRN rows must belong to the invoice's PO (when the PO is known)"""
+            return (not is_valid_po(header["po_number"])) or \
+                   any(clean(r["EBELN"]) == header["po_number"] for r in rows)
 
         # 3) decide which GRN is the right one
         groups = dict(inv_groups)
         resolved = None
-        if grn_rows and (not groups or grn in groups):
+        if grn_rows and not po_ok(grn_rows):
+            notes.append(f"GRN {grn} exists in SAP but for another PO — not this invoice's PO "
+                         f"{header['po_number']}; looking for the right one")
+        if grn_rows and po_ok(grn_rows) and (not groups or grn in groups):
             resolved = (grn, grn_rows)                      # stamp GRN confirmed by SAP
         else:
             if not groups:                                  # no invoice-ref match → try by PO
@@ -803,15 +862,36 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                          f"PO {header['po_number'] or '?'}")
 
         if gr_rows:
-            fill("grn_date", fmt_sap_date(gr_rows[0]["BUDAT_MKPF"]), "SAP_MSEG")
-            fill("plant_code", clean(gr_rows[0]["WERKS"]), "SAP_MSEG", overwrite=True)
+            # the invoice's OWN PO rows decide date / plant / tax code
+            gp = [r for r in gr_rows if clean(r["EBELN"]) == header["po_number"]] or gr_rows
+            fill("grn_date", fmt_sap_date(gp[0]["BUDAT_MKPF"]), "SAP_MSEG")
+            fill("plant_code", clean(gp[0]["WERKS"]), "SAP_MSEG", overwrite=True)
+            if clean(gp[0]["WERKS"]):
+                header["plant_code"] = clean(gp[0]["WERKS"]); src["plant_code"] = "SAP_MSEG"
             header["plant_source"] = src.get("plant_code", header["plant_source"])
-            g = [r for r in gr_rows if clean(r["MBLNR"]) == header["grn_number"]] or gr_rows
-            header["grn_amount"] = round(sum(to_float(r["DMBTR"]) for r in g), 2)
-            src["grn_amount"] = "SAP_MSEG"
-            fill("sap_tax_code", clean(gr_rows[0].get("MWSKZ")), "SAP_MSEG")
+            g = [r for r in gp if clean(r["MBLNR"]) == header["grn_number"]] or gp
+            vals = [to_float(r["DMBTR"]) for r in g]
+            if vals and all(v > 0 for v in vals):
+                header["grn_amount"] = round(sum(vals), 2)
+                src["grn_amount"] = "SAP_MSEG"
+            else:   # job-work / free-of-charge GR lines carry 0.00 value — amount is not comparable
+                header["grn_amount"] = None
+                notes.append("GR value not compared with invoice (GR lines have zero value, e.g. job-work)")
+            fill("sap_tax_code", clean(gp[0].get("MWSKZ")), "SAP_MSEG")
 
-        # all POs this invoice touches in SAP (any GRN) → multi-PO red flag
+        # The same invoice number (e.g. "428/26-27") is used by MANY vendors. Keep only the rows of
+        # the vendor that owns the matched GRN, otherwise other vendors' POs cause a false RED_FLAG.
+        if gr_rows:
+            gv = {strip_zeros(r["LIFNR"]) for r in gr_rows if clean(r["LIFNR"])}
+            if gv:
+                same = [r for r in inv_rows if strip_zeros(r["LIFNR"]) in gv]
+                dropped = len(inv_rows) - len(same)
+                if dropped:
+                    notes.append(f"Ignored {dropped} SAP rows with the same invoice no but another "
+                                 f"vendor (vendor {sorted(gv)} kept)")
+                inv_rows = same
+
+        # all POs this invoice touches in SAP (same vendor, any GRN) → multi-PO red flag
         sap_pos = sorted({clean(r["EBELN"]) for r in (gr_rows + inv_rows) if clean(r["EBELN"])})
         if not is_valid_po(header["po_number"]) and sap_pos:
             header["po_number"] = ""
@@ -834,7 +914,9 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
         main = next((r for r in ekko if clean(r["EBELN"]) == header["po_number"]),
                     ekko[0] if ekko else None)
         if main:
-            fill("vendor_code", strip_zeros(main["LIFNR"]), "SAP_EKKO")
+            # the "Vendor Code" printed on the invoice is often KTFL's own / a different code,
+            # SAP's PO vendor is authoritative
+            fill("vendor_code", strip_zeros(main["LIFNR"]), "SAP_EKKO", overwrite=True)
             if header["currency"] in ("", "INR") and clean(main["WAERS"]):
                 header["currency"] = clean(main["WAERS"]); src["currency"] = "SAP_EKKO"
             fill("po_date", fmt_sap_date(main["BEDAT"]), "SAP_EKKO")
@@ -848,13 +930,20 @@ def sap_enrich(sap_engine, header: dict, lines: list) -> list:
                             ORDER BY p.EBELN, p.EBELP""", pos=all_pos, **base)
         ekpo_map = {(clean(r["EBELN"]), clean(r["EBELP"])): r for r in ekpo}
         if ekpo:
-            fill("plant_code", clean(ekpo[0]["WERKS"]), "SAP_EKPO", overwrite=True)
-            header["plant_source"] = src.get("plant_code", header["plant_source"])
-            fill("sap_tax_code", clean(ekpo[0]["MWSKZ"]), "SAP_EKPO")
-            sap_hsn = re.sub(r"[^\d]", "", clean(ekpo[0].get("STAWN")))
+            # use the invoice's OWN PO items (not the first item of some other PO)
+            own = [r for r in ekpo if clean(r["EBELN"]) == header["po_number"]] or ekpo
+            # plant: the GRN's plant (MSEG.WERKS) wins; PO plant only if the GRN gave none
+            if src.get("plant_code") != "SAP_MSEG":
+                fill("plant_code", clean(own[0]["WERKS"]), "SAP_EKPO", overwrite=True)
+                header["plant_source"] = src.get("plant_code", header["plant_source"])
+            elif clean(own[0]["WERKS"]) and clean(own[0]["WERKS"]) != header["plant_code"]:
+                notes.append(f"Plant: GRN plant {header['plant_code']} vs PO item plant "
+                             f"{clean(own[0]['WERKS'])} — GRN plant kept")
+            fill("sap_tax_code", clean(own[0]["MWSKZ"]), "SAP_EKPO")
+            sap_hsn = re.sub(r"[^\d]", "", clean(own[0].get("STAWN")))
             if sap_hsn:
                 fill("hsn_sac", sap_hsn, "SAP_EKPO")
-            plants = {clean(r["WERKS"]) for r in ekpo if clean(r["WERKS"])}
+            plants = {clean(r["WERKS"]) for r in own if clean(r["WERKS"])}
             if len(plants) > 1:
                 notes.append(f"PO spans multiple plants: {sorted(plants)}")
 
@@ -1241,7 +1330,7 @@ def main():
             header, lines = normalize(invoke_main(llm, images, pdf_text(pdf)), pdf.name)
 
             print("  GRN pass...")
-            header["grn_number"] = clean_grn(invoke_grn(llm, images))
+            header["grn_number"] = clean_grn(invoke_grn(llm, pdf_grn_images(pdf)))
             if header["grn_number"]:
                 header["field_sources"]["grn_number"] = "VISION"
 
