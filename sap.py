@@ -1,26 +1,19 @@
-
 import win32com.client
 
-try:
-    sap = win32com.client.GetObject("SAPGUI")
-    app = sap.GetScriptingEngine
+sap = win32com.client.GetObject("SAPGUI")
+app = sap.GetScriptingEngine
 
-    print("SAP GUI connected")
-    print("Connections:", app.Children.Count)
+print("Connections:", app.Children.Count)
 
-    if app.Children.Count == 0:
-        print("No active SAP connection. Login to SAP first.")
-    else:
-        for i in range(app.Children.Count):
-            connection = app.Children(i)
-            print(f"\nConnection index: {i}")
-            print("Sessions:", connection.Children.Count)
+for i in range(app.Children.Count):
+    conn = app.Children(i)
 
-            for j in range(connection.Children.Count):
-                session = connection.Children(j)
-                print("Session index:", j)
-                print("Transaction:", session.Info.Transaction)
-                print("Screen:", session.Info.ScreenNumber)
+    try:
+        print("Connection", i, "Description:", conn.Description)
+    except Exception as e:
+        print("Description error:", e)
 
-except Exception as e:
-    print("SAP connection error:", e)
+    try:
+        print("Sessions:", conn.Children.Count)
+    except Exception as e:
+        print("Session error:", e)
