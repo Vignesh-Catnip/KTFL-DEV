@@ -52,8 +52,8 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
 	// Maximize SAP Logon
 	showWindow --maximize
 	// Select KTFL SAP connection
-	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/pane[2]/pane[1]/list[1]/listitem[1]/text[1]"
-	delay --timeout "00:00:00.5000000"
+	//click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[1]/pane[1]/pane[1]/pane[1]/pane[1]/pane[2]/pane[1]/list[1]/listitem[1]/text[1]"
+	delay --timeout "00:00:05"
 	// Open selected connection
 	keyboard --type "KeyDown" --key "Return"
 	// Wait for SAP login screen
@@ -85,7 +85,9 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True"
 	logMessage --message "SAP login successful. T-Code box selected." --type "Info"
 	attachWindow --window ${SAP_Easy_Access}
 	// Click T-Code box
-	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[2]/combobox[1]"
+	//click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[2]/combobox[1]"
+	click --selector "XPath" --controlsimilarity 100 --xpath "/root/pane[6]/combobox[1]"
+	delay --timeout "00:00:02"
 	setVar --name "${T_code}" --value MIRO
 	typeText --text "${T_code}"
 	keyboard --type "KeyPress" --key "Return"
@@ -140,18 +142,14 @@ for --variable ${current_row} --from 1 --to ${total_rows} --step 1
 	delay --timeout "00:00:01"
 	keyboard --type "KeyDown" --key "Space"
 	delay --timeout "00:00:01"
-	for --variable ${tabcounter} --from 1 --to 9 --step 1
+	for --variable ${tabcounter} --from 1 --to 10 --step 1
 		keyboard --type "KeyDown" --key "Tab"
 		delay --timeout "00:00:01"
 	next
-	keyboard --type "KeyDown" --key "Space"
+	//keyboard --type "KeyDown" --key "Space"
 	delay --timeout "00:00:01"
-	typeText --text d
-	delay --timeout "00:00:01"
-	keyboard --type "KeyDown" --key "Return"
-	delay --timeout "00:00:01"
-	keyboard --type "KeyDown" --key "Tab"
-	typeText --text "${invoice_number}"
+	//keyboard --type "KeyDown" --key "Tab"
+	typeText --text "${po_number}"
 	delay --timeout "00:00:01"
 	keyboard --type "KeyDown" --key "Return"
 	delay --timeout "00:00:01"
