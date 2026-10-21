@@ -1,26 +1,74 @@
+Microsoft Windows [Version 10.0.20348.2227]
+(c) Microsoft Corporation. All rights reserved.
 
-import win32com.client
+C:\Users\ckts00126>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework
 
-try:
-    sap = win32com.client.GetObject("SAPGUI")
-    app = sap.GetScriptingEngine
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py", line 3, in <module>
+    from robot import run_cli
+ModuleNotFoundError: No module named 'robot'
 
-    print("SAP GUI connected")
-    print("Connections:", app.Children.Count)
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>py -m venv .venv
 
-    if app.Children.Count == 0:
-        print("No active SAP connection. Login to SAP first.")
-    else:
-        for i in range(app.Children.Count):
-            connection = app.Children(i)
-            print(f"\nConnection index: {i}")
-            print("Sessions:", connection.Children.Count)
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>.\.venv\Scripts\Activate.ps1
 
-            for j in range(connection.Children.Count):
-                session = connection.Children(j)
-                print("Session index:", j)
-                print("Transaction:", session.Info.Transaction)
-                print("Screen:", session.Info.ScreenNumber)
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>pip install -r requirements.txt
+Defaulting to user installation because normal site-packages is not writeable
+Collecting robotframework==7.2.2 (from -r requirements.txt (line 1))
+  Downloading robotframework-7.2.2-py3-none-any.whl.metadata (7.5 kB)
+Requirement already satisfied: psycopg==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (3.2.9)
+Collecting python-dotenv==1.1.1 (from -r requirements.txt (line 3))
+  Downloading python_dotenv-1.1.1-py3-none-any.whl.metadata (24 kB)
+Collecting pywin32==310 (from -r requirements.txt (line 4))
+  Downloading pywin32-310-cp312-cp312-win_amd64.whl.metadata (9.4 kB)
+Requirement already satisfied: typing-extensions>=4.6 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg==3.2.9->psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (4.16.0)
+Requirement already satisfied: tzdata in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg==3.2.9->psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (2026.3)
+Requirement already satisfied: psycopg-binary==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (3.2.9)
+Downloading robotframework-7.2.2-py3-none-any.whl (777 kB)
+   ---------------------------------------- 777.7/777.7 kB 8.3 MB/s  0:00:00
+Downloading python_dotenv-1.1.1-py3-none-any.whl (20 kB)
+Downloading pywin32-310-cp312-cp312-win_amd64.whl (9.5 MB)
+   ---------------------------------------- 9.5/9.5 MB 10.2 MB/s  0:00:00
+Installing collected packages: pywin32, robotframework, python-dotenv
+  Attempting uninstall: pywin32
+    Found existing installation: pywin32 312
+    Uninstalling pywin32-312:
+      Successfully uninstalled pywin32-312
+   ---------------------------------------- 0/3 [pywin32]  WARNING: The scripts pywin32_postinstall.exe and pywin32_testall.exe are installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+   ------------- -------------------------- 1/3 [robotframework]  WARNING: The scripts libdoc.exe, rebot.exe and robot.exe are installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  Attempting uninstall: python-dotenv
+    Found existing installation: python-dotenv 1.2.2
+    Uninstalling python-dotenv-1.2.2:
+      Successfully uninstalled python-dotenv-1.2.2
+  WARNING: The script dotenv.exe is installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+Successfully installed python-dotenv-1.1.1 pywin32-310 robotframework-7.2.2
 
-except Exception as e:
-    print("SAP connection error:", e)
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py
+==============================================================================
+Miro Invoice :: KTFL SAP MIRO end-to-end framework - no automatic posting.
+==============================================================================
+Login And Process Review Invoices                                     | FAIL |
+Parent suite setup failed:
+OperationalError: connection failed: connection to server at "10.7.11.22", port 5432 failed: FATAL:  password authentication failed for user "CHANGE_ME"
+------------------------------------------------------------------------------
+Miro Invoice :: KTFL SAP MIRO end-to-end framework - no automatic ... | FAIL |
+Suite setup failed:
+OperationalError: connection failed: connection to server at "10.7.11.22", port 5432 failed: FATAL:  password authentication failed for user "CHANGE_ME"
+
+1 test, 0 passed, 1 failed
+==============================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\report.html
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
