@@ -1,19 +1,9 @@
-import win32com.client
+import subprocess
 
-sap = win32com.client.GetObject("SAPGUI")
-app = sap.GetScriptingEngine
+result = subprocess.run(
+    ["tasklist", "/FI", "IMAGENAME eq saplogon.exe"],
+    capture_output=True,
+    text=True
+)
 
-print("Connections:", app.Children.Count)
-
-for i in range(app.Children.Count):
-    conn = app.Children(i)
-
-    try:
-        print("Connection", i, "Description:", conn.Description)
-    except Exception as e:
-        print("Description error:", e)
-
-    try:
-        print("Sessions:", conn.Children.Count)
-    except Exception as e:
-        print("Session error:", e)
+print(result.stdout)
