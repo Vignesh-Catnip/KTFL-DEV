@@ -1,26 +1,26 @@
+
 import win32com.client
 
-sap = win32com.client.GetObject("SAPGUI")
-app = sap.GetScriptingEngine
-connection = app.Children(0)
-session = connection.Children(0)
+try:
+    sap = win32com.client.GetObject("SAPGUI")
+    app = sap.GetScriptingEngine
 
-def inspect_controls(parent):
-    for i in range(parent.Children.Count):
-        control = parent.Children(i)
+    print("SAP GUI connected")
+    print("Connections:", app.Children.Count)
 
-        try:
-            print(
-                "ID:", control.Id,
-                "| Type:", control.Type,
-                "| Name:", control.Name
-            )
-        except Exception:
-            pass
+    if app.Children.Count == 0:
+        print("No active SAP connection. Login to SAP first.")
+    else:
+        for i in range(app.Children.Count):
+            connection = app.Children(i)
+            print(f"\nConnection index: {i}")
+            print("Sessions:", connection.Children.Count)
 
-        try:
-            inspect_controls(control)
-        except Exception:
-            pass
+            for j in range(connection.Children.Count):
+                session = connection.Children(j)
+                print("Session index:", j)
+                print("Transaction:", session.Info.Transaction)
+                print("Screen:", session.Info.ScreenNumber)
 
-inspect_controls(session.FindById("wnd[0]"))
+except Exception as e:
+    print("SAP connection error:", e)
