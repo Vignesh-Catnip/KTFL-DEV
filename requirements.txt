@@ -8,3 +8,4 @@ pip install langchain langchain-ollama langchain-core pymupdf openpyxl httpx
 python -c "import pyodbc; print(pyodbc.drivers())"
 ['SQL Server', 'ODBC Driver 17 for SQL Server']
 pip install pyodbc
+python -m pip install pywin32
