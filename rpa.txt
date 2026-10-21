@@ -44,7 +44,7 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True" --negate
 	findWindow --title "SAP Logon 800" sap_logon_window=value sap_logon_window_success=success
 	// If SAP Logon is not open, launch it
 	if --left "${sap_logon_window_success}" --operator "Is_True" --negate
-		powerShell --apartmentState "MTA" --script "\"Start-Process"
+		powerShell --apartmentState "MTA" --script "Start-Process \"C:Program Files\\SAP\\FrontEnd\\SAPGUI\\saplogon.exe\" -"
 		waitWindow --title "SAP Logon 800" --classname "#32770" --processname saplogon --timeout "00:00:10" sap_logon_window=value sap_logon_window_success=success
 	endIf
 	// Attach SAP Logon
@@ -95,7 +95,7 @@ if --left "${SAP_Easy_Access_success}" --operator "Is_True"
 		setVar --name "${company_code}" --value 2000
 		typeText --text "${company_code}"
 		delay --timeout "00:00:03"
-		keyboard --type "KeyPress" --key "Return"
+		keyboard --type "KeyDown" --key "Return"
 	else
 		logMessage --message "company code window not showing" --type "Info"
 	endIf
@@ -116,34 +116,43 @@ for --variable ${current_row} --from 1 --to ${total_rows} --step 1
 	logMessage --message "${invoice_number}\r\n${invoice_date}\r\n${po_number}" --type "Info"
 	waitWindow --title "Enter Incoming Invoice: Company Code 2000" --classname SAP_FRONTEND_SESSION --processname saplogon --safesearch  miro_window=value miro_window_success=success
 	attachWindow --window ${miro_window}
-	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:02"
+	keyboard --type "KeyDown" --key "Return"
+	delay --timeout "00:00:01"
 	typeText --text "${invoice_date}"
-	delay --timeout "00:00:02"
+	delay --timeout "00:00:01"
 	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:02"
+	delay --timeout "00:00:01"
 	typeText --text "${invoice_number}"
-	delay --timeout "00:00:02"
-	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:02"
-	keyboard --type "KeyPress" --key "Tab"
-	delay --timeout "00:00:02"
-	keyboard --type "KeyPress" --key "Tab"
-	delay --timeout "00:00:02"
-	keyboard --type "KeyPress" --key "Tab"
-	delay --timeout "00:00:02"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Return"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Tab"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Tab"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Tab"
+	delay --timeout "00:00:01"
 	typeText --text "${currency}"
-	delay --timeout "00:00:02"
-	keyboard --type "KeyPress" --key "Tab"
-	delay --timeout "00:00:04"
-	keyboard --type "KeyPress" --key "Space"
-	delay --timeout "00:00:02"
-	for --variable ${tabcounter} --from 1 --to 10 --step 1
-		keyboard --type "KeyPress" --key "Tab"
-		delay --timeout "00:00:02"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Return"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Tab"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Space"
+	delay --timeout "00:00:01"
+	for --variable ${tabcounter} --from 1 --to 9 --step 1
+		keyboard --type "KeyDown" --key "Tab"
+		delay --timeout "00:00:01"
 	next
-	typeText --text "${po_number}"
-	delay --timeout "00:00:03"
-	keyboard --type "KeyPress" --key "Return"
-	delay --timeout "00:00:03"
+	keyboard --type "KeyDown" --key "Space"
+	delay --timeout "00:00:01"
+	typeText --text d
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Return"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Tab"
+	typeText --text "${invoice_number}"
+	delay --timeout "00:00:01"
+	keyboard --type "KeyDown" --key "Return"
+	delay --timeout "00:00:01"
 next
