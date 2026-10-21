@@ -1,26 +1,10 @@
-import win32com.client
 
-sap = win32com.client.GetObject("SAPGUI")
-app = sap.GetScriptingEngine
-connection = app.Children(0)
-session = connection.Children(0)
-
-def inspect_controls(parent):
-    for i in range(parent.Children.Count):
-        control = parent.Children(i)
-
-        try:
-            print(
-                "ID:", control.Id,
-                "| Type:", control.Type,
-                "| Name:", control.Name
-            )
-        except Exception:
-            pass
-
-        try:
-            inspect_controls(control)
-        except Exception:
-            pass
-
-inspect_controls(session.FindById("wnd[0]"))
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\sap.py
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\sap.py", line 6, in <module>
+    session = connection.Children(0)
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\win32com\client\dynamic.py", line 214, in __call__
+    self._oleobj_.Invoke(*allArgs), self._olerepr_.defaultDispatchName, None
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pywintypes.com_error: (-2147352567, 'Exception occurred.', (614, 'saplogon', 'The enumerator of the collection cannot find an element with the specified index.', 'C:\\Program Files\\SAP\\FrontEnd\\SAPGUI\\saplogon.HLP', 393215, 0), None)
