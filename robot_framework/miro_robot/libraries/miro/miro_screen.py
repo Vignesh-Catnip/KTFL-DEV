@@ -165,10 +165,9 @@ class MiroScreen:
         if len(ref) > 16:
             raise MiroDataError(f"Invoice number '{ref}' longer than 16 characters (SAP Reference)")
 
+        # All header fields first, ONE Enter at the end: SAP checks "Reference" as a required
+        # field on every Enter (document type RE), so it must be filled before the first Enter.
         self.s.set_field("INVFO-BLDAT", date)
-        self.s.enter()
-        self.handle_messages("invoice date")
-
         self.s.set_field("INVFO-XBLNR", ref)
         if c.enter_amount and float(inv.get("total") or 0) > 0:
             self.s.set_field("INVFO-WRBTR", format_sap_amount(inv["total"], c.sap_decimal_sep))
@@ -179,9 +178,8 @@ class MiroScreen:
             if not code:
                 raise MiroDataError("GST tax code is empty - cannot calculate tax in MIRO")
             self.s.set_field("INVFO-MWSKZ", code)
-            chk = self.s.find_name("INVFO-XMWST", types=("GuiCheckBox",), required=False)
-            if chk is not None:
-                chk.Selected = True
+            if self.s.find_name("INVFO-XMWST", types=("GuiCheckBox",), required=False) is not None:
+                self.s.set_field("INVFO-XMWST", True)
         self.s.enter()
         self.handle_messages("header")
         self.note(f"Header: date {date}, reference {ref}, amount {inv.get('total')}, "
@@ -261,6 +259,7 @@ class MiroScreen:
 
     def read_rows(self) -> list[MiroRow]:
         table, _ = self._scroll_to(0)
+        self.s._show(table, "Reading MIRO item table (all rows, Reference Document column)")
         cols = self._columns(table)
         c = self.cfg
         i_ref = self._col(cols, c.col_ref_doc, "REFERENCE DOC", "REF. DOC", "REF.DOC")
@@ -302,6 +301,7 @@ class MiroScreen:
             raise SapError("'Deselect all' button not found in MIRO item list")
         for idx in sorted(indexes):
             table, _ = self._scroll_to(idx)
+            self.s._show(None, f"Tick item row {idx + 1}")
             table.GetAbsoluteRow(idx).Selected = True
         self._scroll_to(0)
         self.s.enter()
