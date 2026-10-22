@@ -60,7 +60,26 @@ class MiroDb:
 
     # ------------------------------------------------------------ reading
     def pending_invoices(self, source_status: str, mode: str, max_attempts: int, limit: int) -> list[dict]:
-        """MATCHED invoices that still need MIRO work in this mode."""
+        """MATCHED invoices that still need MIRO work in this mode.
+
+        CHECK mode is a dry run: it takes EVERY MATCHED invoice on every run (no reset needed),
+        except ones already saved in SAP (POSTED / PARKED) or in doubt (UNKNOWN / IN_PROGRESS)."""
+        if mode == "CHECK":
+            sql = """
+            SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
+                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code,
+                   COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
+              FROM invoices
+             WHERE status = %(st)s
+               AND COALESCE(miro_status, '') NOT IN ('POSTED', 'PARKED', 'UNKNOWN', 'IN_PROGRESS')
+             ORDER BY id
+             LIMIT %(lim)s"""
+            with self._cur() as cur:
+                cur.execute(sql, {"st": source_status, "lim": limit})
+                rows = cur.fetchall()
+            self.conn.commit()
+            return [self._clean(r) for r in rows]
+
         redo = ["FAILED"]                    # CHECKED is re-picked only when mode is PARK/POST
         sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
@@ -90,7 +109,10 @@ class MiroDb:
 
     # ------------------------------------------------------------ claiming / results
     def claim(self, invoice_id: int, mode: str, max_attempts: int) -> bool:
-        """Atomically mark the invoice IN_PROGRESS. False if another run took it or it is done."""
+        """Atomically mark the invoice IN_PROGRESS. False if another run took it or it is done.
+        CHECK mode never writes to `invoices` (dry run) - nothing to claim."""
+        if mode == "CHECK":
+            return True
         with self._cur() as cur:
             cur.execute("""
                 UPDATE invoices
@@ -107,20 +129,25 @@ class MiroDb:
         return ok
 
     def finish(self, invoice_id: int, status: str, message: str = "", doc_number: str = "",
-               selected_rows: str = "", detail: dict[str, Any] | None = None) -> None:
+               selected_rows: str = "", detail: dict[str, Any] | None = None,
+               write_invoice: bool = True) -> None:
+        """Store the result. write_invoice=False (CHECK mode): invoices table untouched,
+        only a history row in audit_logs."""
         if status not in FINAL_STATUSES:
             raise ValueError(f"Unknown MIRO status {status}")
         with self._cur() as cur:
-            cur.execute("""
-                UPDATE invoices
-                   SET miro_status = %s, miro_message = %s,
-                       miro_doc_number = COALESCE(NULLIF(%s, ''), miro_doc_number),
-                       miro_selected_rows = COALESCE(NULLIF(%s, ''), miro_selected_rows),
-                       miro_updated_at = NOW()
-                 WHERE id = %s""", (status, message[:4000], doc_number, selected_rows, invoice_id))
+            if write_invoice:
+                cur.execute("""
+                    UPDATE invoices
+                       SET miro_status = %s, miro_message = %s,
+                           miro_doc_number = COALESCE(NULLIF(%s, ''), miro_doc_number),
+                           miro_selected_rows = COALESCE(NULLIF(%s, ''), miro_selected_rows),
+                           miro_updated_at = NOW()
+                     WHERE id = %s""", (status, message[:4000], doc_number, selected_rows, invoice_id))
             cur.execute("""INSERT INTO audit_logs (invoice_id, action, detail, created_at)
                            VALUES (%s, %s, %s, NOW())""",
-                        (invoice_id, f"MIRO_{status}",
+                        (invoice_id, (f"MIRO_{status}" if write_invoice else
+                                      "MIRO_CHECK_" + ("OK" if status == "CHECKED" else status)),
                          json.dumps({"message": message, "doc_number": doc_number,
                                      "selected_rows": selected_rows, **(detail or {})}, default=str)))
         self.conn.commit()
