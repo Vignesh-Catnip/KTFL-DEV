@@ -1,74 +1,73 @@
-Microsoft Windows [Version 10.0.20348.2227]
-(c) Microsoft Corporation. All rights reserved.
-
-C:\Users\ckts00126>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py
-Traceback (most recent call last):
-  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py", line 3, in <module>
-    from robot import run_cli
-ModuleNotFoundError: No module named 'robot'
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>py -m venv .venv
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>.\.venv\Scripts\Activate.ps1
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>pip install -r requirements.txt
-Defaulting to user installation because normal site-packages is not writeable
-Collecting robotframework==7.2.2 (from -r requirements.txt (line 1))
-  Downloading robotframework-7.2.2-py3-none-any.whl.metadata (7.5 kB)
-Requirement already satisfied: psycopg==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (3.2.9)
-Collecting python-dotenv==1.1.1 (from -r requirements.txt (line 3))
-  Downloading python_dotenv-1.1.1-py3-none-any.whl.metadata (24 kB)
-Collecting pywin32==310 (from -r requirements.txt (line 4))
-  Downloading pywin32-310-cp312-cp312-win_amd64.whl.metadata (9.4 kB)
-Requirement already satisfied: typing-extensions>=4.6 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg==3.2.9->psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (4.16.0)
-Requirement already satisfied: tzdata in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg==3.2.9->psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (2026.3)
-Requirement already satisfied: psycopg-binary==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 2)) (3.2.9)
-Downloading robotframework-7.2.2-py3-none-any.whl (777 kB)
-   ---------------------------------------- 777.7/777.7 kB 8.3 MB/s  0:00:00
-Downloading python_dotenv-1.1.1-py3-none-any.whl (20 kB)
-Downloading pywin32-310-cp312-cp312-win_amd64.whl (9.5 MB)
-   ---------------------------------------- 9.5/9.5 MB 10.2 MB/s  0:00:00
-Installing collected packages: pywin32, robotframework, python-dotenv
-  Attempting uninstall: pywin32
-    Found existing installation: pywin32 312
-    Uninstalling pywin32-312:
-      Successfully uninstalled pywin32-312
-   ---------------------------------------- 0/3 [pywin32]  WARNING: The scripts pywin32_postinstall.exe and pywin32_testall.exe are installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
-  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
-   ------------- -------------------------- 1/3 [robotframework]  WARNING: The scripts libdoc.exe, rebot.exe and robot.exe are installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
-  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
-  Attempting uninstall: python-dotenv
-    Found existing installation: python-dotenv 1.2.2
-    Uninstalling python-dotenv-1.2.2:
-      Successfully uninstalled python-dotenv-1.2.2
-  WARNING: The script dotenv.exe is installed in 'C:\Users\ckts00126\AppData\Roaming\Python\Python312\Scripts' which is not on PATH.
-  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
-Successfully installed python-dotenv-1.1.1 pywin32-310 robotframework-7.2.2
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>python C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\run.py
-==============================================================================
-Miro Invoice :: KTFL SAP MIRO end-to-end framework - no automatic posting.
-==============================================================================
-Login And Process Review Invoices                                     | FAIL |
-Parent suite setup failed:
-OperationalError: connection failed: connection to server at "10.7.11.22", port 5432 failed: FATAL:  password authentication failed for user "CHANGE_ME"
-------------------------------------------------------------------------------
-Miro Invoice :: KTFL SAP MIRO end-to-end framework - no automatic ... | FAIL |
-Suite setup failed:
-OperationalError: connection failed: connection to server at "10.7.11.22", port 5432 failed: FATAL:  password authentication failed for user "CHANGE_ME"
-
-1 test, 0 passed, 1 failed
-==============================================================================
-Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\output.xml
-Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\log.html
-Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework\reports\report.html
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\Ollamafile\KTFL_Robotic_Framework>
+If Not IsObject(application) Then
+   Set SapGuiAuto  = GetObject("SAPGUI")
+   Set application = SapGuiAuto.GetScriptingEngine
+End If
+If Not IsObject(connection) Then
+   Set connection = application.Children(0)
+End If
+If Not IsObject(session) Then
+   Set session    = connection.Children(0)
+End If
+If IsObject(WScript) Then
+   WScript.ConnectObject session,     "on"
+   WScript.ConnectObject application, "on"
+End If
+session.findById("wnd[0]").maximize
+session.findById("wnd[0]/tbar[0]/okcd").text = "miro"
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[1]/usr/ctxtBKPF-BUKRS").text = "2000"
+session.findById("wnd[1]/usr/ctxtBKPF-BUKRS").caretPosition = 4
+session.findById("wnd[1]").sendVKey 0
+session.findById("wnd[0]").sendVKey 2
+session.findById("wnd[0]").sendVKey 2
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/ctxtINVFO-BLDAT").text = "04.08.2026"
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/ctxtINVFO-BLDAT").caretPosition = 10
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/txtINVFO-XBLNR").text = "428/26-27"
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/txtINVFO-XBLNR").caretPosition = 9
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").text = "8100007531"
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").setFocus
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").caretPosition = 10
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 3
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 6
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 9
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 12
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 15
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 19
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 16
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 13
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 0
+session.findById("wnd[0]/usr/btnRM08M-HEADER_COLLAPSE").press
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 1
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 2
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 3
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 4
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 5
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 6
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 7
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 8
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 9
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 10
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(12).selected = false
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(13).selected = false
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(14).selected = false
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").setFocus
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").caretPosition = 4
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 11
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 12
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 13
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(16).selected = false
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(17).selected = false
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,3]").setFocus
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,3]").caretPosition = 4
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 12
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 11
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 10
+session.findById("wnd[0]/tbar[1]/btn[43]").press
+session.findById("wnd[1]/tbar[0]/btn[12]").press
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 13
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 19
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
