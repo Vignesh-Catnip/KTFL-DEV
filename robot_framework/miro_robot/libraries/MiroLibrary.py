@@ -241,7 +241,9 @@ class MiroLibrary:
             logger.console(msg)
 
     def _finish(self, inv_id, status, message, doc, sel, detail):
-        self.db.finish(inv_id, status, message, doc, sel, detail)
+        prefix = "[CHECK] " if self.cfg.mode == "CHECK" else ""
+        self.db.finish(inv_id, status, prefix + message, doc, sel, detail,
+                       write_invoice=self.cfg.mode != "CHECK")
         self._run_stats[status] = self._run_stats.get(status, 0) + 1
 
     def _screenshot(self, invoice, tag):
