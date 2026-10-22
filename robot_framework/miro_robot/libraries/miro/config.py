@@ -122,6 +122,7 @@ class Config:
     # ---- timing / output -----------------------------------------------------------------
     wait_timeout: float = 30.0
     poll_interval: float = 0.3
+    step_delay: float = 0.0               # seconds to pause on every step (watch mode), e.g. 1.5
     output_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "output")
     fake_scenario: str = ""               # JSON file for the SAP simulator (tests only)
 
@@ -185,6 +186,7 @@ def load_config() -> Config:
         park_menu=_env("MIRO_PARK_MENU", Config.park_menu),
         wait_timeout=_env_float("MIRO_WAIT_TIMEOUT", Config.wait_timeout),
         poll_interval=_env_float("MIRO_POLL_INTERVAL", Config.poll_interval),
+        step_delay=_env_float("MIRO_STEP_DELAY", Config.step_delay),
         output_dir=Path(_env("MIRO_OUTPUT_DIR", str(PROJECT_ROOT / "output"))),
         fake_scenario=_env("MIRO_FAKE_SCENARIO", ""),
     )
