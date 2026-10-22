@@ -8,6 +8,7 @@ or in the Windows credential store / Orchestrator vault and export them before t
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -15,15 +16,25 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load_dotenv(path: Path) -> None:
-    """Minimal .env loader (KEY=VALUE lines). Real environment variables always win."""
+    """Minimal .env loader. Real environment variables always win.
+
+    KEY=VALUE                 plain value
+    KEY=VALUE   # comment     comment after whitespace + '#' is removed
+    KEY="pa ss#word"          quote a value that must keep spaces or ' #'
+    """
     if not path.exists():
         return
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    # utf-8-sig: Notepad may save the file with a BOM
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, val = line.split("=", 1)
-        key, val = key.strip(), val.strip().strip('"').strip("'")
+        key, val = key.strip(), val.strip()
+        if val[:1] in ('"', "'") and val.find(val[0], 1) > 0:
+            val = val[1:val.find(val[0], 1)]          # quoted: keep everything inside the quotes
+        else:
+            val = re.split(r"\s+#", val, maxsplit=1)[0].strip()
         os.environ.setdefault(key, val)
 
 
@@ -38,12 +49,18 @@ def _env_bool(name: str, default: bool) -> bool:
 
 def _env_float(name: str, default: float) -> float:
     v = _env(name, "")
-    return default if v == "" else float(v)
+    try:
+        return default if v == "" else float(v)
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got '{v}' (check the .env file)") from None
 
 
 def _env_int(name: str, default: int) -> int:
     v = _env(name, "")
-    return default if v == "" else int(v)
+    try:
+        return default if v == "" else int(v)
+    except ValueError:
+        raise ValueError(f"{name} must be a whole number, got '{v}' (check the .env file)") from None
 
 
 VALID_MODES = ("CHECK", "PARK", "POST")
