@@ -1,47 +1,24 @@
-Microsoft Windows [Version 10.0.20348.2227]
-(c) Microsoft Corporation. All rights reserved.
-
-C:\Users\ckts00126>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>pip install -r requirements.txt
-Defaulting to user installation because normal site-packages is not writeable
-Requirement already satisfied: robotframework>=7.0 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 1)) (7.2.2)
-Requirement already satisfied: psycopg>=3.1 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]>=3.1->-r requirements.txt (line 2)) (3.2.9)
-Requirement already satisfied: pywin32>=306 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 3)) (310)
-Requirement already satisfied: pytest>=8.0 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 4)) (8.4.1)
-Requirement already satisfied: typing-extensions>=4.6 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg>=3.1->psycopg[binary]>=3.1->-r requirements.txt (line 2)) (4.16.0)
-Requirement already satisfied: tzdata in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg>=3.1->psycopg[binary]>=3.1->-r requirements.txt (line 2)) (2026.3)
-Requirement already satisfied: colorama>=0.4 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (0.4.6)
-Requirement already satisfied: iniconfig>=1 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (2.3.0)
-Requirement already satisfied: packaging>=20 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (26.3)
-Requirement already satisfied: pluggy<2,>=1.5 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (1.6.0)
-Requirement already satisfied: pygments>=2.7.2 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (2.21.0)
-Requirement already satisfied: psycopg-binary==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]>=3.1->-r requirements.txt (line 2)) (3.2.9)
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\run_miro.bat
-The directory name is invalid.
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>cd run_miro.bat
-The directory name is invalid.
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>run_miro.bat
-This program is blocked by group policy. For more information, contact your system administrator.
 ========================================================================================================================
 Miro Posting :: KTFL - MIRO invoice entry robot
 ========================================================================================================================
-Enter Matched Invoices In MIRO                                                                                  | FAIL |
-Parent suite setup failed:
-ValueError: could not convert string to float: '1.00       # GRN rows value vs invoice taxable value (INR)'
+MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui
+Enter Matched Invoices In MIRO                                                                                  1 invoice(s) with status MATCHED waiting for MIRO
+..SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+.=== Invoice AB2627143 | PO 8100007309 | GRN 5000356087 | total 182085.8 ===
+[ WARN ] AB2627143: FAILED - [invoice date] SAP error: For document type RE, an entry is required in field Reference number
+Enter Matched Invoices In MIRO                                                                                  AB2627143 -> FAILED
+Enter Matched Invoices In MIRO                                                                                  | PASS |
 ------------------------------------------------------------------------------------------------------------------------
-MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0
-Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | FAIL |
-Suite setup failed:
-ValueError: could not convert string to float: '1.00       # GRN rows value vs invoice taxable value (INR)'
-
-1 task, 0 passed, 1 failed
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 1 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
 ========================================================================================================================
-Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\output.xml
-Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\log.html
-Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\report.html
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261022_211214\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261022_211214\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261022_211214\report.html
+
+Log: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261022_211214\log.html
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>
