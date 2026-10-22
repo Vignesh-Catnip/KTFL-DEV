@@ -89,6 +89,7 @@ class MiroLibrary:
     @_track
     def connect_to_sap(self):
         self.sap = connect_sap(self.cfg)
+        self.sap.say = self._say
         self.miro = MiroScreen(self.sap, self.cfg)
         logger.info(f"SAP session ready ({self.sap.screen_info()})", also_console=True)
 
@@ -233,6 +234,12 @@ class MiroLibrary:
             self.db.close()
 
     # ================================================================ helpers
+    def _say(self, msg):
+        """Every SAP step: always in log.html; on the console too in watch mode."""
+        logger.info(msg)
+        if self.cfg.step_delay > 0:
+            logger.console(msg)
+
     def _finish(self, inv_id, status, message, doc, sel, detail):
         self.db.finish(inv_id, status, message, doc, sel, detail)
         self._run_stats[status] = self._run_stats.get(status, 0) + 1
