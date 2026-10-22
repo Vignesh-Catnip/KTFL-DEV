@@ -1,84 +1,47 @@
-If Not IsObject(application) Then
-   Set SapGuiAuto  = GetObject("SAPGUI")
-   Set application = SapGuiAuto.GetScriptingEngine
-End If
-If Not IsObject(connection) Then
-   Set connection = application.Children(0)
-End If
-If Not IsObject(session) Then
-   Set session    = connection.Children(0)
-End If
-If IsObject(WScript) Then
-   WScript.ConnectObject session,     "on"
-   WScript.ConnectObject application, "on"
-End If
-session.findById("wnd[0]").maximize
-session.findById("wnd[0]/usr/txtRSYST-BNAME").text = "ATC01021"
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = "********"
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").setFocus
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").caretPosition = 12
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = "********"
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").setFocus
-session.findById("wnd[0]/usr/pwdRSYST-BCODE").caretPosition = 12
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[1]/tbar[0]/btn[0]").press
-session.findById("wnd[0]/tbar[0]/okcd").text = "miro"
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[1]/usr/ctxtBKPF-BUKRS").text = "2000"
-session.findById("wnd[1]/usr/ctxtBKPF-BUKRS").caretPosition = 4
-session.findById("wnd[1]").sendVKey 0
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/ctxtINVFO-BLDAT").text = "04.08.2026"
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/ctxtINVFO-BLDAT").caretPosition = 10
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/txtINVFO-XBLNR").text = "428/26-27"
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/tabsHEADER/tabpHEADER_TOTAL/ssubHEADER_SCREEN:SAPLFDCB:0010/txtINVFO-XBLNR").caretPosition = 9
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").text = "8100007531"
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").setFocus
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subREFERENZBELEG:SAPLMR1M:6211/ctxtRM08M-EBELN").caretPosition = 10
-session.findById("wnd[0]").sendVKey 0
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 3
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 6
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 12
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 15
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 19
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 16
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 1
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6005/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 0
-session.findById("wnd[0]/usr/btnRM08M-HEADER_COLLAPSE").press
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/btnDESELECT_ALL").press
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(0).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(1).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(2).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(3).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(4).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").columns.elementAt(54).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").setFocus
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").caretPosition = 5
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 1
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 2
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 3
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 4
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 5
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 6
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 5
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(6).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(7).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(8).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(9).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").setFocus
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,4]").caretPosition = 4
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 6
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 7
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 8
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 9
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 10
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(10).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").getAbsoluteRow(11).selected = true
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,1]").setFocus
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M/txtDRSEG-RBLGP[0,1]").caretPosition = 4
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 11
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 12
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 13
-session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").verticalScrollbar.position = 14
+Microsoft Windows [Version 10.0.20348.2227]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\ckts00126>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>pip install -r requirements.txt
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: robotframework>=7.0 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 1)) (7.2.2)
+Requirement already satisfied: psycopg>=3.1 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]>=3.1->-r requirements.txt (line 2)) (3.2.9)
+Requirement already satisfied: pywin32>=306 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 3)) (310)
+Requirement already satisfied: pytest>=8.0 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from -r requirements.txt (line 4)) (8.4.1)
+Requirement already satisfied: typing-extensions>=4.6 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg>=3.1->psycopg[binary]>=3.1->-r requirements.txt (line 2)) (4.16.0)
+Requirement already satisfied: tzdata in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg>=3.1->psycopg[binary]>=3.1->-r requirements.txt (line 2)) (2026.3)
+Requirement already satisfied: colorama>=0.4 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (0.4.6)
+Requirement already satisfied: iniconfig>=1 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (2.3.0)
+Requirement already satisfied: packaging>=20 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (26.3)
+Requirement already satisfied: pluggy<2,>=1.5 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from pytest>=8.0->-r requirements.txt (line 4)) (2.21.0)
+Requirement already satisfied: psycopg-binary==3.2.9 in C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages (from psycopg[binary]>=3.1->-r requirements.txt (line 2)) (3.2.9)
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>cd C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\run_miro.bat
+The directory name is invalid.
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>cd run_miro.bat
+The directory name is invalid.
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>run_miro.bat
+This program is blocked by group policy. For more information, contact your system administrator.
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot
+========================================================================================================================
+Enter Matched Invoices In MIRO                                                                                  | FAIL |
+Parent suite setup failed:
+ValueError: could not convert string to float: '1.00       # GRN rows value vs invoice taxable value (INR)'
+------------------------------------------------------------------------------------------------------------------------
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | FAIL |
+Suite setup failed:
+ValueError: could not convert string to float: '1.00       # GRN rows value vs invoice taxable value (INR)'
+
+1 task, 0 passed, 1 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_\report.html
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>
