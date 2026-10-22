@@ -61,6 +61,25 @@ class SapSession:
     def __init__(self, session, cfg: Config):
         self.s = session
         self.cfg = cfg
+        self.say = print                     # replaced by the Robot library (console + log)
+
+    # ------------------------------------------------------------ watch mode
+    def _show(self, el, text: str) -> None:
+        """Print what the robot does; with MIRO_STEP_DELAY > 0 also draw a red frame
+        around the field in SAP and pause, so a person can follow every step."""
+        self.say(f"  > {text}")
+        if self.cfg.step_delay > 0:
+            if el is not None:
+                try:
+                    el.Visualize(True)
+                except Exception:
+                    pass
+            time.sleep(self.cfg.step_delay)
+            if el is not None:
+                try:
+                    el.Visualize(False)
+                except Exception:
+                    pass
 
     # ------------------------------------------------------------ element access
     def find(self, element_id: str, required: bool = True):
@@ -93,6 +112,7 @@ class SapSession:
     def set_field(self, name: str, value: str, container: str = "wnd[0]/usr") -> None:
         el = self.find_name(name, container=container)
         t = getattr(el, "Type", "")
+        self._show(el, f"Type {name} = {value}")
         if t == "GuiComboBox":
             el.Key = str(value)
         elif t == "GuiCheckBox":
@@ -113,21 +133,27 @@ class SapSession:
         el = self.find_name(name, types=("GuiButton",), container=container, required=required)
         if el is None:
             return False
+        self._show(el, f"Press button {name}")
         el.Press()
         self.wait_ready()
         return True
 
     # ------------------------------------------------------------ keys / transactions
     def enter(self, wnd: int = 0) -> None:
+        self._show(None, "Press Enter" + (" (popup)" if wnd else ""))
         self.find(f"wnd[{wnd}]").SendVKey(0)
         self.wait_ready()
 
     def vkey(self, key: int, wnd: int = 0) -> None:
+        names = {11: "Save (Ctrl+S)", 12: "Cancel (F12)", 3: "Back (F3)"}
+        self._show(None, f"Press {names.get(key, f'key {key}')}" + (" (popup)" if wnd else ""))
         self.find(f"wnd[{wnd}]").SendVKey(key)
         self.wait_ready()
 
     def okcode(self, code: str) -> None:
-        self.find("wnd[0]/tbar[0]/okcd").Text = code
+        el = self.find("wnd[0]/tbar[0]/okcd")
+        self._show(el, f"Command field: {code}")
+        el.Text = code
         self.enter()
 
     def wait_ready(self) -> None:
