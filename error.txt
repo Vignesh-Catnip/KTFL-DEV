@@ -13,3 +13,4 @@ If IsObject(WScript) Then
    WScript.ConnectObject application, "on"
 End If
 session.findById("wnd[0]").maximize
+session.findById("wnd[0]/usr/subHEADER_AND_ITEMS:SAPLMR1M:6006/subITEMS:SAPLMR1M:6010/tabsITEMTAB/tabpITEMS_PO/ssubTABS:SAPLMR1M:6020/subITEM:SAPLMR1M:6310/tblSAPLMR1MTC_MR1M").columns.elementAt(54).selected = true
