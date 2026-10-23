@@ -76,6 +76,7 @@ class MiroRow:
     amount: float = 0.0
     quantity: float = 0.0
     text: str = ""
+    hsn: str = ""           # HSN/SAC shown in the MIRO item row (DRSEG-HSN_SAC)
 
 
 @dataclass
@@ -147,6 +148,62 @@ def plan_selection(rows: list, invoice: dict, amount_tolerance: float = 1.0) -> 
             plan.warnings.append(f"Quantity: invoice lines {inv_qty:g} vs GRN rows "
                                  f"{plan.selected_quantity:g} (UoM may differ) - amount matched, continuing")
     return plan
+
+
+# ---------------------------------------------------------------- HSN / SAC
+
+def norm_hsn(v) -> str:
+    return re.sub(r"\D", "", str(v or ""))
+
+
+def plan_hsn(rows: list, invoice: dict, amount_tolerance: float = 1.0) -> tuple[dict, list]:
+    """
+    Expected HSN for every selected MIRO row, from the database.
+    Returns ({row_index: new_hsn} for rows whose HSN must be CHANGED, notes).
+
+    Which DB HSN belongs to a row:
+      1. invoice line with the same PO item (00010 == 10)
+      2. only ONE HSN on the whole invoice (lines + header) -> that one for every row
+      3. exactly one invoice line with the same amount (+- tolerance)
+      otherwise -> MiroDataError (REVIEW): cannot decide safely
+    No HSN at all in the DB -> nothing to check (note only).
+    """
+    lines = [l for l in invoice.get("lines") or []]
+    header = norm_hsn(invoice.get("hsn_sac"))
+    all_hsn = {norm_hsn(l.get("hsn_sac")) for l in lines} | {header}
+    all_hsn.discard("")
+    notes = []
+    if not all_hsn:
+        notes.append("HSN: no HSN/SAC in the database for this invoice - not checked")
+        return {}, notes
+
+    changes = {}
+    for r in rows:
+        want, how = "", ""
+        by_item = [norm_hsn(l.get("hsn_sac")) for l in lines
+                   if norm_doc(l.get("po_item")) and norm_doc(l.get("po_item")) == norm_doc(r.po_item)
+                   and norm_hsn(l.get("hsn_sac"))]
+        if len(set(by_item)) == 1:
+            want, how = by_item[0], f"PO item {r.po_item}"
+        elif len(all_hsn) == 1:
+            want, how = next(iter(all_hsn)), "only HSN on invoice"
+        else:
+            by_amt = [norm_hsn(l.get("hsn_sac")) for l in lines
+                      if norm_hsn(l.get("hsn_sac"))
+                      and abs(float(l.get("amount") or 0) - r.amount) <= amount_tolerance]
+            if len(set(by_amt)) == 1:
+                want, how = by_amt[0], f"amount {r.amount:,.2f}"
+        if not want:
+            raise MiroDataError(f"HSN: invoice has several HSN codes {sorted(all_hsn)} and MIRO row "
+                                f"{r.index + 1} (PO item {r.po_item}, {r.amount:,.2f}) cannot be matched "
+                                f"to one of them")
+        have = norm_hsn(r.hsn)
+        if have == want:
+            notes.append(f"HSN row {r.index + 1}: {have} OK ({how})")
+        else:
+            changes[r.index] = want
+            notes.append(f"HSN row {r.index + 1}: SAP '{r.hsn or '-'}' -> DB {want} ({how}) - will change")
+    return changes, notes
 
 
 # ---------------------------------------------------------------- SAP messages
