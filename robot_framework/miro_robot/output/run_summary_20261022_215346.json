@@ -1,0 +1,9 @@
+{
+  "CHECKED": 1,
+  "PARKED": 0,
+  "POSTED": 0,
+  "REVIEW": 1,
+  "FAILED": 0,
+  "UNKNOWN": 0,
+  "SKIPPED": 0
+}
