@@ -13,6 +13,7 @@ subscreen number changes (6005 expanded / 6006 collapsed header).
 """
 from __future__ import annotations
 
+import re
 import time
 
 from .config import Config
@@ -103,6 +104,7 @@ class MiroScreen:
         self.s = s
         self.cfg = cfg
         self.log: list[str] = []
+        self.collapsed = False
 
     def note(self, msg: str) -> None:
         self.log.append(msg)
@@ -137,6 +139,7 @@ class MiroScreen:
     # ------------------------------------------------------------ start
     def open(self) -> None:
         self.leave()                                          # clean start, discards any half-entered doc
+        self.collapsed = False
         self.s.okcode("/nMIRO")
         if self.s.exists("wnd[1]/usr/ctxtBKPF-BUKRS"):
             self.s.find("wnd[1]/usr/ctxtBKPF-BUKRS").Text = self.cfg.company_code
@@ -155,8 +158,25 @@ class MiroScreen:
             if self.cfg.company_code not in title:
                 raise SapError(f"MIRO is not in company code {self.cfg.company_code}: '{title}'")
 
-    # ------------------------------------------------------------ header
+    # ------------------------------------------------------------ header (Basic data tab)
+    def select_tab(self, tab: str) -> None:
+        """HEADER_TOTAL = Basic data, HEADER_FI = Details."""
+        self.expand_header()
+        el = self.s.find_name(tab, types=("GuiTab",), required=False)
+        if el is None:
+            raise SapError(f"MIRO header tab {tab} not found ({self.s.screen_info()})")
+        self.s._show(el, f"Open tab {'Details' if tab == 'HEADER_FI' else 'Basic data'}")
+        el.Select()
+        self.s.wait_ready()
+
+    def expand_header(self) -> None:
+        if self.collapsed:
+            self.s.press_name("RM08M-HEADER_COLLAPSE")
+            self.collapsed = False
+
     def fill_header(self, inv: dict) -> None:
+        """Basic data: date, reference, (currency), Calculate tax, Business Place, Section, Text.
+        Everything is typed first and Enter is pressed ONCE (SAP checks Reference on every Enter)."""
         c = self.cfg
         date = format_sap_date(inv.get("invoice_date"), c.sap_date_format)
         ref = str(inv.get("invoice_number") or "").strip()
@@ -164,26 +184,35 @@ class MiroScreen:
             raise MiroDataError("Invoice number is empty")
         if len(ref) > 16:
             raise MiroDataError(f"Invoice number '{ref}' longer than 16 characters (SAP Reference)")
+        plant = str(inv.get("plant_code") or "").strip()
+        if c.enter_plant and not plant:
+            raise MiroDataError("Plant code is empty in the database - needed for Business Place / Section")
+        text = ""
+        if c.enter_item_text:
+            for line in inv.get("lines") or []:
+                text = str(line.get("item") or "").strip()
+                if text:
+                    break
+            text = text[:50]                                  # SGTXT is 50 characters
 
-        # All header fields first, ONE Enter at the end: SAP checks "Reference" as a required
-        # field on every Enter (document type RE), so it must be filled before the first Enter.
         self.s.set_field("INVFO-BLDAT", date)
         self.s.set_field("INVFO-XBLNR", ref)
-        if c.enter_amount and float(inv.get("total") or 0) > 0:
-            self.s.set_field("INVFO-WRBTR", format_sap_amount(inv["total"], c.sap_decimal_sep))
         if c.enter_currency and inv.get("currency"):
             self.s.set_field("INVFO-WAERS", str(inv["currency"]).strip())
         if c.enter_tax_code:
             code = str(inv.get("gst_tax_code") or inv.get("sap_tax_code") or "").strip()
-            if not code:
-                raise MiroDataError("GST tax code is empty - cannot calculate tax in MIRO")
-            self.s.set_field("INVFO-MWSKZ", code)
-            if self.s.find_name("INVFO-XMWST", types=("GuiCheckBox",), required=False) is not None:
-                self.s.set_field("INVFO-XMWST", True)
+            if code:
+                self.s.set_field("INVFO-MWSKZ", code)
+        if c.calculate_tax:
+            self.s.set_field("INVFO-XMWST", True)
+        if c.enter_plant:
+            self.s.set_field("INVFO-BUPLA", plant)
+            self.s.set_field("INVFO-SECCO", plant)
+        if text:
+            self.s.set_field("INVFO-SGTXT", text)
         self.s.enter()
         self.handle_messages("header")
-        self.note(f"Header: date {date}, reference {ref}, amount {inv.get('total')}, "
-                  f"tax code {inv.get('gst_tax_code') or '-'}")
+        self.note(f"Header: date {date}, reference {ref}, plant {plant or '-'}, text '{text}'")
 
     # ------------------------------------------------------------ PO
     def enter_po(self, po: str) -> None:
@@ -197,8 +226,109 @@ class MiroScreen:
         self.s.set_field("RM08M-EBELN", po)
         self.s.enter()
         self.handle_messages("purchase order")
-        if self.cfg.collapse_header:
-            self.s.press_name("RM08M-HEADER_COLLAPSE", required=False)
+        if self.cfg.collapse_header and not self.collapsed:
+            if self.s.press_name("RM08M-HEADER_COLLAPSE", required=False):
+                self.collapsed = True
+
+    # ------------------------------------------------------------ amount / balance
+    def enter_amount(self, inv: dict) -> float:
+        """Basic data: Amount = invoice total, Enter, return the MIRO balance."""
+        total = float(inv.get("total") or 0)
+        if total <= 0:
+            raise MiroDataError("Invoice total is 0 / empty in the database")
+        self.select_tab("HEADER_TOTAL")
+        self.s.set_field("INVFO-WRBTR", format_sap_amount(total, self.cfg.sap_decimal_sep))
+        self.s.enter()
+        self.handle_messages("amount")
+        bal = self.balance()
+        if bal is None:
+            raise SapError(f"Balance field {self.cfg.balance_field} not found")
+        self.note(f"Amount {total:,.2f} entered, balance {bal:,.2f}")
+        return bal
+
+    def settle_balance(self, inv: dict, balance: float) -> float:
+        """Balance 0 -> nothing to do. Otherwise Details tab: Doc. Type by plant,
+        Unpl. Del. Csts = balance, Enter, balance must now be 0. Returns the unplanned amount."""
+        c = self.cfg
+        if abs(balance) <= c.balance_tolerance:
+            self.s._show(None, f"Balance {balance:,.2f} = OK, invoice total matches")
+            return 0.0
+        if balance < 0:
+            raise MiroDataError(f"Balance is {balance:,.2f}: selected GRN lines + tax are MORE than the "
+                                f"invoice total - cannot use unplanned delivery costs")
+        if balance > c.max_unplanned_cost:
+            raise MiroDataError(f"Balance {balance:,.2f} is more than MIRO_MAX_UNPLANNED_COST "
+                                f"{c.max_unplanned_cost:,.2f} - not booked as unplanned delivery costs")
+
+        self.s._show(None, f"Balance {balance:,.2f} not zero -> Details tab, Unpl. Del. Csts")
+        self.select_tab("HEADER_FI")
+        self.set_doc_type(inv)
+        self.s.set_field("INVFO-BEZNK", format_sap_amount(balance, c.sap_decimal_sep))
+        self.s.enter()
+        self.handle_messages("unplanned delivery costs")
+        after = self.balance()
+        if after is None or abs(after) > c.balance_tolerance:
+            raise MiroDataError(f"Balance still {after:,.2f} after Unpl. Del. Csts {balance:,.2f} "
+                                f"(tax on delivery costs?) - check manually")
+        self.note(f"Unpl. Del. Csts {balance:,.2f} entered, balance now {after:,.2f}")
+        return balance
+
+    def set_doc_type(self, inv: dict) -> None:
+        """Details tab: Doc. Type from MIRO_DOC_TYPE_BY_PLANT; else an entry whose text contains
+        the plant code; else leave SAP's default."""
+        plant = str(inv.get("plant_code") or "").strip()
+        combo = self.s.find_name("INVFO-BLART", types=("GuiComboBox",), required=False)
+        if combo is None:
+            raise SapError("Doc. Type (INVFO-BLART) not found on Details tab")
+        entries = []
+        try:
+            for i in range(combo.Entries.Count):
+                e = combo.Entries.ElementAt(i)
+                entries.append((str(e.Key).strip(), str(e.Value).strip()))
+        except Exception:
+            pass
+        key = self.cfg.doc_type_for_plant(plant)
+        if not key and plant:
+            hits = [k for k, v in entries if plant in v or plant == k]
+            key = hits[0] if len(hits) == 1 else ""
+        if not key:
+            self.note(f"Doc. Type: no mapping for plant {plant} - kept '{combo.Value}'. "
+                      f"Available: {entries}")
+            self.s._show(combo, f"Doc. Type kept '{combo.Value}' (no mapping for plant {plant})")
+            return
+        if entries and key not in [k for k, _ in entries]:
+            raise SapError(f"Doc. Type '{key}' (plant {plant}) is not in the list: {entries}")
+        self.s.set_field("INVFO-BLART", key)
+        self.note(f"Doc. Type {key} for plant {plant}")
+
+    # ------------------------------------------------------------ simulate
+    def simulate(self) -> str:
+        """Press Simulate, read the result, close the simulation window. Raises on SAP errors."""
+        btn = self.s.find(self.cfg.simulate_button, required=False)
+        if btn is None:
+            raise SapError(f"Simulate button {self.cfg.simulate_button} not found")
+        self.s._show(btn, "Press Simulate")
+        btn.Press()
+        self.s.wait_ready()
+        info = ""
+        for _ in range(4):
+            if not self.s.popup_open():
+                break
+            ptxt = self.s.popup_text()
+            info = info or ptxt
+            self.note(f"[simulate] window: {ptxt}")
+            if self.cfg.step_delay > 0:
+                import time as _t
+                _t.sleep(self.cfg.step_delay * 2)              # let the person look at it
+            self.s.vkey(12, wnd=1)                             # close simulation (Cancel/Back)
+        if self.s.popup_open():
+            raise SapError("Simulation window did not close")
+        mt, txt = self.s.status()
+        if mt in ("E", "A"):
+            raise SapError(f"[simulate] SAP error: {txt}")
+        if txt:
+            self.note(f"[simulate] {mt}: {txt}")
+        return info or txt
 
     # ------------------------------------------------------------ item table
     def _table(self):
@@ -268,6 +398,7 @@ class MiroScreen:
         i_amt = self._col(cols, c.col_amount, "AMOUNT")
         i_qty = self._col(cols, c.col_quantity, "QUANTITY", required=False)
         i_txt = self._col(cols, c.col_item_text, "SHORT TEXT", required=False)
+        i_hsn = self._col(cols, c.col_hsn, "HSN", required=False)
 
         total = int(table.RowCount)
         visible = max(1, int(table.VisibleRowCount))
@@ -286,7 +417,8 @@ class MiroScreen:
                     ref_doc=self._cell(table, r, i_ref),
                     amount=parse_sap_number(self._cell(table, r, i_amt), c.sap_decimal_sep),
                     quantity=parse_sap_number(self._cell(table, r, i_qty), c.sap_decimal_sep),
-                    text=self._cell(table, r, i_txt))
+                    text=self._cell(table, r, i_txt),
+                    hsn=self._cell(table, r, i_hsn))
                 if row.po or row.ref_doc or row.amount:
                     rows[idx] = row
             start = pos + visible
@@ -311,6 +443,41 @@ class MiroScreen:
         if sorted(got) != sorted(indexes):
             raise SapError(f"Row selection mismatch: wanted {sorted(i + 1 for i in indexes)}, "
                            f"SAP has {sorted(i + 1 for i in got)}")
+
+    def update_hsn(self, changes: dict) -> None:
+        """Type the DB HSN into the HSN/SAC cell of the given rows, Enter, then read back."""
+        if not changes:
+            return
+        table, _ = self._scroll_to(0)
+        col = self._col(self._columns(table), self.cfg.col_hsn, "HSN")
+        for idx in sorted(changes):
+            table, pos = self._scroll_to(idx)
+            r = idx - pos
+            try:
+                cell = table.GetCell(r, col)
+            except Exception:
+                table.HorizontalScrollbar.Position = col            # column far to the right
+                self.s.wait_ready()
+                table = self._table()
+                cell = table.GetCell(r, col)
+            self.s._show(cell, f"Row {idx + 1}: HSN '{str(cell.Text).strip()}' -> {changes[idx]}")
+            try:
+                cell.Text = changes[idx]
+            except Exception as e:
+                raise SapError(f"HSN cell of row {idx + 1} cannot be changed (read-only?): {e}")
+        try:
+            table.HorizontalScrollbar.Position = 0
+        except Exception:
+            pass
+        self._scroll_to(0)
+        self.s.enter()
+        self.handle_messages("HSN change")
+        got = {r.index: r.hsn for r in self.read_rows()}
+        wrong = {i: got.get(i) for i, v in changes.items()
+                 if re.sub(r"\D", "", str(got.get(i) or "")) != v}
+        if wrong:
+            raise SapError(f"HSN not taken by SAP for rows {[i + 1 for i in wrong]}: {wrong}")
+        self.note(f"HSN changed: { {i + 1: v for i, v in changes.items()} }")
 
     def selected_indexes(self) -> list[int]:
         table, _ = self._scroll_to(0)
