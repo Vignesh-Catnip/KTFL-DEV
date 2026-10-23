@@ -20,7 +20,7 @@ from robot.api.deco import keyword, library        # noqa: E402
 
 from miro.config import load_config                # noqa: E402
 from miro.db import MiroDb                         # noqa: E402
-from miro.matching import MiroDataError, plan_selection   # noqa: E402
+from miro.matching import MiroDataError, plan_hsn, plan_selection   # noqa: E402
 from miro.miro_screen import MiroScreen, connect_sap       # noqa: E402
 from miro.sapgui import SapError                   # noqa: E402
 
@@ -98,6 +98,7 @@ class MiroLibrary:
     def claim(self, invoice):
         self._error_kind = ""
         self._plan = None
+        self._unplanned = 0.0
         if self.miro:
             self.miro.log = []
         ok = self.db.claim(int(invoice["id"]), self.cfg.mode, self.cfg.max_attempts)
@@ -131,7 +132,9 @@ class MiroLibrary:
         """Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
         checks them against the invoice from the DB, then ticks exactly those rows."""
         rows = self.miro.read_rows()
-        plan = plan_selection(rows, invoice, self.cfg.amount_tolerance)
+        # GRN value may differ from the invoice taxable value by freight etc. that is later
+        # booked as unplanned delivery costs -> allow that much difference here
+        plan = plan_selection(rows, invoice, self.cfg.amount_tolerance + self.cfg.max_unplanned_cost)
         for w in plan.warnings:
             logger.warn(f"{invoice['invoice_number']}: {w}")
             self.miro.note(w)
@@ -145,21 +148,45 @@ class MiroLibrary:
         self.miro.note(msg)
         logger.info(msg, also_console=True)
 
-    @keyword("Verify Balance")
+    @keyword("Check And Fix HSN")
     @_track
-    def verify_balance(self, invoice):
-        bal = self.miro.balance()
-        if bal is None:
-            if self.cfg.mode == "CHECK":
-                logger.warn("Balance field not found - cannot verify (CHECK mode, continuing)")
-                return
-            raise SapError(f"Balance field {self.cfg.balance_field} not found - will not save "
-                           f"without a verified balance")
-        self.miro.note(f"MIRO balance: {bal:,.2f}")
-        if abs(bal) > self.cfg.balance_tolerance:
-            raise MiroDataError(f"MIRO balance is {bal:,.2f} (not zero) after selecting GRN "
-                                f"{invoice['grn_number']} lines - check amount / tax code")
-        logger.info(f"Balance OK ({bal:,.2f})", also_console=True)
+    def check_hsn(self, invoice):
+        """HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+        different -> the cell is overwritten with the DB value."""
+        if not self.cfg.check_hsn or not self._plan:
+            return
+        rows = {r.index: r for r in self.miro.read_rows()}
+        selected = [rows[r.index] for r in self._plan.rows if r.index in rows]
+        changes, notes = plan_hsn(selected, invoice, self.cfg.amount_tolerance)
+        for n in notes:
+            self.miro.note(n)
+            logger.info(n, also_console=True)
+        self.miro.update_hsn(changes)
+        if changes:
+            logger.info(f"HSN corrected on {len(changes)} row(s)", also_console=True)
+
+    @keyword("Enter Amount And Settle Balance")
+    @_track
+    def amount_and_balance(self, invoice):
+        """Amount = invoice total. Balance 0 -> OK. Balance > 0 (up to MIRO_MAX_UNPLANNED_COST) ->
+        Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
+        bal = self.miro.enter_amount(invoice)
+        logger.info(f"Balance after amount: {bal:,.2f}", also_console=True)
+        unpl = self.miro.settle_balance(invoice, bal)
+        self._unplanned = unpl
+        if unpl:
+            logger.info(f"Unpl. Del. Csts {unpl:,.2f} entered - balance 0", also_console=True)
+        else:
+            logger.info("Balance OK (0.00)", also_console=True)
+
+    @keyword("Simulate Invoice")
+    @_track
+    def simulate(self, invoice):
+        if not self.cfg.simulate:
+            return
+        info = self.miro.simulate()
+        self._screenshot(invoice, "simulated")
+        logger.info(f"Simulate OK {('- ' + info) if info else ''}", also_console=True)
 
     @keyword("Complete Invoice")
     @_track
@@ -169,7 +196,8 @@ class MiroLibrary:
         shot = self._screenshot(invoice, "before_save")
         sel = ",".join(str(r.index + 1) for r in (self._plan.rows if self._plan else []))
         detail = {"mode": self.cfg.mode, "screenshot": shot, "sap_log": self.miro.log,
-                  "selected_amount": self._plan.selected_amount if self._plan else None}
+                  "selected_amount": self._plan.selected_amount if self._plan else None,
+                  "unplanned_delivery_costs": getattr(self, "_unplanned", 0.0)}
 
         if self.cfg.mode == "CHECK":
             self.miro.leave()
