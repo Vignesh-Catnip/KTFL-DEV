@@ -65,6 +65,11 @@ class MiroLibrary:
         logger.info(f"MIRO mode: {self.cfg.mode} | company code {self.cfg.company_code} | "
                     f"source status {self.cfg.source_status} | SAP backend {self.cfg.sap_backend}",
                     also_console=True)
+        c = self.cfg
+        logger.info(f"Tax code entry: {'ON (invoices.tax_code)' if c.enter_tax_code else 'OFF  <-- set MIRO_ENTER_TAX_CODE=true in .env'}"
+                    f" | Calculate tax: {'ON' if c.calculate_tax else 'OFF'}"
+                    f" | HSN check: {'ON' if c.check_hsn else 'OFF'}"
+                    f" | step delay: {c.step_delay}s", also_console=True)
         if self.cfg.mode == "POST":
             logger.warn("MIRO_MODE=POST - invoices WILL be posted in SAP")
 
@@ -125,6 +130,11 @@ class MiroLibrary:
     @_track
     def enter_po(self, invoice):
         self.miro.enter_po(invoice["po_number"])
+
+    @keyword("Enter Tax And Business Place")
+    @_track
+    def enter_tax_and_plant(self, invoice):
+        self.miro.fill_tax_and_plant(invoice)
 
     @keyword("Select GRN Lines")
     @_track
