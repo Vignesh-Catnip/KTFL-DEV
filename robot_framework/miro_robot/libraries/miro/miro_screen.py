@@ -195,8 +195,7 @@ class MiroScreen:
             self.collapsed = False
 
     def fill_header(self, inv: dict) -> None:
-        """Basic data: date, reference, (currency), Calculate tax, Business Place, Section, Text.
-        Everything is typed first and Enter is pressed ONCE (SAP checks Reference on every Enter)."""
+        """Basic data part 1 (before the PO): date, reference, currency -> Enter."""
         c = self.cfg
         date = format_sap_date(inv.get("invoice_date"), c.sap_date_format)
         ref = str(inv.get("invoice_number") or "").strip()
@@ -204,10 +203,27 @@ class MiroScreen:
             raise MiroDataError("Invoice number is empty")
         if len(ref) > 16:
             raise MiroDataError(f"Invoice number '{ref}' longer than 16 characters (SAP Reference)")
-        plant = business_place(inv)
-        if c.enter_plant and not plant:
+        # check DB data now, so a bad invoice stops before anything is typed
+        if c.enter_plant and not business_place(inv):
             raise MiroDataError("business_place / plant_code is empty in the database - "
                                 "needed for Business Place / Section")
+        if c.enter_tax_code and not tax_code(inv):
+            raise MiroDataError("tax_code is empty in the database (invoices.tax_code)")
+
+        self.s.set_field("INVFO-BLDAT", date)
+        self.s.set_field("INVFO-XBLNR", ref)
+        if c.enter_currency and inv.get("currency"):
+            self.s.set_field("INVFO-WAERS", str(inv["currency"]).strip())
+        self.s.enter()
+        self.handle_messages("header")
+        self.note(f"Header: date {date}, reference {ref}")
+
+    def fill_tax_and_plant(self, inv: dict) -> None:
+        """Basic data part 2 - AFTER the PO is entered (SAP overwrites the header tax code with
+        the PO default, e.g. I0, when the PO is loaded). Same order as the SAP recording:
+        Calculate tax, Tax code, Business Place, Section, Text -> Enter -> tax code verified."""
+        c = self.cfg
+        plant = business_place(inv)
         text = ""
         if c.enter_item_text:
             for line in inv.get("lines") or []:
@@ -216,17 +232,11 @@ class MiroScreen:
                     break
             text = text[:50]                                  # SGTXT is 50 characters
 
-        self.s.set_field("INVFO-BLDAT", date)
-        self.s.set_field("INVFO-XBLNR", ref)
-        if c.enter_currency and inv.get("currency"):
-            self.s.set_field("INVFO-WAERS", str(inv["currency"]).strip())
+        self.select_tab("HEADER_TOTAL")
         if c.calculate_tax:
             self.s.set_field("INVFO-XMWST", True)
-        tax = ""
-        if c.enter_tax_code:
-            tax = tax_code(inv)
-            if not tax:
-                raise MiroDataError("tax_code is empty in the database (invoices.tax_code)")
+        tax = tax_code(inv) if c.enter_tax_code else ""
+        if tax:
             self.set_tax_code(tax)
         if c.enter_plant:
             self.s.set_field("INVFO-BUPLA", plant)
@@ -234,9 +244,29 @@ class MiroScreen:
         if text:
             self.s.set_field("INVFO-SGTXT", text)
         self.s.enter()
-        self.handle_messages("header")
-        self.note(f"Header: date {date}, reference {ref}, tax {tax or '-'}, plant {plant or '-'}, "
-                  f"text '{text}'")
+        self.handle_messages("tax / business place")
+        if tax:
+            self.ensure_tax_code(tax)
+        self.note(f"Tax code {tax or '-'}, business place {plant or '-'}, text '{text}'")
+        if c.collapse_header and not self.collapsed:
+            if self.s.press_name("RM08M-HEADER_COLLAPSE", required=False):
+                self.collapsed = True
+
+    def ensure_tax_code(self, code: str) -> None:
+        """After an Enter SAP may put the PO default tax code back - set it again once."""
+        self.select_tab("HEADER_TOTAL")
+        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+        got = str(getattr(combo, "Key", "") or "").strip().upper()
+        if got == code:
+            return
+        self.note(f"Tax code changed by SAP to '{got}' - setting {code} again")
+        self.set_tax_code(code)
+        self.s.enter()
+        self.handle_messages("tax code")
+        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+        got = str(getattr(combo, "Key", "") or "").strip().upper()
+        if got != code:
+            raise SapError(f"SAP keeps tax code '{got}' instead of '{code}'")
 
     def set_tax_code(self, code: str) -> None:
         """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
@@ -255,6 +285,13 @@ class MiroScreen:
             self.s.set_field("INVFO-MWSKZ", code)
         except Exception as e:
             raise SapError(f"Could not set tax code '{code}': {e}")
+        self.s.wait_ready()
+        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+        got = str(getattr(combo, "Key", "") or getattr(combo, "Text", "") or "").strip().upper()
+        if got != code:
+            raise SapError(f"Tax code not taken by SAP: wanted '{code}', field shows '{got}'. "
+                           f"List: {entries}")
+        self.s._show(combo, f"Tax code OK: {code}")
 
     # ------------------------------------------------------------ PO
     def enter_po(self, po: str) -> None:
@@ -268,9 +305,6 @@ class MiroScreen:
         self.s.set_field("RM08M-EBELN", po)
         self.s.enter()
         self.handle_messages("purchase order")
-        if self.cfg.collapse_header and not self.collapsed:
-            if self.s.press_name("RM08M-HEADER_COLLAPSE", required=False):
-                self.collapsed = True
 
     # ------------------------------------------------------------ amount / balance
     def enter_amount(self, inv: dict) -> float:
@@ -282,6 +316,8 @@ class MiroScreen:
         self.s.set_field("INVFO-WRBTR", format_sap_amount(total, self.cfg.sap_decimal_sep))
         self.s.enter()
         self.handle_messages("amount")
+        if self.cfg.enter_tax_code and tax_code(inv):
+            self.ensure_tax_code(tax_code(inv))
         bal = self.balance()
         if bal is None:
             raise SapError(f"Balance field {self.cfg.balance_field} not found")
