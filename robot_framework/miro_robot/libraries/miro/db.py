@@ -67,7 +67,7 @@ class MiroDb:
         if mode == "CHECK":
             sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac,
+                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
@@ -83,7 +83,7 @@ class MiroDb:
         redo = ["FAILED"]                    # CHECKED is re-picked only when mode is PARK/POST
         sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac,
+                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
