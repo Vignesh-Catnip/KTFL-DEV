@@ -103,7 +103,7 @@ class Config:
     mode: str = "CHECK"
     collapse_header: bool = True
     enter_amount: bool = True             # type the invoice gross total in the header
-    enter_tax_code: bool = False          # type a header tax code (normally taken from the PO items)
+    enter_tax_code: bool = True           # Basic data Tax code = invoices.gst_tax_code (e.g. I3)
     calculate_tax: bool = True            # tick "Calculate tax" on Basic data
     enter_plant: bool = True              # Business Place + Section = invoices.plant_code
     enter_item_text: bool = True          # Text = first invoice line item
