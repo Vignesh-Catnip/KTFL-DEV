@@ -104,6 +104,7 @@ class MiroLibrary:
         self._error_kind = ""
         self._plan = None
         self._unplanned = 0.0
+        self._sel_txt = ""
         if self.miro:
             self.miro.log = []
         ok = self.db.claim(int(invoice["id"]), self.cfg.mode, self.cfg.max_attempts)
@@ -149,6 +150,12 @@ class MiroLibrary:
             logger.warn(f"{invoice['invoice_number']}: {w}")
             self.miro.note(w)
         self.miro.select_rows(plan.indexes)
+        self._sel_txt = ",".join(str(i + 1) for i in plan.indexes)   # original row numbers
+        if self.cfg.refresh_items:
+            old_rows = [r.index + 1 for r in plan.rows]
+            plan.rows = self.miro.refresh_items(plan.rows)          # new row numbers after Refresh
+            logger.info(f"Refresh: rows {old_rows} kept, other rows removed -> now rows "
+                        f"{[r.index + 1 for r in plan.rows]}", also_console=True)
         self._plan = plan
         msg = (f"Selected {len(plan.rows)} row(s) {[r.index + 1 for r in plan.rows]} for GRN "
                f"{invoice['grn_number']} = {plan.selected_amount:,.2f} "
@@ -204,7 +211,7 @@ class MiroLibrary:
         """CHECK -> leave without saving | PARK -> park | POST -> post. Records the result."""
         inv_id = int(invoice["id"])
         shot = self._screenshot(invoice, "before_save")
-        sel = ",".join(str(r.index + 1) for r in (self._plan.rows if self._plan else []))
+        sel = getattr(self, "_sel_txt", "")
         detail = {"mode": self.cfg.mode, "screenshot": shot, "sap_log": self.miro.log,
                   "selected_amount": self._plan.selected_amount if self._plan else None,
                   "unplanned_delivery_costs": getattr(self, "_unplanned", 0.0)}
