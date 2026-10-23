@@ -126,6 +126,7 @@ class Config:
     col_item_text: str = "DRSEG-TXZ01"
     col_hsn: str = "DRSEG-HSN_SAC"                  # HSN/SAC column in the item table
     check_hsn: bool = True                          # compare + correct HSN of the selected rows
+    refresh_items: bool = True                      # press Refresh: drop the not-selected rows
     balance_field: str = "RM08M-DIFFERENZ"          # MIRO "Balance" field
     park_menu: str = "Invoice document>Park"        # menu path used in PARK mode
 
@@ -214,6 +215,7 @@ def load_config() -> Config:
         col_item_text=_env("MIRO_COL_ITEM_TEXT", Config.col_item_text),
         col_hsn=_env("MIRO_COL_HSN", Config.col_hsn),
         check_hsn=_env_bool("MIRO_CHECK_HSN", Config.check_hsn),
+        refresh_items=_env_bool("MIRO_REFRESH_ITEMS", Config.refresh_items),
         balance_field=_env("MIRO_BALANCE_FIELD", Config.balance_field),
         park_menu=_env("MIRO_PARK_MENU", Config.park_menu),
         wait_timeout=_env_float("MIRO_WAIT_TIMEOUT", Config.wait_timeout),
