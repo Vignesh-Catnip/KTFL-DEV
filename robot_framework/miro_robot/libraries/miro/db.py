@@ -67,7 +67,7 @@ class MiroDb:
         if mode == "CHECK":
             sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code,
+                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac,
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
@@ -83,7 +83,7 @@ class MiroDb:
         redo = ["FAILED"]                    # CHECKED is re-picked only when mode is PARK/POST
         sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code,
+                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac,
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
@@ -101,7 +101,7 @@ class MiroDb:
 
     def invoice_lines(self, invoice_id: int) -> list[dict]:
         with self._cur() as cur:
-            cur.execute("""SELECT item, quantity, rate, amount, uom, source
+            cur.execute("""SELECT item, quantity, rate, amount, uom, source, hsn_sac, po_item
                              FROM invoice_lines WHERE invoice_id = %s ORDER BY id""", (invoice_id,))
             rows = cur.fetchall()
         self.conn.commit()
