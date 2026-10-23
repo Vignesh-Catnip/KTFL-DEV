@@ -97,6 +97,26 @@ def logon(s: SapSession, cfg: Config) -> None:
         raise SapError(f"SAP logon not completed ({txt or 'still on logon screen'})")
 
 
+# ======================================================================= DB fields
+
+def tax_code(inv: dict) -> str:
+    """invoices.tax_code (e.g. I3); older rows: gst_tax_code / sap_tax_code."""
+    for k in ("tax_code", "gst_tax_code", "sap_tax_code"):
+        v = str(inv.get(k) or "").strip().upper()
+        if v:
+            return v
+    return ""
+
+
+def business_place(inv: dict) -> str:
+    """invoices.business_place (e.g. 2002); fallback plant_code."""
+    for k in ("business_place", "plant_code"):
+        v = str(inv.get(k) or "").strip()
+        if v:
+            return v
+    return ""
+
+
 # ======================================================================= MIRO
 
 class MiroScreen:
@@ -184,9 +204,10 @@ class MiroScreen:
             raise MiroDataError("Invoice number is empty")
         if len(ref) > 16:
             raise MiroDataError(f"Invoice number '{ref}' longer than 16 characters (SAP Reference)")
-        plant = str(inv.get("plant_code") or "").strip()
+        plant = business_place(inv)
         if c.enter_plant and not plant:
-            raise MiroDataError("Plant code is empty in the database - needed for Business Place / Section")
+            raise MiroDataError("business_place / plant_code is empty in the database - "
+                                "needed for Business Place / Section")
         text = ""
         if c.enter_item_text:
             for line in inv.get("lines") or []:
@@ -199,12 +220,14 @@ class MiroScreen:
         self.s.set_field("INVFO-XBLNR", ref)
         if c.enter_currency and inv.get("currency"):
             self.s.set_field("INVFO-WAERS", str(inv["currency"]).strip())
-        if c.enter_tax_code:
-            code = str(inv.get("gst_tax_code") or inv.get("sap_tax_code") or "").strip()
-            if code:
-                self.s.set_field("INVFO-MWSKZ", code)
         if c.calculate_tax:
             self.s.set_field("INVFO-XMWST", True)
+        tax = ""
+        if c.enter_tax_code:
+            tax = tax_code(inv)
+            if not tax:
+                raise MiroDataError("tax_code is empty in the database (invoices.tax_code)")
+            self.set_tax_code(tax)
         if c.enter_plant:
             self.s.set_field("INVFO-BUPLA", plant)
             self.s.set_field("INVFO-SECCO", plant)
@@ -212,7 +235,26 @@ class MiroScreen:
             self.s.set_field("INVFO-SGTXT", text)
         self.s.enter()
         self.handle_messages("header")
-        self.note(f"Header: date {date}, reference {ref}, plant {plant or '-'}, text '{text}'")
+        self.note(f"Header: date {date}, reference {ref}, tax {tax or '-'}, plant {plant or '-'}, "
+                  f"text '{text}'")
+
+    def set_tax_code(self, code: str) -> None:
+        """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
+        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+        entries = []
+        try:
+            for i in range(combo.Entries.Count):
+                e = combo.Entries.ElementAt(i)
+                entries.append(str(e.Key).strip())
+        except Exception:
+            pass
+        if entries and code not in entries:
+            raise MiroDataError(f"Tax code '{code}' from the database is not in the MIRO tax code list "
+                                f"{entries}")
+        try:
+            self.s.set_field("INVFO-MWSKZ", code)
+        except Exception as e:
+            raise SapError(f"Could not set tax code '{code}': {e}")
 
     # ------------------------------------------------------------ PO
     def enter_po(self, po: str) -> None:
@@ -276,7 +318,7 @@ class MiroScreen:
     def set_doc_type(self, inv: dict) -> None:
         """Details tab: Doc. Type from MIRO_DOC_TYPE_BY_PLANT; else an entry whose text contains
         the plant code; else leave SAP's default."""
-        plant = str(inv.get("plant_code") or "").strip()
+        plant = business_place(inv)
         combo = self.s.find_name("INVFO-BLART", types=("GuiComboBox",), required=False)
         if combo is None:
             raise SapError("Doc. Type (INVFO-BLART) not found on Details tab")
