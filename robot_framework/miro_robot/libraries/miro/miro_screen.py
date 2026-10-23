@@ -522,6 +522,29 @@ class MiroScreen:
             raise SapError(f"Row selection mismatch: wanted {sorted(i + 1 for i in indexes)}, "
                            f"SAP has {sorted(i + 1 for i in got)}")
 
+    def refresh_items(self, plan_rows: list) -> list[MiroRow]:
+        """Press Refresh in the item list: SAP drops every NOT selected row. Then read the table
+        again and make sure exactly the GRN rows are left (same count, GRN, amount) and selected.
+        Returns the rows with their NEW row numbers."""
+        if not self.s.press_name("REFRESH", required=False):
+            raise SapError("Refresh button (btnREFRESH) not found in MIRO item list")
+        self.handle_messages("refresh items")
+        rows = self.read_rows()
+        want_grn = {r.ref_doc.strip().lstrip("0") for r in plan_rows}
+        got_grn = {r.ref_doc.strip().lstrip("0") for r in rows}
+        want_amt = round(sum(r.amount for r in plan_rows), 2)
+        got_amt = round(sum(r.amount for r in rows), 2)
+        if len(rows) != len(plan_rows) or got_grn != want_grn or abs(got_amt - want_amt) > 0.01:
+            raise SapError(f"After Refresh the item list is not as expected: {len(rows)} rows, "
+                           f"GRN {sorted(got_grn)}, {got_amt:,.2f} (expected {len(plan_rows)} rows, "
+                           f"GRN {sorted(want_grn)}, {want_amt:,.2f})")
+        sel = self.selected_indexes()
+        if sel != [r.index for r in rows]:
+            self.note(f"After Refresh selected rows {[i + 1 for i in sel]} - selecting all again")
+            self.select_rows([r.index for r in rows])
+        self.note(f"Refresh: {len(rows)} GRN row(s) left in the item list")
+        return rows
+
     def update_hsn(self, changes: dict) -> None:
         """Type the DB HSN into the HSN/SAC cell of the given rows, Enter, then read back."""
         if not changes:
