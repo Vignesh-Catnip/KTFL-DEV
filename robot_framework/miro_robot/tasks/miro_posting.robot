@@ -2,10 +2,14 @@
 Documentation       KTFL - MIRO invoice entry robot
 ...
 ...                 Picks invoices with status = MATCHED from PostgreSQL (written by the
-...                 invoice extractor), opens MIRO, types invoice date / invoice number /
-...                 amount / tax code, enters the PO, then ticks ONLY the item rows whose
-...                 "Reference Document" equals the invoice GRN number. Selected GR value and
-...                 MIRO balance are checked before anything is saved.
+...                 invoice extractor) and enters them in MIRO:
+...                 1. Basic data: date, reference, Calculate tax, Business Place + Section
+...                    (plant code), Text (first line item)
+...                 2. PO -> tick ONLY rows whose "Reference Document" = invoice GRN
+...                    -> HSN/SAC of those rows = DB HSN (changed in the cell if different)
+...                 3. Amount = invoice total -> balance 0? else Details tab: Doc. Type by
+...                    plant, Unpl. Del. Csts = balance
+...                 4. Simulate -> CHECK: exit | PARK: park | POST: post
 ...
 ...                 MIRO_MODE = CHECK (default, nothing saved) | PARK | POST
 ...                 Run:  run_miro.bat      or      robot --outputdir output tasks\\miro_posting.robot
@@ -48,7 +52,9 @@ Process One Invoice
         Enter Invoice Header    ${invoice}
         Enter Purchase Order    ${invoice}
         Select GRN Lines    ${invoice}
-        Verify Balance    ${invoice}
+        Check And Fix HSN    ${invoice}
+        Enter Amount And Settle Balance    ${invoice}
+        Simulate Invoice    ${invoice}
         ${result}=    Complete Invoice    ${invoice}
         Log    ${invoice}[invoice_number] -> ${result}    console=True
     EXCEPT    AS    ${error}
