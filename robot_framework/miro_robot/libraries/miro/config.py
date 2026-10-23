@@ -103,7 +103,15 @@ class Config:
     mode: str = "CHECK"
     collapse_header: bool = True
     enter_amount: bool = True             # type the invoice gross total in the header
-    enter_tax_code: bool = True           # type the GST tax code + tick "Calculate tax"
+    enter_tax_code: bool = False          # type a header tax code (normally taken from the PO items)
+    calculate_tax: bool = True            # tick "Calculate tax" on Basic data
+    enter_plant: bool = True              # Business Place + Section = invoices.plant_code
+    enter_item_text: bool = True          # Text = first invoice line item
+    max_unplanned_cost: float = 1000.00   # max balance moved to "Unpl. Del. Csts" automatically
+    doc_type_by_plant: str = ""           # "2002=RE,2001=RJ" - Doc. Type per plant (Details tab)
+    doc_type_default: str = ""            # Doc. Type key when the plant has no mapping ("" = leave SAP default)
+    simulate: bool = True                 # press Simulate before park / post / exit
+    simulate_button: str = "wnd[0]/tbar[1]/btn[43]"
     enter_currency: bool = True
     amount_tolerance: float = 1.00        # selected GR value vs invoice taxable value (INR)
     balance_tolerance: float = 0.00       # MIRO balance must be within this to park/post
@@ -116,6 +124,8 @@ class Config:
     col_amount: str = "DRSEG-WRBTR"
     col_quantity: str = "DRSEG-MENGE"
     col_item_text: str = "DRSEG-TXZ01"
+    col_hsn: str = "DRSEG-HSN_SAC"                  # HSN/SAC column in the item table
+    check_hsn: bool = True                          # compare + correct HSN of the selected rows
     balance_field: str = "RM08M-DIFFERENZ"          # MIRO "Balance" field
     park_menu: str = "Invoice document>Park"        # menu path used in PARK mode
 
@@ -134,10 +144,22 @@ class Config:
             raise ValueError("SAP_DECIMAL_SEP must be '.' or ','")
         if not self.pg_password:
             raise ValueError("PG_PASSWORD is not set (environment variable / .env)")
+        if self.max_unplanned_cost < 0:
+            raise ValueError("MIRO_MAX_UNPLANNED_COST cannot be negative")
         if self.sap_backend not in ("gui", "fake"):
             raise ValueError("MIRO_SAP_BACKEND must be 'gui' or 'fake'")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         (self.output_dir / "screenshots").mkdir(parents=True, exist_ok=True)
+
+    def doc_type_for_plant(self, plant: str) -> str:
+        """MIRO_DOC_TYPE_BY_PLANT=2002=RE,2001=RJ  ->  '2002' -> 'RE'."""
+        plant = str(plant or "").strip()
+        for pair in self.doc_type_by_plant.replace(";", ",").split(","):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                if k.strip() == plant:
+                    return v.strip()
+        return self.doc_type_default
 
     @property
     def pg_conninfo(self) -> str:
@@ -172,6 +194,14 @@ def load_config() -> Config:
         collapse_header=_env_bool("MIRO_COLLAPSE_HEADER", Config.collapse_header),
         enter_amount=_env_bool("MIRO_ENTER_AMOUNT", Config.enter_amount),
         enter_tax_code=_env_bool("MIRO_ENTER_TAX_CODE", Config.enter_tax_code),
+        calculate_tax=_env_bool("MIRO_CALCULATE_TAX", Config.calculate_tax),
+        enter_plant=_env_bool("MIRO_ENTER_PLANT", Config.enter_plant),
+        enter_item_text=_env_bool("MIRO_ENTER_ITEM_TEXT", Config.enter_item_text),
+        max_unplanned_cost=_env_float("MIRO_MAX_UNPLANNED_COST", Config.max_unplanned_cost),
+        doc_type_by_plant=_env("MIRO_DOC_TYPE_BY_PLANT", ""),
+        doc_type_default=_env("MIRO_DOC_TYPE_DEFAULT", ""),
+        simulate=_env_bool("MIRO_SIMULATE", Config.simulate),
+        simulate_button=_env("MIRO_SIMULATE_BUTTON", Config.simulate_button),
         enter_currency=_env_bool("MIRO_ENTER_CURRENCY", Config.enter_currency),
         amount_tolerance=_env_float("MIRO_AMOUNT_TOLERANCE", Config.amount_tolerance),
         balance_tolerance=_env_float("MIRO_BALANCE_TOLERANCE", Config.balance_tolerance),
@@ -182,6 +212,8 @@ def load_config() -> Config:
         col_amount=_env("MIRO_COL_AMOUNT", Config.col_amount),
         col_quantity=_env("MIRO_COL_QUANTITY", Config.col_quantity),
         col_item_text=_env("MIRO_COL_ITEM_TEXT", Config.col_item_text),
+        col_hsn=_env("MIRO_COL_HSN", Config.col_hsn),
+        check_hsn=_env_bool("MIRO_CHECK_HSN", Config.check_hsn),
         balance_field=_env("MIRO_BALANCE_FIELD", Config.balance_field),
         park_menu=_env("MIRO_PARK_MENU", Config.park_menu),
         wait_timeout=_env_float("MIRO_WAIT_TIMEOUT", Config.wait_timeout),
