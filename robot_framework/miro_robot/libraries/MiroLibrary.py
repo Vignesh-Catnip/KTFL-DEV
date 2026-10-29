@@ -185,16 +185,15 @@ class MiroLibrary:
     @keyword("Enter Amount And Settle Balance")
     @_track
     def amount_and_balance(self, invoice):
-        """Amount = invoice total. Balance 0 -> OK. Balance > 0 (up to MIRO_MAX_UNPLANNED_COST) ->
-        Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
-        self.miro.fill_details(invoice)          # Details tab, always: Doc. Type of the plant (invoices.doc_type_desc)
-        logger.info(f"Doc. Type set: {invoice.get('doc_type') or '-'} {invoice.get('doc_type_desc') or ''}".strip(),
-                    also_console=True)
+        """Amount = invoice total. Balance 0 -> OK, the Details tab is NOT opened. Balance > 0 (up to
+        MIRO_MAX_UNPLANNED_COST) -> Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
         bal = self.miro.enter_amount(invoice)
         logger.info(f"Balance after amount: {bal:,.2f}", also_console=True)
         unpl = self.miro.settle_balance(invoice, bal)
         self._unplanned = unpl
         if unpl:
+            logger.info(f"Doc. Type set: {invoice.get('doc_type') or '-'} {invoice.get('doc_type_desc') or ''}".strip(),
+                        also_console=True)
             logger.info(f"Unpl. Del. Csts {unpl:,.2f} entered - balance 0", also_console=True)
         else:
             logger.info("Balance OK (0.00)", also_console=True)
