@@ -1,0 +1,48 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s
+Enter Matched Invoices In MIRO                                                                                  2 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+=== Invoice AB2627143 | PO 8100007309 | GRN 5000356087 | total 182085.8 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Press Enter (popup)
+  > Type INVFO-BLDAT = 20.08.2026
+  > Type INVFO-XBLNR = AB2627143
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 8100007309
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2002
+  > Type INVFO-SECCO = 2002
+  > Type INVFO-SGTXT = NSETPINHLDISIZ01349:SEMIFINISH SETTING PIN HOLDER 
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+  > Press button DESELECT_ALL
+  > Tick item row 1
+  > Tick item row 2
+[ WARN ] AB2627143: FAILED - com_error: (-2147417851, 'The server threw an exception.', None, None)
+  > Command field: /n
+AB2627143 -> FAILED
+=== Invoice BM/26-27/1328 | PO 5100002309 | GRN 5000356389 | total 217144.0 ===
+[ WARN ] BM/26-27/1328: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd
+BM/26-27/1328 -> FAILED
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 2 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261027_114843\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261027_114843\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261027_114843\report.html
