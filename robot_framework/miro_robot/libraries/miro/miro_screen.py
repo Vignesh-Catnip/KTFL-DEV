@@ -291,9 +291,25 @@ class MiroScreen:
         if got != code:
             raise SapError(f"SAP keeps tax code '{got}' instead of '{code}'")
 
+    @staticmethod
+    def _changeable(el) -> bool:
+        try:
+            return bool(el.Changeable)
+        except Exception:
+            return True                                       # property not available -> try and see
+
     def set_tax_code(self, code: str) -> None:
         """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
         combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+        if not self._changeable(combo):
+            # 'Calculate tax' was just ticked: SAP makes the tax code field input-ready only after a round trip
+            self.note("Tax code field is read-only - pressing Enter so SAP enables it")
+            self.s.enter()
+            self.handle_messages("tax code")
+            combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
+            if not self._changeable(combo):
+                raise SapError("Tax code field (INVFO-MWSKZ) stays read-only even after Enter - SAP does not allow "
+                               "a tax code on this PO / screen variant (is 'Calculate tax' ticked?)")
         entries = []
         try:
             for i in range(combo.Entries.Count):
@@ -307,7 +323,15 @@ class MiroScreen:
         try:
             self.s.set_field("INVFO-MWSKZ", code)
         except Exception as e:
-            raise SapError(f"Could not set tax code '{code}': {e}")
+            if "readonly" not in str(e).lower() and "read-only" not in str(e).lower():
+                raise SapError(f"Could not set tax code '{code}': {e}")
+            self.note("Tax code was read-only - pressing Enter once and trying again")
+            try:
+                self.s.enter()
+                self.handle_messages("tax code")
+                self.s.set_field("INVFO-MWSKZ", code)
+            except Exception as e2:
+                raise SapError(f"Could not set tax code '{code}': {e2}")
         self.s.wait_ready()
         combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
         got = str(getattr(combo, "Key", "") or getattr(combo, "Text", "") or "").strip().upper()
