@@ -1,91 +1,230 @@
-========================================================================================================================
-Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
-========================================================================================================================
-MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
-Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.0s
-[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
-Enter Matched Invoices In MIRO                                                                                  1 invoice(s) with status MATCHED waiting for MIRO
-SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
-=== Invoice AB2627143 | PO 8100007309 | GRN 5000356087 | total 182085.8 ===
-  > Command field: /n
-  > Press Enter
-  > Command field: /nMIRO
-  > Press Enter
-  > Press Enter (popup)
-  > Type INVFO-BLDAT = 20.08.2026
-  > Type INVFO-XBLNR = AB2627143
-  > Type INVFO-WAERS = INR
-  > Press Enter
-  > Type RM08M-EBELN = 8100007309
-  > Press Enter
-  > Open tab Basic data
-  > Type INVFO-XMWST = True
-  > Type INVFO-MWSKZ = I3
-  > Tax code OK: I3
-  > Type INVFO-BUPLA = 2002
-  > Type INVFO-SECCO = 2002
-  > Type INVFO-SGTXT = NSETPINHLDISIZ01349:SEMIFINISH SETTING PIN HOLDER 
-  > Press Enter
-  > Open tab Basic data
-  > Press button RM08M-HEADER_COLLAPSE
-  > Reading MIRO item table (all rows, Reference Document column)
-  > Press button DESELECT_ALL
-  > Tick item row 1
-  > Tick item row 2
-  > Tick item row 3
-  > Tick item row 4
-  > Tick item row 5
-  > Tick item row 6
-  > Tick item row 7
-  > Tick item row 8
-  > Tick item row 9
-  > Tick item row 10
-  > Tick item row 11
-  > Tick item row 12
-  > Press Enter
-  > Press button REFRESH
-  > Reading MIRO item table (all rows, Reference Document column)
-Refresh: rows [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] kept, other rows removed -> now rows [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-Selected 12 row(s) [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] for GRN 5000356087 = 154,310.00 (invoice taxable 154,310.00)
-  > Reading MIRO item table (all rows, Reference Document column)
-HSN row 1: 82073000 OK (only HSN on invoice)
-HSN row 2: 82073000 OK (only HSN on invoice)
-HSN row 3: 82073000 OK (only HSN on invoice)
-HSN row 4: 82073000 OK (only HSN on invoice)
-HSN row 5: 82073000 OK (only HSN on invoice)
-HSN row 6: 82073000 OK (only HSN on invoice)
-HSN row 7: 82073000 OK (only HSN on invoice)
-HSN row 8: 82073000 OK (only HSN on invoice)
-HSN row 9: 82073000 OK (only HSN on invoice)
-HSN row 10: 82073000 OK (only HSN on invoice)
-HSN row 11: 82073000 OK (only HSN on invoice)
-HSN row 12: 82073000 OK (only HSN on invoice)
-  > Press button RM08M-HEADER_COLLAPSE
-  > Open tab Details
-  > Type INVFO-BLART = X1
-  > Open tab Basic data
-Doc. Type set: X1 Invoice - R'gaon R1
-  > Open tab Basic data
-  > Type INVFO-WRBTR = 182085.80
-  > Press Enter
-  > Open tab Basic data
-Balance after amount: 0.00
-  > Balance 0.00 = OK, invoice total matches
-Balance OK (0.00)
-  > Press Simulate
-  > Press Cancel (F12) (popup)
-Simulate OK - Simulate Document in INR (Document currency) | Debit | 182,085.80 | Credit | 182,085.80 | Bal. | 0.00
-  > Press Save (Ctrl+S)
-POSTED: SAP document 5100205686
-AB2627143 -> POSTED
-| PASS |
-------------------------------------------------------------------------------------------------------------------------
-  > Command field: /n
-  > Press Enter
-MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 1 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0
-Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
-1 task, 1 passed, 0 failed
-========================================================================================================================
-Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261029_104804\output.xml
-Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261029_104804\log.html
-Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261029_104804\report.html
+SELECT TOP (1000) [MANDT]
+      ,[MBLNR]
+      ,[MJAHR]
+      ,[ZEILE]
+      ,[LINE_ID]
+      ,[PARENT_ID]
+      ,[LINE_DEPTH]
+      ,[MAA_URZEI]
+      ,[BWART]
+      ,[XAUTO]
+      ,[MATNR]
+      ,[WERKS]
+      ,[LGORT]
+      ,[CHARG]
+      ,[INSMK]
+      ,[ZUSCH]
+      ,[ZUSTD]
+      ,[SOBKZ]
+      ,[LIFNR]
+      ,[KUNNR]
+      ,[KDAUF]
+      ,[KDPOS]
+      ,[KDEIN]
+      ,[PLPLA]
+      ,[SHKZG]
+      ,[WAERS]
+      ,[DMBTR]
+      ,[BNBTR]
+      ,[BUALT]
+      ,[SHKUM]
+      ,[DMBUM]
+      ,[BWTAR]
+      ,[MENGE]
+      ,[MEINS]
+      ,[ERFMG]
+      ,[ERFME]
+      ,[BPMNG]
+      ,[BPRME]
+      ,[EBELN]
+      ,[EBELP]
+      ,[LFBJA]
+      ,[LFBNR]
+      ,[LFPOS]
+      ,[SJAHR]
+      ,[SMBLN]
+      ,[SMBLP]
+      ,[ELIKZ]
+      ,[SGTXT]
+      ,[EQUNR]
+      ,[WEMPF]
+      ,[ABLAD]
+      ,[GSBER]
+      ,[KOKRS]
+      ,[PARGB]
+      ,[PARBU]
+      ,[KOSTL]
+      ,[PROJN]
+      ,[AUFNR]
+      ,[ANLN1]
+      ,[ANLN2]
+      ,[XSKST]
+      ,[XSAUF]
+      ,[XSPRO]
+      ,[XSERG]
+      ,[GJAHR]
+      ,[XRUEM]
+      ,[XRUEJ]
+      ,[BUKRS]
+      ,[BELNR]
+      ,[BUZEI]
+      ,[BELUM]
+      ,[BUZUM]
+      ,[RSNUM]
+      ,[RSPOS]
+      ,[KZEAR]
+      ,[PBAMG]
+      ,[KZSTR]
+      ,[UMMAT]
+      ,[UMWRK]
+      ,[UMLGO]
+      ,[UMCHA]
+      ,[UMZST]
+      ,[UMZUS]
+      ,[UMBAR]
+      ,[UMSOK]
+      ,[KZBEW]
+      ,[KZVBR]
+      ,[KZZUG]
+      ,[WEUNB]
+      ,[PALAN]
+      ,[LGNUM]
+      ,[LGTYP]
+      ,[LGPLA]
+      ,[BESTQ]
+      ,[BWLVS]
+      ,[TBNUM]
+      ,[TBPOS]
+      ,[XBLVS]
+      ,[VSCHN]
+      ,[NSCHN]
+      ,[DYPLA]
+      ,[UBNUM]
+      ,[TBPRI]
+      ,[TANUM]
+      ,[WEANZ]
+      ,[GRUND]
+      ,[EVERS]
+      ,[EVERE]
+      ,[IMKEY]
+      ,[KSTRG]
+      ,[PAOBJNR]
+      ,[PRCTR]
+      ,[PS_PSP_PNR]
+      ,[NPLNR]
+      ,[AUFPL]
+      ,[APLZL]
+      ,[AUFPS]
+      ,[VPTNR]
+      ,[FIPOS]
+      ,[SAKTO]
+      ,[BSTMG]
+      ,[BSTME]
+      ,[XWSBR]
+      ,[EMLIF]
+      ,[DUMMY_INCL_EEW_COBL]
+      ,[EXBWR]
+      ,[VKWRT]
+      ,[AKTNR]
+      ,[ZEKKN]
+      ,[VFDAT]
+      ,[CUOBJ_CH]
+      ,[EXVKW]
+      ,[PPRCTR]
+      ,[RSART]
+      ,[GEBER]
+      ,[FISTL]
+      ,[MATBF]
+      ,[UMMAB]
+      ,[BUSTM]
+      ,[BUSTW]
+      ,[MENGU]
+      ,[WERTU]
+      ,[LBKUM]
+      ,[SALK3]
+      ,[VPRSV]
+      ,[FKBER]
+      ,[DABRBZ]
+      ,[VKWRA]
+      ,[DABRZ]
+      ,[XBEAU]
+      ,[LSMNG]
+      ,[LSMEH]
+      ,[KZBWS]
+      ,[QINSPST]
+      ,[URZEI]
+      ,[J_1BEXBASE]
+      ,[MWSKZ]
+      ,[TXJCD]
+      ,[EMATN]
+      ,[J_1AGIRUPD]
+      ,[VKMWS]
+      ,[HSDAT]
+      ,[BERKZ]
+      ,[MAT_KDAUF]
+      ,[MAT_KDPOS]
+      ,[MAT_PSPNR]
+      ,[XWOFF]
+      ,[BEMOT]
+      ,[PRZNR]
+      ,[LLIEF]
+      ,[LSTAR]
+      ,[XOBEW]
+      ,[GRANT_NBR]
+      ,[ZUSTD_T156M]
+      ,[SPE_GTS_STOCK_TY]
+      ,[KBLNR]
+      ,[KBLPOS]
+      ,[XMACC]
+      ,[VGART_MKPF]
+      ,[BUDAT_MKPF]
+      ,[CPUDT_MKPF]
+      ,[CPUTM_MKPF]
+      ,[USNAM_MKPF]
+      ,[XBLNR_MKPF]
+      ,[TCODE2_MKPF]
+      ,[VBELN_IM]
+      ,[VBELP_IM]
+      ,[SGT_SCAT]
+      ,[SGT_UMSCAT]
+      ,[SGT_RCAT]
+      ,[SERVICEPERFORMER]
+      ,[PERNR]
+      ,[KNTTP_GR]
+      ,[WORK_ITEM_ID]
+      ,[FBUDA]
+      ,[XPRINT]
+      ,[NROFLABELS]
+      ,[CWM_MENGE]
+      ,[CWM_MEINS]
+      ,[CWM_ERFMG]
+      ,[CWM_ERFME]
+      ,[SERVICE_DOC_TYPE]
+      ,[SERVICE_DOC_ID]
+      ,[SERVICE_DOC_ITEM_ID]
+      ,[EWM_LGNUM]
+      ,[EWM_GMDOC]
+      ,[RESOURCENAME_SID]
+      ,[RESOURCENAME_CID]
+      ,[DUMMY_MATDOC_INCL_EEW_PS]
+      ,[DISUB_OWNER]
+      ,[FSH_SEASON_YEAR]
+      ,[FSH_SEASON]
+      ,[FSH_COLLECTION]
+      ,[FSH_THEME]
+      ,[FSH_UMSEA_YR]
+      ,[FSH_UMSEA]
+      ,[FSH_UMCOLL]
+      ,[FSH_UMTHEME]
+      ,[SGT_CHINT]
+      ,[COMPL_MARK]
+      ,[FZGLS_MARK]
+      ,[ETANP_MARK]
+      ,[POPUP_MARK]
+      ,[OINAVNW]
+      ,[OICONDCOD]
+      ,[CONDI]
+      ,[WRF_CHARSTC1]
+      ,[WRF_CHARSTC2]
+      ,[WRF_CHARSTC3]
+  FROM [BRONZE_DB].[dbo].[MSEG]
