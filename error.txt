@@ -20,8 +20,8 @@ SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
   > Press Enter
   > Open tab Basic data
   > Type INVFO-XMWST = True
-  > Type INVFO-MWSKZ = I3
-[ WARN ] 1702/2026-2027: FAILED - Could not set tax code 'I3': (-2147352567, 'Exception occurred.', (609, 'SAP Frontend Server', 'The property is readonly.', 'C:\\Program Files\\SAP\\FrontEnd\\SAPGUI\\sapfront.HLP', 393215, 0), None)
+  > Press Enter
+[ WARN ] 1702/2026-2027: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027
   > Command field: /n
   > Press Enter
 1702/2026-2027 -> FAILED
@@ -33,6 +33,6 @@ MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 1 | UNKNO
 Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
 1 task, 1 passed, 0 failed
 ========================================================================================================================
-Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\output.xml
-Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\log.html
-Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\report.html
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_164018\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_164018\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_164018\report.html
