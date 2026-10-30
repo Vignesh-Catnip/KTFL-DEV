@@ -6,7 +6,7 @@ Tables: MSEG (goods receipt), EKKO (PO header), EKPO (PO items).
 Rules (agreed with the AP team):
   * Vendor code, plant, PO date, GRN date / value, company code come from SAP when the invoice
     does not print them.
-  * HSN/SAC is NEVER copied from SAP. The invoice's own HSN is kept as is; SAP's HSN (EKPO.STAWN) is
+  * HSN/SAC is NEVER copied from SAP. The invoice's own HSN is kept as is; SAP's HSN (EKPO.J_1BNBM) is
     only stored next to it (`sap_hsn`) so the two can be compared.
   * A value the invoice prints and SAP disagrees with is NOT overwritten - it is reported as a mismatch
     (exception: plant and vendor code, where SAP is authoritative).
@@ -48,13 +48,16 @@ class SapGateway:
         self._hsn_cols = hsn_cols
 
     def hsn_columns(self) -> dict[str, list[str]]:
-        """{table: [columns]} that hold the HSN / SAC / NCM code in this SAP data lake (cached)."""
+        """{table: [columns]} that hold the HSN / SAC / NCM code in this SAP data lake (cached).
+        Default (SAP_HSN_COLUMNS empty): EKPO.J_1BNBM - the NCM / HSN code of the PO item. Set another column list
+        (e.g. EKPO.J_1BNBM,EKPO.STAWN) or "auto" (look for HSN / NBM / STEUC / STAWN columns in MSEG and EKPO)."""
         if self._hsn_cols is not None:
             return self._hsn_cols
         found: dict[str, list[str]] = {t: [] for t in HSN_TABLES}
         cfg = get_settings()
-        if cfg.sap_hsn_columns.strip():
-            for item in cfg.sap_hsn_columns.split(","):
+        setting = cfg.sap_hsn_columns.strip() or "EKPO.J_1BNBM"      # default: NCM / HSN code of the PO item
+        if setting.lower() != "auto":
+            for item in setting.split(","):
                 t, _, c = item.strip().partition(".")
                 t, c = t.upper(), c.upper()
                 if t in found and _IDENT.match(c) and c not in found[t]:
@@ -62,7 +65,7 @@ class SapGateway:
         else:
             try:
                 rows = self.rows("""SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-                                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('MSEG','EKPO','MARC')
+                                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('MSEG','EKPO')
                                       AND (COLUMN_NAME LIKE '%HSN%' OR COLUMN_NAME LIKE '%NBM%'
                                            OR COLUMN_NAME LIKE '%STEUC%' OR COLUMN_NAME LIKE '%STAWN%')
                                     ORDER BY TABLE_NAME, COLUMN_NAME""")
@@ -215,7 +218,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     types = list(gw.grn_types)
     hc = gw.hsn_columns()
     mcols = MSEG_COLS + "".join(f", m.{c} AS HSNM_{c}" for c in hc["MSEG"])
-    pcols = "".join(f", p.{c} AS HSNP_{c}" for c in hc["EKPO"] if c != "STAWN")
+    pcols = "".join(f", p.{c} AS HSNP_{c}" for c in hc["EKPO"])         # only the configured HSN column(s)
 
     def live(rows):
         """Drop reversed documents; prefer rows carrying item text (SGTXT) - same as the manual check
@@ -346,6 +349,16 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             h["plant_source"] = "SAP_MSEG"
             h["sap_plant"] = h["plant_code"]
         g = [r for r in own_gr if clean(r["MBLNR"]) == h["grn_number"]] or own_gr
+        if not h.get("invoice_number"):
+            # invoice number not read from the PDF -> the vendor reference stored with the goods receipt
+            refs = sorted({clean(r.get("XBLNR_MKPF")) for r in g if clean(r.get("XBLNR_MKPF"))})
+            if len(refs) == 1:
+                h["invoice_number"] = refs[0]
+                src["invoice_number"] = "SAP_MSEG"
+                notes.append(f"invoice_number <- SAP_MSEG (XBLNR_MKPF of GRN {h['grn_number']}): {refs[0]}")
+            elif len(refs) > 1:
+                notes.append(f"Invoice number not read; GRN {h['grn_number']} carries several references {refs} - "
+                             f"not guessed")
         vals = [to_float(r["DMBTR"]) for r in g]
         if vals and all(v > 0 for v in vals):
             h["grn_amount"] = round(sum(vals), 2)
@@ -407,7 +420,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         notes.append(f"PO {h['po_number']} not found in SAP (EKKO)")
 
     # 5) PO items (EKPO) - plant fall-back, tax code, and the SAP HSN (compare only!)
-    ekpo = gw.rows(f"""SELECT p.EBELN, p.EBELP, p.TXZ01, p.MATNR, p.WERKS, p.STAWN, p.MENGE, p.MEINS,
+    ekpo = gw.rows(f"""SELECT p.EBELN, p.EBELP, p.TXZ01, p.MATNR, p.WERKS, p.MENGE, p.MEINS,
                               p.NETPR, p.PEINH, p.NETWR, p.BRTWR, p.MWSKZ{pcols}
                        FROM dbo.EKPO p
                        WHERE p.EBELN IN :pos AND COALESCE(p.LOEKZ,'') = ''{gw.mandt('p')}
@@ -439,8 +452,12 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             hsn_src[label] = vals
 
     po_scope = ekpo if h["multi_po_flag"] else own
+    # only the PO items that are on THIS goods receipt: the PO may also hold other materials (other HSN codes)
+    grn_items = {(clean(r["EBELN"]), clean(r["EBELP"])) for r in snapshot["gr_rows"]}
+    if grn_items:
+        po_scope = [r for r in po_scope if (clean(r["EBELN"]), clean(r["EBELP"])) in grn_items] or po_scope
     for c in hc["EKPO"]:
-        key = "STAWN" if c == "STAWN" else f"HSNP_{c}"
+        key = f"HSNP_{c}"
         _collect(f"EKPO.{c}", po_scope, lambda r, k=key: r.get(k))
     for c in hc["MSEG"]:
         _collect(f"MSEG.{c}", snapshot["gr_rows"], lambda r, c=c: r.get(f"HSNM_{c}"))
