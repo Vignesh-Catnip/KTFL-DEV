@@ -1,0 +1,38 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.0s
+[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
+Enter Matched Invoices In MIRO                                                                                  1 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+=== Invoice 1702/2026-2027 | PO 6100015411 | GRN 5000340793 | total 97190.7 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Press Enter (popup)
+  > Type INVFO-BLDAT = 31.07.2026
+  > Type INVFO-XBLNR = 1702/2026-2027
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100015411
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+[ WARN ] 1702/2026-2027: FAILED - Could not set tax code 'I3': (-2147352567, 'Exception occurred.', (609, 'SAP Frontend Server', 'The property is readonly.', 'C:\\Program Files\\SAP\\FrontEnd\\SAPGUI\\sapfront.HLP', 393215, 0), None)
+  > Command field: /n
+  > Press Enter
+1702/2026-2027 -> FAILED
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+  > Command field: /n
+  > Press Enter
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 1 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261030_161109\report.html
