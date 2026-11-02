@@ -138,14 +138,24 @@ def _unreadable(page) -> bool:
 
 
 def fix_orientation(path: str | Path, probe) -> list[tuple[int, int]]:
-    """Scanned pages whose text layer is gibberish / missing are checked by the model ("how many degrees clockwise
-    to make this upright?") and turned with the PDF's own page rotation, so reading, GRN stamp and the dashboard
-    viewer all see them upright. Only the stored working copy is changed. Returns [(page_no, degrees)]."""
+    """Scanned pages whose text layer is gibberish / missing are checked by the model with a plain yes/no
+    question - "is the text upright?". Upright (the usual case) -> left alone. Otherwise the page is shown turned
+    90 / 270 / 180 degrees and the model is asked the same; it is turned only when EXACTLY ONE of the three is
+    upright (unclear -> left as it is). Done with the PDF's own page rotation, so reading, GRN stamp and the
+    dashboard viewer all see the page upright; only the stored working copy is changed.
+    probe(image_b64) -> True / False / None.  Returns [(page_no, degrees)]."""
     if probe is None or is_image_name(str(path)):
         return []
+    from PIL import Image
     cfg = get_settings()
     done: list[tuple[int, int]] = []
     doc = pymupdf.open(str(path))
+
+    def b64(im) -> str:
+        buf = io.BytesIO()
+        im.convert("RGB").save(buf, "JPEG", quality=80)
+        return base64.b64encode(buf.getvalue()).decode()
+
     try:
         for i in range(min(doc.page_count, max(cfg.main_pages, cfg.grn_pages))):
             pg = doc[i]
@@ -153,14 +163,20 @@ def fix_orientation(path: str | Path, probe) -> list[tuple[int, int]]:
                 continue
             side = max(pg.rect.width, pg.rect.height)
             pix = pg.get_pixmap(matrix=pymupdf.Matrix(1000 / side, 1000 / side), alpha=False)
+            base = Image.open(io.BytesIO(pix.tobytes("jpeg", jpg_quality=80)))
             try:
-                deg = int(probe(base64.b64encode(pix.tobytes("jpeg", jpg_quality=80)).decode()))
+                if probe(b64(base)) is not False:            # upright, or no answer -> do not touch
+                    continue
+                ok = [deg for deg in (90, 270, 180) if probe(b64(base.rotate(-deg, expand=True))) is True]
             except Exception as exc:
                 log.warning("orientation check of page %s failed: %s", i + 1, exc)
                 continue
-            if deg in (90, 180, 270):
-                pg.set_rotation(deg)
-                done.append((i + 1, deg))
+            if len(ok) == 1:
+                pg.set_rotation(ok[0])
+                done.append((i + 1, ok[0]))
+            else:
+                log.info("%s page %s looks sideways but the direction is unclear %s - left as it is", Path(path).name,
+                         i + 1, ok)
         if done:
             data = doc.tobytes()
     finally:
