@@ -21,8 +21,10 @@ STEP 1 — Find the receiving stamp (usually a "KALYANI TECHNOFORGE LTD." rubber
 STEP 2 — Find the row labelled "GRN NO", "GRN No.", "GRN", "JRN NO", "Inward No", "MRN No".
          It is normally the row BELOW "SCROLL NO".
 STEP 3 — Extract the handwritten number EXACTLY as written (keep dash / dots / spaces).
-STEP 4 — A GRN always starts with "50" and has EXACTLY 10 digits.
-         "50-343863" means 50 + 00 + 343863 = 5000343863. Count the digits carefully.
+STEP 4 — A GRN always starts with "50" and has EXACTLY 10 digits. People often write it short:
+         "50" then a dash then the last 6 digits - the two missing zeros are added later, so copy
+         the handwriting exactly as written. Count the digits carefully.
+         If you cannot find a GRN written on the page, return an empty string. NEVER make a number up.
 
 NEVER extract from: SCROLL NO (starts with 200...), CH NO, Challan No, E-way Bill No,
 Vehicle No, Gate Pass No, Delivery Note No, Buyer's Order No.
