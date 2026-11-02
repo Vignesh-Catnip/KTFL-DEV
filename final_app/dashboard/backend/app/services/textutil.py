@@ -25,10 +25,22 @@ def clean(v) -> str:
 
 
 def clean_po(v) -> str:
+    """Handles the full 10-digit PO as printed, and the short hand some people write by the gate /
+    transporter stamp: '51/2448', '51-2448', '81.7531' -> 51 + 00 + 2448 = 5100002448 (pad the gap so
+    it is 10 digits), same idea as clean_grn. Only expanded when it starts with KTFL's own PO prefixes
+    51 or 81 - any other short number is left alone rather than guessed into a PO."""
     s = clean(v)
     s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
+    s = "".join(_OCR_DIGITS.get(c, c) for c in s)
     m = re.search(r"\d{10}", s)
-    return m.group(0) if m else s
+    if m:
+        return m.group(0)
+    m = re.match(r"^\s*(\d{2,4})\s*[-/.]\s*(\d{3,8})\s*$", s)
+    if m:
+        a, b = m.group(1), m.group(2)
+        if a[:2] in ("51", "81") and 0 < 10 - len(a) - len(b) < 10:
+            return a + "0" * (10 - len(a) - len(b)) + b
+    return s
 
 
 def is_valid_po(po: str) -> bool:
