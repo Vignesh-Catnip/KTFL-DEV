@@ -166,6 +166,38 @@ def fix_gstin(g: str) -> str:
 
 
 GSTIN_RE = re.compile(r"^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z][A-Z0-9]$")
+_GST_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_LOOKALIKE = {"0": "ODQ", "1": "ILT", "2": "Z", "5": "S", "6": "G", "8": "BR", "7": "T", "4": "A", "9": "Q"}
+_LOOKALIKE = {**_LOOKALIKE, **{c: k for k, v in _LOOKALIKE.items() for c in v}}
+
+
+def gstin_ok(g: str) -> bool:
+    """15 characters, right pattern AND the GSTIN check character (last) agrees with the other 14."""
+    if not GSTIN_RE.match(g or ""):
+        return False
+    total = 0
+    for i, c in enumerate(g[:14]):
+        v = _GST_CHARS.index(c) * (1 if i % 2 == 0 else 2)
+        total += v // 36 + v % 36
+    return g[14] == _GST_CHARS[(36 - total % 36) % 36]
+
+
+def repair_gstin(g: str) -> str:
+    """A GSTIN the model misread by ONE character (extra character, or a look-alike such as 8<->R, 0<->O, 5<->S)
+    is put right when exactly one correction makes it a valid GSTIN (pattern + check character). Otherwise it is
+    returned unchanged - a wrong guess is worse than a flagged one."""
+    g = (g or "").strip().upper().replace(" ", "")
+    if gstin_ok(g) or not g:
+        return g
+    cands: set[str] = set()
+    if len(g) == 16:                                          # one extra character
+        cands = {g[:i] + g[i + 1:] for i in range(16)}
+    elif len(g) == 15:                                        # one look-alike character
+        for i, c in enumerate(g):
+            for r in _LOOKALIKE.get(c, ""):
+                cands.add(g[:i] + r + g[i + 1:])
+    found = {c for c in cands if gstin_ok(c)}
+    return found.pop() if len(found) == 1 else g
 
 
 def extract_json(raw) -> dict:
