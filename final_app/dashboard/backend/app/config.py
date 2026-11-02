@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     main_pages: int = 2
     grn_pages: int = 3
     image_zoom: float = 1.4
+    image_autorotate: bool = True            # landscape photo of a portrait invoice -> turn it upright
+    image_max_side: int = 1800               # photos are shrunk to this many pixels (longest side) before reading
     grn_zoom: float = 2.0
 
     # ---- matching thresholds ----
