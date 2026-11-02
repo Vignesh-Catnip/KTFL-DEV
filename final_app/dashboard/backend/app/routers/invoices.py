@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import mimetypes
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -169,4 +170,4 @@ def original(invoice_id: int, db: Session = Depends(get_db), _: User = Depends(c
     path = pdfio.locate_pdf(inv.filename, inv.source_path)
     if path is None:
         raise HTTPException(404, "Original PDF not found on the server")
-    return FileResponse(Path(path), media_type="application/pdf", filename=inv.filename)
+    return FileResponse(Path(path), media_type=mimetypes.guess_type(str(path))[0] or "application/pdf", filename=inv.filename)
