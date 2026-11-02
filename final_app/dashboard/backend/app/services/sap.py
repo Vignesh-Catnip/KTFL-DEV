@@ -377,24 +377,10 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     all_pos = sorted(set(sap_pos) | set(h["po_numbers_printed"]) |
                      ({h["po_number"]} if is_valid_po(h["po_number"]) else set()))
     h["po_list"] = ", ".join(all_pos)
+    # Multi-PO is no longer flagged or specially checked: the invoice's own PO (as printed / typed) decides
+    # what is checked, even when SAP shows the invoice number touching several POs/GRNs elsewhere.
     h["multi_po_flag"], h["red_flag_reason"] = False, ""
     scope_rows = gr_rows                     # the goods-receipt rows this invoice is checked against
-    if len(sap_pos) > 1:
-        # One vendor invoice booked against several POs / GRNs: NOT a block. The invoice's PO, GRN and
-        # line items are checked against ALL its goods-receipt rows; if they agree it is Matched and the
-        # robot picks the right GR lines in MIRO.
-        h["multi_po_flag"] = True
-        h["red_flag_reason"] = (f"Invoice is booked against {len(sap_pos)} POs in SAP ({', '.join(sap_pos)}) - "
-                                f"lines checked across all of them")
-        notes.append("MULTI-PO: " + h["red_flag_reason"])
-        seen = {(clean(r["MBLNR"]), clean(r["EBELP"]), clean(r["EBELN"])) for r in gr_rows}
-        scope_rows = gr_rows + [r for r in inv_rows if (clean(r["MBLNR"]), clean(r["EBELP"]), clean(r["EBELN"])) not in seen]
-        vals = [to_float(r["DMBTR"]) for r in scope_rows]
-        if vals and all(v > 0 for v in vals):
-            h["grn_amount"] = round(sum(vals), 2)
-    elif len(all_pos) > 1:
-        _mismatch(h, "po_number", ", ".join(all_pos), ", ".join(sap_pos) or "none",
-                  "PO numbers printed on invoice vs SAP GR")
 
     snapshot = {"checked_at": datetime.now(timezone.utc).isoformat(), "grn": h["grn_number"],
                 "po": None, "po_items": [], "gr_rows": [], "pos": all_pos}
