@@ -46,6 +46,11 @@ FIELD RULES
 - po_number      : "Buyer's Order No." — KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531).
                    Strip any "PO-" prefix. If MORE THAN ONE different PO is printed anywhere on the
                    invoice, list every one of them comma-separated in "po_numbers_all".
+                   If the printed Order No. is missing, unclear, or not a KTFL PO, also look for a
+                   HANDWRITTEN PO note - people scribble it near the transporter / "To Place" box, the
+                   receiving stamp, or in a side margin, often in SHORT FORM: "51/2448", "81-7531",
+                   "PO 51.2448". Read it exactly as written (keep the "/" "-" "." ) into "po_number" -
+                   it will be expanded automatically (51/2448 means PO 5100002448). Never invent one.
 - vendor_code    : "Vendor Code" printed on the invoice, if present.
 - gstin          : the SELLER's GSTIN (15 chars). Never KTFL's own GSTIN (starts 27AABCK0618A).
 - hsn_sac        : the HSN/SAC code of the goods (4–8 digits) EXACTLY as printed on the invoice.
