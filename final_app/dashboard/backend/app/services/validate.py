@@ -1,11 +1,11 @@
 """
 Decides which dashboard queue an invoice belongs to.
 
-    BLOCKED    mandatory data is missing, or SAP cannot be matched at all
-               (no invoice no / date / vendor / PO / GRN / plant / GST tax code, PO or GRN not in SAP,
-               invoice linked to several POs)
-    RECONCILE  every field is present but something does not agree with SAP
-               (line quantity / amount, GRN value, tax code, HSN, arithmetic ...)
+    BLOCKED    mandatory data is missing from the invoice itself
+               (no invoice no / date / vendor / PO / GRN / plant / GST tax code)
+    RECONCILE  every field is present but something does not agree with SAP, or SAP does not have the
+               PO / GRN the invoice names (line quantity / amount, GRN value, tax code, HSN, arithmetic,
+               PO/GRN not found in SAP, invoice linked to several POs ...) - a person checks and pushes it
     MATCHED    everything present and everything agrees with SAP  -> robot posts it automatically
 
 HSN rule: the invoice's own HSN is the only HSN ever stored. SAP's HSN is compared with it:
@@ -66,7 +66,7 @@ def check_hsn(h: dict, lines: list[dict]) -> list[dict]:
     if not sap:
         h["hsn_match"] = False
         out.append(issue("HSN_MISSING_SAP", RECON, "HSN",
-                         "HSN/SAC is not maintained for this PO in SAP (EKPO.STAWN is empty)",
+                         "HSN/SAC is not maintained for this PO in SAP (EKPO NCM column is empty)",
                          "hsn_sac", ", ".join(sorted(inv)), ""))
         return out
     bad = sorted(x for x in inv if not any(hsn_agree(x, s) for s in sap))
@@ -130,10 +130,10 @@ def validate(h: dict, lines: list[dict]) -> dict:
                          "SAP could not be reached - the invoice has not been cross-checked yet"))
     else:
         if h.get("po_number") and is_valid_po(h["po_number"]) and not h.get("po_in_sap"):
-            iss.append(issue("PO_NOT_IN_SAP", BLOCK, "MISSING",
+            iss.append(issue("PO_NOT_IN_SAP", RECON, "SAP",
                              f"PO {h['po_number']} not found in SAP (EKKO)", "po_number", h["po_number"]))
         if h.get("grn_number") and not h.get("grn_in_sap"):
-            iss.append(issue("GRN_NOT_IN_SAP", BLOCK, "MISSING",
+            iss.append(issue("GRN_NOT_IN_SAP", RECON, "SAP",
                              f"GRN {h['grn_number']} not found in SAP (MSEG) by stamp, invoice no, PO or lines",
                              "grn_number", h["grn_number"]))
     if h.get("multi_po_flag"):
