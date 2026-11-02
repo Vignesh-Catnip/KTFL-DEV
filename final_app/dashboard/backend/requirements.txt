@@ -11,3 +11,4 @@ pyjwt>=2.8
 psycopg[binary]>=3.1
 # SAP data-lake (SQL Server) access - needs "ODBC Driver 17/18 for SQL Server" on the host
 pyodbc>=5.0
+pillow>=10
