@@ -52,6 +52,8 @@ def run_job(job_id: int) -> None:
         job.status, job.started_at, job.stage = "RUNNING", now(), "Starting"
         db.commit()
 
+        log.info("extraction started: job %s  %s  (%s)", job_id, job.filename, job.source)
+
         def progress(stage):
             job.stage = stage
             db.commit()
@@ -60,6 +62,8 @@ def run_job(job_id: int) -> None:
                               progress=progress)
             job.status = "DUPLICATE" if res.outcome == "DUPLICATE" else "DONE"
             job.invoice_id, job.queue, job.stage = res.invoice_id, res.queue, "Finished"
+            log.info("extraction finished: job %s  %s  -> %s / %s  invoice_id=%s", job_id, job.filename,
+                     res.outcome, res.queue, res.invoice_id)
             workflow.place_after_extraction(job, res.outcome, res.queue)      # processing -> output\\<queue>
             if res.outcome == "CREATED" and res.queue == "MATCHED":
                 robot.schedule_auto()                   # matched invoices go to the MIRO robot by themselves
