@@ -51,12 +51,26 @@ def hsn_agree(a: str, b: str) -> bool:
 
 
 def check_hsn(h: dict, lines: list[dict]) -> list[dict]:
+    """Every invoice line's HSN is compared with the HSN of the PO item that line was matched to in SQL
+    (`sap_item_hsn`). Codes that cannot be tied to one item (header HSN of an invoice without line HSN, lines
+    not found on the goods receipt) are compared with all HSN codes of the GRN's PO items."""
     out: list[dict] = []
-    inv = {norm_hsn(h.get("hsn_sac"))} | {norm_hsn(l.get("hsn_sac")) for l in lines}
-    inv.discard("")
+    head = norm_hsn(h.get("hsn_sac"))
+    pooled: set[str] = set()
+    per_line: list[tuple[int, dict, str, list[str]]] = []
+    for idx, l in enumerate(lines):
+        code = norm_hsn(l.get("hsn_sac"))
+        item_sap = [x.strip() for x in (l.get("sap_item_hsn") or "").split(",") if x.strip()]
+        if code and item_sap:
+            per_line.append((idx, l, code, item_sap))
+        elif code:
+            pooled.add(code)
+    if head and not any(norm_hsn(l.get("hsn_sac")) for l in lines):
+        pooled.add(head)
+    inv_all = pooled | {c for _, _, c, _ in per_line}
     sap = [x.strip() for x in (h.get("sap_hsn") or "").split(",") if x.strip()]
     h["hsn_match"] = None
-    if not inv:
+    if not inv_all:
         out.append(issue("HSN_MISSING_INVOICE", RECON, "HSN",
                          "HSN/SAC is not printed on the invoice (it is never taken from SAP)",
                          "hsn_sac", "", ", ".join(sap)))
@@ -67,14 +81,23 @@ def check_hsn(h: dict, lines: list[dict]) -> list[dict]:
         h["hsn_match"] = False
         out.append(issue("HSN_MISSING_SAP", RECON, "HSN",
                          "HSN/SAC is not maintained for this PO in SAP (EKPO NCM column is empty)",
-                         "hsn_sac", ", ".join(sorted(inv)), ""))
+                         "hsn_sac", ", ".join(sorted(inv_all)), ""))
         return out
-    bad = sorted(x for x in inv if not any(hsn_agree(x, s) for s in sap))
-    h["hsn_match"] = not bad
+    ok = True
+    for idx, l, code, item_sap in per_line:                  # line <-> its own PO item
+        if not any(hsn_agree(code, s) for s in item_sap):
+            ok = False
+            name = (l.get("item") or "")[:35]
+            out.append(issue("HSN_MISMATCH", RECON, "HSN",
+                             f"Line '{name}': HSN {code} on invoice does not match SAP HSN {', '.join(item_sap)} "
+                             f"of its PO item", "hsn_sac", code, ", ".join(item_sap), line_index=idx))
+    bad = sorted(x for x in pooled if not any(hsn_agree(x, s) for s in sap))
     if bad:
+        ok = False
         out.append(issue("HSN_MISMATCH", RECON, "HSN",
                          f"HSN {', '.join(bad)} on invoice does not match SAP HSN {', '.join(sap)}",
                          "hsn_sac", ", ".join(bad), ", ".join(sap)))
+    h["hsn_match"] = ok
     return out
 
 
@@ -214,8 +237,9 @@ def validate(h: dict, lines: list[dict]) -> dict:
         gone.add("hsn_sac")                      # HSN not read (its own RECON issue is raised in the HSN check)
     done = max(0, len(MANDATORY_FIELDS) - len(gone))
     h["completeness"] = round(done / len(MANDATORY_FIELDS), 2)
-    # without a PO there is nothing to check in SQL -> stays BLOCKED however much else was read
-    if missing and h["completeness"] >= cfg.min_completeness - 1e-9 and is_valid_po(h.get("po_number", "")):
+    # a PO that could not be read (and could not be found in SQL from the GRN / invoice no.) no longer blocks by itself:
+    # 70 % or more read -> RECONCILE, a person types the PO and pushes it. Only < 70 % read stays BLOCKED.
+    if missing and h["completeness"] >= cfg.min_completeness - 1e-9:
         for i in missing:
             i["severity"] = RECON
             i["message"] += f" ({int(h['completeness'] * 100)}% of the invoice was read - please complete it)"
