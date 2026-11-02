@@ -1,0 +1,799 @@
+2026-11-02 16:21:36,767 INFO clearmatch: GST master loaded: 61 codes
+2026-11-02 16:21:36,774 INFO clearmatch: Document type master: 0 rows added
+2026-11-02 16:21:36,785 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-02 16:21:40,209 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:23:01,757 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:23:01,946 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:23:02,005 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:25:35,929 INFO clearmatch: GST master loaded: 61 codes
+2026-11-02 16:25:35,939 INFO clearmatch: Document type master: 0 rows added
+2026-11-02 16:25:35,949 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-02 16:27:26,181 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:27:40,985 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:27:56,260 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:28:11,060 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:28:26,010 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:28:40,997 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:28:55,964 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:29:10,998 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:29:26,033 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:29:41,012 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:29:55,980 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:30:11,068 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:30:25,986 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:30:40,989 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:30:55,981 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:31:10,988 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:31:25,981 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:31:40,973 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:31:55,977 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:32:10,992 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:32:25,981 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:32:40,991 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:32:55,963 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:33:10,978 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:33:25,981 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:33:40,995 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:33:56,010 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:34:10,989 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:34:26,071 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:34:38,368 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:34:53,109 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:35:08,459 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:35:23,160 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:35:38,125 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:35:53,207 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:36:08,064 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:36:23,088 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:36:38,127 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:36:53,116 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:37:08,089 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:37:23,137 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:37:38,098 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:37:53,081 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:38:08,080 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:38:23,098 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:38:38,101 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:38:53,170 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:39:08,164 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:39:23,150 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:39:38,099 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:39:53,130 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:40:08,118 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:40:23,139 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:40:38,094 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:40:53,155 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:41:08,099 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:41:23,132 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:41:38,102 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:41:53,132 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:42:08,089 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:42:23,120 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:42:38,114 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:42:53,092 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:43:08,103 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:43:23,191 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:43:38,075 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:43:53,131 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:44:08,141 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:44:23,100 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:44:38,100 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:44:53,104 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:45:08,113 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:45:23,112 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:45:38,096 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:45:53,168 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:46:08,133 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:46:23,114 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:46:34,343 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:46:49,324 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:47:04,636 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:47:19,349 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:47:34,348 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:47:49,320 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:48:04,373 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:48:19,393 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:48:34,332 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:48:49,367 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:49:04,337 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:49:19,360 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:49:34,379 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:49:49,338 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:50:04,338 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:50:19,362 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:50:34,357 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:50:49,355 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:51:04,439 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:51:13,546 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:51:28,562 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:51:43,807 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:51:55,322 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:52:10,380 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:52:25,497 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:52:40,326 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:52:55,743 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:53:10,451 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:53:25,403 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:53:40,428 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:53:55,411 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:54:38,924 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:54:40,338 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:54:55,681 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:55:10,391 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:55:25,382 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:55:40,360 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:55:55,341 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:56:10,315 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:56:25,321 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:56:40,352 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:56:55,337 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:57:10,371 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:57:25,350 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:57:40,377 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:57:55,339 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:58:10,327 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:58:25,384 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:58:40,370 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:58:55,357 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:59:10,334 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:59:25,359 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:59:40,366 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 16:59:55,349 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:00:10,351 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:00:25,376 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:00:40,375 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:00:55,370 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:01:10,360 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:01:25,361 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:01:40,359 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:01:55,349 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:02:10,343 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:02:25,365 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:02:40,366 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:02:55,349 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:03:10,356 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:03:25,378 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:03:40,370 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:03:55,369 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:04:10,350 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:04:25,377 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:04:40,380 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:04:55,376 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:05:10,345 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:05:25,381 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:05:40,359 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:05:55,361 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:06:10,391 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:06:25,409 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:06:40,371 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:06:55,500 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:07:10,445 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:07:25,505 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:07:40,509 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:07:57,460 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:08:10,401 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:08:25,368 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:08:40,347 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:08:55,372 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:09:10,359 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:09:25,350 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:09:40,377 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:09:55,383 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:10:10,365 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:10:25,393 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:10:40,372 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:10:55,365 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:11:10,368 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:11:25,376 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:11:40,472 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:11:55,377 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:12:10,373 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:12:25,369 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:12:40,379 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:12:55,379 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:13:10,404 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:13:25,375 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:13:40,396 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:13:55,381 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:14:10,393 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:14:25,401 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:14:40,394 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:14:55,430 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:15:10,381 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:15:25,499 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:15:40,487 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:15:55,588 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:16:10,403 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:16:11,632 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:16:26,572 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:16:31,686 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:16:46,910 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:17:01,547 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:17:16,555 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:17:31,580 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:17:46,548 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:17:55,587 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:18:10,583 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:18:25,650 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:18:40,612 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:18:55,587 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:19:10,589 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:19:25,581 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:19:40,614 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:19:55,588 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:20:10,578 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:20:25,586 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:20:40,613 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:20:55,584 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:21:10,636 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:21:25,635 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:21:40,570 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:21:55,601 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:22:10,592 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:22:25,641 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:22:40,658 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:22:56,537 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:23:11,471 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:23:26,478 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:23:41,510 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:23:57,533 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:24:57,528 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:25:57,528 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:26:57,485 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:27:57,514 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:28:57,507 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:29:57,533 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:30:57,812 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:31:57,531 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:32:57,562 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:33:57,500 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:34:57,496 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:35:57,563 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:36:57,594 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:37:57,926 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:38:57,535 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:39:57,538 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:40:57,503 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:41:57,632 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:42:57,828 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:43:57,578 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:44:57,587 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:45:57,562 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:46:57,545 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:47:57,539 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:48:10,968 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:48:25,647 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:48:31,667 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:48:46,679 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:49:01,687 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:49:16,675 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:49:31,686 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:49:47,566 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:50:02,591 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:53:52,191 INFO clearmatch: GST master loaded: 61 codes
+2026-11-02 17:53:52,198 INFO clearmatch: Document type master: 0 rows added
+2026-11-02 17:53:52,206 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-02 17:54:02,003 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:54:02,003 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:54:03,911 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 17:54:18,888 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:32:20,149 INFO clearmatch: GST master loaded: 61 codes
+2026-11-02 19:32:20,158 INFO clearmatch: Document type master: 0 rows added
+2026-11-02 19:32:20,168 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-02 19:32:20,225 INFO clearmatch.worker: extraction started: job 99  20260927104329623.pdf  (WATCH)
+2026-11-02 19:32:21,173 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:33:09,621 INFO clearmatch: GST master loaded: 61 codes
+2026-11-02 19:33:09,629 INFO clearmatch: Document type master: 0 rows added
+2026-11-02 19:33:09,650 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-02 19:33:09,680 INFO clearmatch.worker: extraction started: job 99  20260927104329623.pdf  (WATCH)
+2026-11-02 19:33:20,123 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:33:26,743 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:33:41,679 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:33:56,717 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:33:57,549 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:34:00,662 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:34:00,750 INFO clearmatch.sap: HSN / NCM columns used for the SAP check: EKPO.J_1BNBM
+2026-11-02 19:34:02,063 INFO clearmatch.worker: extraction finished: job 99  20260927104329623.pdf  -> CREATED / RECONCILE  invoice_id=165
+2026-11-02 19:34:02,081 INFO clearmatch.worker: extraction started: job 100  20261102143242690.pdf  (WATCH)
+2026-11-02 19:34:08,550 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:14,295 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:34:16,860 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:34:18,019 INFO clearmatch.worker: extraction finished: job 100  20261102143242690.pdf  -> CREATED / RECONCILE  invoice_id=166
+2026-11-02 19:34:18,033 INFO clearmatch.worker: extraction started: job 101  5000298627.pdf  (WATCH)
+2026-11-02 19:34:23,538 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:38,490 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:43,640 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:46,220 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:50,630 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:34:57,751 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:01,181 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:02,352 INFO clearmatch.worker: extraction finished: job 101  5000298627.pdf  -> CREATED / RECONCILE  invoice_id=167
+2026-11-02 19:35:02,367 INFO clearmatch.worker: extraction started: job 102  5000340789 (1).pdf  (WATCH)
+2026-11-02 19:35:05,604 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:35:16,531 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:19,417 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:20,586 INFO clearmatch.worker: extraction finished: job 102  5000340789 (1).pdf  -> CREATED / MATCHED  invoice_id=168
+2026-11-02 19:35:20,606 INFO clearmatch.worker: extraction started: job 103  5000340790.pdf  (WATCH)
+2026-11-02 19:35:20,766 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:35:35,773 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:35:41,873 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:44,843 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:35:46,048 INFO clearmatch.worker: extraction finished: job 103  5000340790.pdf  -> CREATED / MATCHED  invoice_id=169
+2026-11-02 19:35:46,063 INFO clearmatch.worker: extraction started: job 104  5000340791.pdf  (WATCH)
+2026-11-02 19:35:50,761 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:35:57,865 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:00,923 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:02,501 INFO clearmatch.worker: extraction finished: job 104  5000340791.pdf  -> CREATED / RECONCILE  invoice_id=170
+2026-11-02 19:36:02,514 INFO clearmatch.worker: extraction started: job 105  5000340793.pdf  (WATCH)
+2026-11-02 19:36:03,118 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:12,219 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:17,102 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:20,347 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:21,512 INFO clearmatch.worker: extraction finished: job 105  5000340793.pdf  -> CREATED / MATCHED  invoice_id=171
+2026-11-02 19:36:21,522 INFO clearmatch.worker: extraction started: job 106  5000340795.pdf  (WATCH)
+2026-11-02 19:36:27,222 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:27,973 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:33,434 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:33,576 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:36,297 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:37,787 INFO clearmatch.worker: extraction finished: job 106  5000340795.pdf  -> CREATED / RECONCILE  invoice_id=172
+2026-11-02 19:36:37,801 INFO clearmatch.worker: extraction started: job 107  5000341272.pdf  (WATCH)
+2026-11-02 19:36:48,498 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:50,069 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:52,357 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:36:52,937 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:36:54,095 INFO clearmatch.worker: extraction finished: job 107  5000341272.pdf  -> CREATED / RECONCILE  invoice_id=173
+2026-11-02 19:36:54,107 INFO clearmatch.worker: extraction started: job 108  5000341287.pdf  (WATCH)
+2026-11-02 19:36:57,771 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:09,229 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:12,481 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:12,694 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:13,685 INFO clearmatch.worker: extraction finished: job 108  5000341287.pdf  -> CREATED / RECONCILE  invoice_id=174
+2026-11-02 19:37:13,696 INFO clearmatch.worker: extraction started: job 109  5000341300.pdf  (WATCH)
+2026-11-02 19:37:27,095 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:27,727 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:29,934 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:30,062 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:31,160 INFO clearmatch.worker: extraction finished: job 109  5000341300.pdf  -> CREATED / RECONCILE  invoice_id=175
+2026-11-02 19:37:31,172 INFO clearmatch.worker: extraction started: job 110  5000344355.pdf  (WATCH)
+2026-11-02 19:37:37,610 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:47,298 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:50,667 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:51,760 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:37:52,291 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:37:52,891 INFO clearmatch.worker: extraction finished: job 110  5000344355.pdf  -> CREATED / MATCHED  invoice_id=176
+2026-11-02 19:37:52,902 INFO clearmatch.worker: extraction started: job 111  5000356389.pdf  (WATCH)
+2026-11-02 19:37:54,545 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:09,107 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:11,987 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:27,005 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:35,849 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:38:36,730 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:40,052 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:38:41,272 INFO clearmatch.worker: extraction finished: job 111  5000356389.pdf  -> CREATED / RECONCILE  invoice_id=177
+2026-11-02 19:38:41,284 INFO clearmatch.worker: extraction started: job 112  5000365809.pdf  (WATCH)
+2026-11-02 19:38:51,537 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:38:58,566 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:39:02,007 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:39:03,235 INFO clearmatch.worker: extraction finished: job 112  5000365809.pdf  -> CREATED / RECONCILE  invoice_id=178
+2026-11-02 19:39:03,247 INFO clearmatch.worker: extraction started: job 113  5000370742.pdf  (WATCH)
+2026-11-02 19:39:06,894 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:39:21,541 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:39:29,043 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:39:32,430 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:39:33,620 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:39:34,788 INFO clearmatch.worker: extraction finished: job 113  5000370742.pdf  -> CREATED / MATCHED  invoice_id=179
+2026-11-02 19:39:34,802 INFO clearmatch.worker: extraction started: job 114  5000373614.pdf  (WATCH)
+2026-11-02 19:39:36,581 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:39:49,676 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:00,233 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:40:04,151 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:40:04,623 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:05,408 INFO clearmatch.worker: extraction finished: job 114  5000373614.pdf  -> CREATED / MATCHED  invoice_id=180
+2026-11-02 19:40:05,421 INFO clearmatch.worker: extraction started: job 115  5000373619.pdf  (WATCH)
+2026-11-02 19:40:19,646 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:21,534 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:36,748 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:39,425 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:54,758 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:40:59,202 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:41:03,534 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:41:04,802 INFO clearmatch.worker: extraction finished: job 115  5000373619.pdf  -> CREATED / RECONCILE  invoice_id=181
+2026-11-02 19:41:04,815 INFO clearmatch.worker: extraction started: job 116  5000376005.pdf  (WATCH)
+2026-11-02 19:41:09,754 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:41:24,475 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:41:39,422 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:41:54,430 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:05,485 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:06,171 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:09,467 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:10,613 INFO clearmatch.worker: extraction finished: job 116  5000376005.pdf  -> CREATED / RECONCILE  invoice_id=182
+2026-11-02 19:42:10,624 INFO clearmatch.worker: extraction started: job 117  5000377736.pdf  (WATCH)
+2026-11-02 19:42:11,940 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:26,635 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:26,988 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:42,284 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:51,140 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:54,663 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:55,698 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:56,725 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:42:57,102 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:57,814 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:42:59,024 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:43:00,879 INFO clearmatch.worker: extraction finished: job 117  5000377736.pdf  -> CREATED / RECONCILE  invoice_id=183
+2026-11-02 19:43:00,891 INFO clearmatch.worker: extraction started: job 118  5000377743.pdf  (WATCH)
+2026-11-02 19:43:12,808 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:43:27,810 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:43:42,756 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:43:57,830 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:44:00,221 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:04,027 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:05,144 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:06,143 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:08,309 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:09,480 INFO clearmatch.worker: extraction finished: job 118  5000377743.pdf  -> CREATED / RECONCILE  invoice_id=184
+2026-11-02 19:44:09,498 INFO clearmatch.worker: extraction started: job 119  5000377914.pdf  (WATCH)
+2026-11-02 19:44:12,833 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:44:27,790 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:44:40,229 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:42,771 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:44:43,567 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:46,068 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:44:47,197 INFO clearmatch.worker: extraction finished: job 119  5000377914.pdf  -> CREATED / RECONCILE  invoice_id=185
+2026-11-02 19:44:47,207 INFO clearmatch.worker: extraction started: job 120  5000387769.pdf  (WATCH)
+2026-11-02 19:44:57,803 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:45:12,310 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:45:13,024 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:45:15,779 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:45:17,134 INFO clearmatch.worker: extraction finished: job 120  5000387769.pdf  -> CREATED / MATCHED  invoice_id=186
+2026-11-02 19:45:17,147 INFO clearmatch.worker: extraction started: job 121  5000392138.pdf  (WATCH)
+2026-11-02 19:45:27,785 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:45:32,147 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:45:36,937 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:45:40,654 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:45:41,824 INFO clearmatch.worker: extraction finished: job 121  5000392138.pdf  -> CREATED / RECONCILE  invoice_id=187
+2026-11-02 19:45:41,855 INFO clearmatch.worker: extraction started: job 122  5000392913.pdf  (WATCH)
+2026-11-02 19:45:47,120 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:45:56,525 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:00,321 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:46:00,350 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:01,494 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:02,711 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:04,954 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:07,175 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:08,819 INFO clearmatch.worker: extraction finished: job 122  5000392913.pdf  -> CREATED / RECONCILE  invoice_id=188
+2026-11-02 19:46:08,831 INFO clearmatch.worker: extraction started: job 123  5000393525.pdf  (WATCH)
+2026-11-02 19:46:15,027 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:46:29,166 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:30,032 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:46:32,558 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:46:33,664 INFO clearmatch.worker: extraction finished: job 123  5000393525.pdf  -> CREATED / MATCHED  invoice_id=189
+2026-11-02 19:46:33,675 INFO clearmatch.worker: extraction started: job 124  5000395483.pdf  (WATCH)
+2026-11-02 19:46:34,734 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:46:49,691 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:46:52,874 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:07,833 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:10,105 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:12,895 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:16,236 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:17,417 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:18,541 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:19,821 INFO clearmatch.worker: extraction finished: job 124  5000395483.pdf  -> CREATED / RECONCILE  invoice_id=190
+2026-11-02 19:47:19,832 INFO clearmatch.worker: extraction started: job 125  5000396086.pdf  (WATCH)
+2026-11-02 19:47:25,105 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:35,418 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:39,110 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:47:40,088 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:40,870 INFO clearmatch.worker: extraction finished: job 125  5000396086.pdf  -> CREATED / RECONCILE  invoice_id=191
+2026-11-02 19:47:40,885 INFO clearmatch.worker: extraction started: job 126  5000396179.pdf  (WATCH)
+2026-11-02 19:47:55,082 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:47:57,162 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:48:00,806 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:48:02,000 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:48:03,156 INFO clearmatch.worker: extraction finished: job 126  5000396179.pdf  -> CREATED / RECONCILE  invoice_id=192
+2026-11-02 19:48:03,168 INFO clearmatch.worker: extraction started: job 127  5000402140.pdf  (WATCH)
+2026-11-02 19:48:10,111 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:48:25,099 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:48:40,129 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:48:40,627 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:48:49,227 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:04,253 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:07,307 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:11,307 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:12,668 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:26,598 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:28,510 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:29,932 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:41,651 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:49:56,612 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:50:11,989 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:50:26,645 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:50:38,790 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:50:54,154 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:50:56,850 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:11,822 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:19,171 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:19,172 WARNING clearmatch.vlm: main pass failed (No valid JSON in response (repair failed)) - retrying compact
+2026-11-02 19:51:26,827 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:39,163 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:39,662 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:40,672 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:42,291 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:43,535 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:44,418 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:44,620 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:45,737 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:45,739 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:51:47,819 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:50,106 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:51:51,807 INFO clearmatch.worker: extraction finished: job 127  5000402140.pdf  -> CREATED / RECONCILE  invoice_id=193
+2026-11-02 19:51:51,821 INFO clearmatch.worker: extraction started: job 128  5000402702.pdf  (WATCH)
+2026-11-02 19:52:01,013 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:52:06,172 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:09,980 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:11,134 INFO clearmatch.worker: extraction finished: job 128  5000402702.pdf  -> CREATED / RECONCILE  invoice_id=194
+2026-11-02 19:52:11,146 INFO clearmatch.worker: extraction started: job 129  5000407239.pdf  (WATCH)
+2026-11-02 19:52:15,775 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:52:28,911 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:30,704 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:52:32,906 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:34,047 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:35,184 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:37,482 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:39,685 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:52:41,093 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:52:41,388 INFO clearmatch.worker: extraction finished: job 129  5000407239.pdf  -> CREATED / RECONCILE  invoice_id=195
+2026-11-02 19:52:41,401 INFO clearmatch.worker: extraction started: job 130  5000407251.pdf  (WATCH)
+2026-11-02 19:52:56,023 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:53:03,220 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:53:07,230 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:53:08,914 INFO clearmatch.worker: extraction finished: job 130  5000407251.pdf  -> CREATED / RECONCILE  invoice_id=196
+2026-11-02 19:53:08,929 INFO clearmatch.worker: extraction started: job 131  5000410881.pdf  (WATCH)
+2026-11-02 19:53:11,353 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:53:23,886 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:53:26,044 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:53:27,808 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:53:29,598 INFO clearmatch.worker: extraction finished: job 131  5000410881.pdf  -> CREATED / RECONCILE  invoice_id=197
+2026-11-02 19:53:29,609 INFO clearmatch.worker: extraction started: job 132  5000410882.pdf  (WATCH)
+2026-11-02 19:53:34,513 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:53:43,998 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:53:51,146 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:54:05,841 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:54:20,832 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:54:35,857 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:54:51,777 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:55:01,417 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:55:16,772 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:55:31,449 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:55:46,790 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:56:01,426 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:56:16,389 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:56:23,738 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:56:38,742 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:56:42,244 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:56:42,245 WARNING clearmatch.vlm: main pass failed (No valid JSON in response (repair failed)) - retrying compact
+2026-11-02 19:56:53,713 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:57:08,756 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:57:23,724 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:57:38,775 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:57:53,759 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:07,105 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:09,796 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:11,153 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:12,494 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:27,488 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:29,611 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:41,989 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:58:56,927 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:59:02,046 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:59:17,036 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:59:32,321 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:59:46,998 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 19:59:52,640 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 19:59:52,642 ERROR clearmatch.worker: job 132 failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\vlm.py", line 133, in extract_invoice
+    return self._ask(prompt, images[: self.cfg.main_pages])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\vlm.py", line 127, in _ask
+    return extract_json(raw)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\textutil.py", line 188, in extract_json
+    return repair_json(t)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\textutil.py", line 208, in repair_json
+    raise ValueError("No valid JSON in response (repair failed)")
+ValueError: No valid JSON in response (repair failed)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\worker.py", line 61, in run_job
+    res = process_pdf(db, job.stored_path, job.filename, actor=job.created_by, source=job.source,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 74, in process_pdf
+    data = vlm.extract_invoice(images, pdfio.text_layer(path))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\vlm.py", line 137, in extract_invoice
+    return self._ask(short, images[:2])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\vlm.py", line 127, in _ask
+    return extract_json(raw)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\textutil.py", line 188, in extract_json
+    return repair_json(t)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\textutil.py", line 208, in repair_json
+    raise ValueError("No valid JSON in response (repair failed)")
+ValueError: No valid JSON in response (repair failed)
+2026-11-02 19:59:52,664 INFO clearmatch.worker: extraction started: job 133  5000412955.pdf  (WATCH)
+2026-11-02 20:00:02,041 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:00:09,710 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:13,483 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:15,137 INFO clearmatch.worker: extraction finished: job 133  5000412955.pdf  -> CREATED / RECONCILE  invoice_id=198
+2026-11-02 20:00:15,149 INFO clearmatch.worker: extraction started: job 134  Adobe Scan 02 Nov 2026 (1).pdf  (WATCH)
+2026-11-02 20:00:15,430 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:00:27,439 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:30,153 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:30,374 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:00:31,098 INFO clearmatch.worker: extraction finished: job 134  Adobe Scan 02 Nov 2026 (1).pdf  -> CREATED / RECONCILE  invoice_id=199
+2026-11-02 20:00:31,112 INFO clearmatch.worker: extraction started: job 135  Adobe Scan 02 Nov 2026 (2).pdf  (WATCH)
+2026-11-02 20:00:42,908 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:45,380 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:00:45,780 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:00:46,715 INFO clearmatch.worker: extraction finished: job 135  Adobe Scan 02 Nov 2026 (2).pdf  -> CREATED / RECONCILE  invoice_id=200
+2026-11-02 20:00:46,728 INFO clearmatch.worker: extraction started: job 136  Adobe Scan 02 Nov 2026 (3).pdf  (WATCH)
+2026-11-02 20:00:58,473 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:00,414 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:01:01,278 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:02,242 INFO clearmatch.worker: extraction finished: job 136  Adobe Scan 02 Nov 2026 (3).pdf  -> CREATED / RECONCILE  invoice_id=201
+2026-11-02 20:01:02,253 INFO clearmatch.worker: extraction started: job 137  Adobe Scan 02 Nov 2026 (4).pdf  (WATCH)
+2026-11-02 20:01:14,460 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:15,386 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:01:17,442 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:18,412 INFO clearmatch.worker: extraction finished: job 137  Adobe Scan 02 Nov 2026 (4).pdf  -> CREATED / RECONCILE  invoice_id=202
+2026-11-02 20:01:18,423 INFO clearmatch.worker: extraction started: job 138  Adobe Scan 02 Nov 2026 (5).pdf  (WATCH)
+2026-11-02 20:01:30,373 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:01:30,379 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:33,219 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:34,284 INFO clearmatch.worker: extraction finished: job 138  Adobe Scan 02 Nov 2026 (5).pdf  -> CREATED / RECONCILE  invoice_id=203
+2026-11-02 20:01:34,295 INFO clearmatch.worker: extraction started: job 139  Adobe Scan 02 Nov 2026 (6).pdf  (WATCH)
+2026-11-02 20:01:45,354 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:01:48,814 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:51,668 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:01:53,195 INFO clearmatch.worker: extraction finished: job 139  Adobe Scan 02 Nov 2026 (6).pdf  -> CREATED / RECONCILE  invoice_id=204
+2026-11-02 20:01:53,209 INFO clearmatch.worker: extraction started: job 140  Adobe Scan 02 Nov 2026 (7).pdf  (WATCH)
+2026-11-02 20:02:00,370 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:02:10,481 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:13,317 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:14,380 INFO clearmatch.worker: extraction finished: job 140  Adobe Scan 02 Nov 2026 (7).pdf  -> CREATED / RECONCILE  invoice_id=205
+2026-11-02 20:02:14,395 INFO clearmatch.worker: extraction started: job 141  Adobe Scan 02 Nov 2026 (8).pdf  (WATCH)
+2026-11-02 20:02:15,375 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:02:26,912 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:30,312 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:30,381 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:02:32,086 INFO clearmatch.worker: extraction finished: job 141  Adobe Scan 02 Nov 2026 (8).pdf  -> CREATED / RECONCILE  invoice_id=206
+2026-11-02 20:02:32,099 INFO clearmatch.worker: extraction started: job 142  Adobe Scan 02 Nov 2026 (9).pdf  (WATCH)
+2026-11-02 20:02:45,384 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:02:45,713 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:48,910 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:02:50,664 INFO clearmatch.worker: extraction finished: job 142  Adobe Scan 02 Nov 2026 (9).pdf  -> CREATED / RECONCILE  invoice_id=207
+2026-11-02 20:02:50,675 INFO clearmatch.worker: extraction started: job 143  IMG_20261030_144828.jpg  (WATCH)
+2026-11-02 20:03:00,369 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:03:07,987 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:03:14,214 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:03:15,344 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:03:15,783 INFO clearmatch.worker: extraction finished: job 143  IMG_20261030_144828.jpg  -> CREATED / RECONCILE  invoice_id=208
+2026-11-02 20:03:15,794 INFO clearmatch.worker: extraction started: job 144  IMG_20261030_144837.jpg  (WATCH)
+2026-11-02 20:03:27,135 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:03:30,453 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:03:36,547 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:03:38,102 INFO clearmatch.worker: extraction finished: job 144  IMG_20261030_144837.jpg  -> CREATED / RECONCILE  invoice_id=209
+2026-11-02 20:03:38,114 INFO clearmatch.worker: extraction started: job 145  IMG_20261030_144923.jpg  (WATCH)
+2026-11-02 20:03:39,649 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:03:50,236 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:03:54,437 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:00,611 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:02,391 INFO clearmatch.worker: extraction finished: job 145  IMG_20261030_144923.jpg  -> CREATED / RECONCILE  invoice_id=210
+2026-11-02 20:04:02,404 INFO clearmatch.worker: extraction started: job 146  IMG_20261030_144928.jpg  (WATCH)
+2026-11-02 20:04:05,274 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:04:17,260 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:20,556 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:04:23,480 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:24,975 INFO clearmatch.worker: extraction finished: job 146  IMG_20261030_144928.jpg  -> CREATED / RECONCILE  invoice_id=211
+2026-11-02 20:04:24,986 INFO clearmatch.worker: extraction started: job 147  IMG_20261030_144932.jpg  (WATCH)
+2026-11-02 20:04:28,910 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:04:37,258 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:04:43,440 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:49,648 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:04:51,120 INFO clearmatch.worker: extraction finished: job 147  IMG_20261030_144932.jpg  -> CREATED / RECONCILE  invoice_id=212
+2026-11-02 20:04:51,132 INFO clearmatch.worker: extraction started: job 148  IMG_20261030_144939.jpg  (WATCH)
+2026-11-02 20:04:52,345 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:05:07,278 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:05:08,397 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:05:14,730 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:05:16,182 INFO clearmatch.worker: extraction finished: job 148  IMG_20261030_144939.jpg  -> CREATED / RECONCILE  invoice_id=213
+2026-11-02 20:05:16,203 INFO clearmatch.worker: extraction started: job 149  IMG_20261030_144943.jpg  (WATCH)
+2026-11-02 20:05:17,998 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:05:32,970 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:05:35,902 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:05:42,146 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:05:43,652 INFO clearmatch.worker: extraction finished: job 149  IMG_20261030_144943.jpg  -> CREATED / RECONCILE  invoice_id=214
+2026-11-02 20:05:43,664 INFO clearmatch.worker: extraction started: job 150  IMG_20261030_144947.jpg  (WATCH)
+2026-11-02 20:05:48,276 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:06:00,171 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:03,051 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:06:06,666 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:08,275 INFO clearmatch.worker: extraction finished: job 150  IMG_20261030_144947.jpg  -> CREATED / RECONCILE  invoice_id=215
+2026-11-02 20:06:08,291 INFO clearmatch.worker: extraction started: job 151  IMG_20261030_144951.jpg  (WATCH)
+2026-11-02 20:06:18,591 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:06:26,875 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:32,920 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:33,321 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:06:34,329 INFO clearmatch.worker: extraction finished: job 151  IMG_20261030_144951.jpg  -> CREATED / RECONCILE  invoice_id=216
+2026-11-02 20:06:34,342 INFO clearmatch.worker: extraction started: job 152  IMG_20261030_144956.jpg  (WATCH)
+2026-11-02 20:06:48,004 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:06:49,009 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:55,281 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:06:57,019 INFO clearmatch.worker: extraction finished: job 152  IMG_20261030_144956.jpg  -> CREATED / RECONCILE  invoice_id=217
+2026-11-02 20:06:57,034 INFO clearmatch.worker: extraction started: job 153  IMG_20261030_145045.jpg  (WATCH)
+2026-11-02 20:07:02,990 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:07:17,980 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:07:18,297 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:07:28,919 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:07:33,123 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:07:35,416 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:07:37,317 INFO clearmatch.worker: extraction finished: job 153  IMG_20261030_145045.jpg  -> CREATED / RECONCILE  invoice_id=218
+2026-11-02 20:07:37,327 INFO clearmatch.worker: extraction started: job 154  IMG_20261030_145052.jpg  (WATCH)
+2026-11-02 20:07:48,109 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:07:53,234 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:07:59,451 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:08:01,095 INFO clearmatch.worker: extraction finished: job 154  IMG_20261030_145052.jpg  -> CREATED / MATCHED  invoice_id=219
+2026-11-02 20:08:01,109 INFO clearmatch.worker: extraction started: job 155  IMG_20261030_145059.jpg  (WATCH)
+2026-11-02 20:08:03,181 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:08:17,626 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:08:18,256 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:08:23,544 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:08:25,613 INFO clearmatch.worker: extraction finished: job 155  IMG_20261030_145059.jpg  -> CREATED / RECONCILE  invoice_id=220
+2026-11-02 20:08:25,626 INFO clearmatch.worker: extraction started: job 156  IMG_20261030_145105.jpg  (WATCH)
+2026-11-02 20:08:33,120 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:08:40,435 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:08:46,613 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:08:48,144 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:08:48,150 INFO clearmatch.worker: extraction finished: job 156  IMG_20261030_145105.jpg  -> CREATED / RECONCILE  invoice_id=221
+2026-11-02 20:08:48,162 INFO clearmatch.worker: extraction started: job 157  IMG_20261030_145114.jpg  (WATCH)
+2026-11-02 20:09:03,181 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:09:03,244 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:09:09,238 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:09:10,444 INFO clearmatch.worker: extraction finished: job 157  IMG_20261030_145114.jpg  -> CREATED / RECONCILE  invoice_id=222
+2026-11-02 20:09:10,454 INFO clearmatch.worker: extraction started: job 158  IMG_20261030_145651.jpg  (WATCH)
+2026-11-02 20:09:18,138 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:09:31,672 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:09:33,153 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:09:37,440 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:09:38,698 INFO clearmatch.worker: extraction finished: job 158  IMG_20261030_145651.jpg  -> CREATED / RECONCILE  invoice_id=223
+2026-11-02 20:09:38,708 INFO clearmatch.worker: extraction started: job 159  IMG_20261030_145740.jpg  (WATCH)
+2026-11-02 20:09:48,161 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:09:53,640 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:10:00,129 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:10:01,609 INFO clearmatch.worker: extraction finished: job 159  IMG_20261030_145740.jpg  -> CREATED / RECONCILE  invoice_id=224
+2026-11-02 20:10:01,625 INFO clearmatch.worker: extraction started: job 160  IMG_20261030_145818.jpg  (WATCH)
+2026-11-02 20:10:03,195 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:10:18,166 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:10:26,182 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:10:32,313 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-02 20:10:33,228 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:10:33,653 INFO clearmatch.worker: extraction finished: job 160  IMG_20261030_145818.jpg  -> CREATED / RECONCILE  invoice_id=225
+2026-11-02 20:10:48,172 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:11:03,164 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:11:18,163 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:11:33,151 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:11:48,138 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:03,135 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:18,119 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:33,154 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:47,010 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:52,867 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:54,013 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:12:56,060 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-02 20:13:11,102 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
