@@ -69,6 +69,11 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
     gateway = get_sap() if gw is True else (gw or None)
     step = progress or (lambda s: None)
 
+    step("Checking page orientation")
+    try:
+        pdfio.fix_orientation(path, getattr(vlm, "page_rotation", None))
+    except Exception:
+        log.exception("page orientation check failed - reading the pages as they are")
     step("Reading invoice")
     images = pdfio.main_page_images(path)
     data = vlm.extract_invoice(images, pdfio.text_layer(path))
