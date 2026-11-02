@@ -32,13 +32,11 @@ Vehicle No, Gate Pass No, Delivery Note No, Buyer's Order No.
 Return ONLY: {"grn_number": "<value or empty string>"}
 """
 
-ROTATE_PROMPT = """
-This is one page of a scanned business document, possibly turned sideways or upside down.
-How many degrees must it be rotated CLOCKWISE so that the printed text reads upright, left to right?
-Look at the big printed words (e.g. "TAX INVOICE", company names, table headings).
-Answer 0 if it is already upright, 90 if the top of the text is currently on the LEFT side of the picture,
-270 if the top of the text is currently on the RIGHT side, 180 if upside down.
-Return ONLY: {"rotate": 0}
+UPRIGHT_PROMPT = """
+Look at this scanned page. Is the printed text UPRIGHT - horizontal lines of text that read normally from left
+to right, with the tops of the letters pointing to the top of the picture?
+Answer false if the text runs vertically (page turned sideways) or is upside down.
+Return ONLY: {"upright": true} or {"upright": false}
 """
 
 GRN_RETRY_HINT = """
@@ -99,7 +97,7 @@ Return exactly:
 class VlmClient(Protocol):
     def extract_invoice(self, images: list[str], text_layer: str) -> dict: ...
     def read_grn(self, images: list[str]) -> str: ...
-    def page_rotation(self, image_b64: str) -> int: ...
+    def page_is_upright(self, image_b64: str) -> bool | None: ...
     def health(self) -> tuple[bool, str]: ...
 
 
@@ -136,7 +134,12 @@ class OllamaVlm:
             raw = (msg.get("content") or msg.get("thinking") or "").strip()
         if not raw:
             raise ValueError(f"Ollama returned an empty response (done_reason={data.get('done_reason')})")
-        return extract_json(raw)
+        try:
+            return extract_json(raw)
+        except ValueError:
+            log.warning("model answer is not JSON (%d chars, done_reason=%s): %s ... %s", len(raw),
+                        data.get("done_reason"), raw[:200].replace("\n", " "), raw[-120:].replace("\n", " "))
+            raise
 
     # -- interface -------------------------------------------------------------------------------
     def extract_invoice(self, images: list[str], text_layer: str) -> dict:
@@ -146,16 +149,25 @@ class OllamaVlm:
         except Exception as exc:
             log.warning("main pass failed (%s) - retrying compact", exc)
             short = prompt + "\nIMPORTANT: keep it compact. At most 25 line items, item text max 40 characters."
-            return self._ask(short, images[:2])
+            try:
+                return self._ask(short, images[:2])
+            except Exception as exc2:
+                # last resort: header fields only, first page, no line items (they are taken from SQL later)
+                log.warning("compact pass failed (%s) - header-only pass", exc2)
+                head = PROMPT + ("\nIMPORTANT: return NO line items - \"lines\": []. Fill every other field. "
+                                 "Keep the answer short.")
+                return self._ask(head, images[:1], 1200)
 
-    def page_rotation(self, image_b64: str) -> int:
-        """0 / 90 / 180 / 270 degrees clockwise to make a scanned page upright."""
+    def page_is_upright(self, image_b64: str) -> bool | None:
+        """True / False = the model's yes/no on 'is the text upright?'; None = no usable answer."""
         try:
-            v = int(float(self._ask(ROTATE_PROMPT, [image_b64], 24).get("rotate")))
+            v = self._ask(UPRIGHT_PROMPT, [image_b64], 24).get("upright")
         except Exception as exc:
             log.warning("page orientation not understood: %s", exc)
-            return 0
-        return v if v in (0, 90, 180, 270) else 0
+            return None
+        if isinstance(v, str):
+            v = v.strip().lower() in ("true", "yes")
+        return bool(v) if v is not None else None
 
     def read_grn(self, images: list[str], max_retry: int = 2) -> str:
         best = ""
