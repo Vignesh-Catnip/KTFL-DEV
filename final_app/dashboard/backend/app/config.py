@@ -81,6 +81,7 @@ class Settings(BaseSettings):
     robot_auto_delay_seconds: int = 60       # wait for more invoices before starting (one SAP session at a time)
     robot_timeout_minutes: int = 120
     robot_log_dir: str = "./data/robot_runs"
+    log_dir: str = "./data/logs"             # backend.log (extraction, folder pickup, robot start) - one file per day, 30 days kept
     watcher_poll_seconds: int = 20
     cors_origins: str = "http://localhost:5173"
     plant_names: str = "{}"
