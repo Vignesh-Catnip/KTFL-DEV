@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
+import re
 from pathlib import Path
 
 import pymupdf
 
 from ..config import get_settings
 
+
+log = logging.getLogger("clearmatch.pdfio")
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".gif", ".webp")
 
@@ -80,7 +84,8 @@ def text_layer(path: str | Path, per_page: int = 2000) -> str:
     with _open(path) as doc:
         for i, p in enumerate(doc, 1):
             t = p.get_text("text")
-            if t.strip():
+            q = text_quality(t)
+            if t.strip() and q is not None and q >= 0.08:          # a sideways scan's OCR text is noise - do not feed it on
                 parts.append(f"--- PAGE {i} ---\n{t[:per_page]}")
     return "\n".join(parts)
 
@@ -114,3 +119,53 @@ def locate_pdf(filename: str | None, source_path: str | None = None) -> Path | N
 
 def b64_png_from_bytes(data: bytes) -> str:
     return base64.b64encode(data).decode()
+
+
+# ------------------------------------------------------------------ scanned pages that were fed in sideways
+def text_quality(text: str) -> float | None:
+    """Share of real words in a page's text layer. ~0.2-0.45 for a normal invoice, ~0.02 when the page was scanned
+    sideways and the scanner's OCR produced gibberish. None = no text layer at all."""
+    w = text.split()
+    if not w:
+        return None
+    good = [x for x in w if re.fullmatch(r"[A-Za-z]{4,}", x) and re.search(r"[aeiouAEIOU]", x)]
+    return len(good) / len(w)
+
+
+def _unreadable(page) -> bool:
+    q = text_quality(page.get_text())
+    return q is None or q < 0.08
+
+
+def fix_orientation(path: str | Path, probe) -> list[tuple[int, int]]:
+    """Scanned pages whose text layer is gibberish / missing are checked by the model ("how many degrees clockwise
+    to make this upright?") and turned with the PDF's own page rotation, so reading, GRN stamp and the dashboard
+    viewer all see them upright. Only the stored working copy is changed. Returns [(page_no, degrees)]."""
+    if probe is None or is_image_name(str(path)):
+        return []
+    cfg = get_settings()
+    done: list[tuple[int, int]] = []
+    doc = pymupdf.open(str(path))
+    try:
+        for i in range(min(doc.page_count, max(cfg.main_pages, cfg.grn_pages))):
+            pg = doc[i]
+            if pg.rotation or not _unreadable(pg):
+                continue
+            side = max(pg.rect.width, pg.rect.height)
+            pix = pg.get_pixmap(matrix=pymupdf.Matrix(1000 / side, 1000 / side), alpha=False)
+            try:
+                deg = int(probe(base64.b64encode(pix.tobytes("jpeg", jpg_quality=80)).decode()))
+            except Exception as exc:
+                log.warning("orientation check of page %s failed: %s", i + 1, exc)
+                continue
+            if deg in (90, 180, 270):
+                pg.set_rotation(deg)
+                done.append((i + 1, deg))
+        if done:
+            data = doc.tobytes()
+    finally:
+        doc.close()
+    if done:
+        Path(path).write_bytes(data)
+        log.info("%s: pages turned upright %s", Path(path).name, done)
+    return done
