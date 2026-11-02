@@ -32,6 +32,7 @@ def compare_lines(inv_lines: list[dict], gr_rows: list[dict], po_items: dict | N
     for idx, l in enumerate(inv_lines):
         q, a = to_float(l.get("quantity")), to_float(l.get("amount"))
         l["gr_quantity"], l["gr_amount"], l["gr_row"], l["line_status"] = None, None, None, None
+        l["gr_po"], l["gr_item"], l["sap_item_hsn"] = "", "", ""
         if not q and not a:
             continue
 
@@ -51,7 +52,7 @@ def compare_lines(inv_lines: list[dict], gr_rows: list[dict], po_items: dict | N
             used.add(hit)
             r = gr_rows[hit]
             l.update(gr_quantity=to_float(r["MENGE"]), gr_amount=to_float(r["DMBTR"]),
-                     gr_row=row_id(r), line_status="OK")
+                     gr_row=row_id(r), line_status="OK", gr_po=clean(r.get("EBELN")), gr_item=clean(r.get("EBELP")))
             continue
 
         # 2) nearest candidate, to say WHAT differs
@@ -85,7 +86,8 @@ def compare_lines(inv_lines: list[dict], gr_rows: list[dict], po_items: dict | N
         i, r = cand
         used.add(i)
         rq, rv = to_float(r["MENGE"]), to_float(r["DMBTR"])
-        l.update(gr_quantity=rq, gr_amount=rv, gr_row=row_id(r))
+        l.update(gr_quantity=rq, gr_amount=rv, gr_row=row_id(r),
+                 gr_po=clean(r.get("EBELN")), gr_item=clean(r.get("EBELP")))
         if q and abs(rq - q) > qtol:
             l["line_status"] = "QTY"
             rate = to_float(l.get("rate")) or (a / q if q else 0.0)
