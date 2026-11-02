@@ -18,6 +18,22 @@ from .services import robot, worker
 from .services.gst import load_gst_master
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+
+def _file_log() -> None:
+    """Everything the console shows is also written to <LOG_DIR>/backend.log (new file every midnight, 30 kept)."""
+    from logging.handlers import TimedRotatingFileHandler
+    try:
+        d = Path(get_settings().log_dir)
+        d.mkdir(parents=True, exist_ok=True)
+        h = TimedRotatingFileHandler(d / "backend.log", when="midnight", backupCount=30, encoding="utf-8")
+        h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        logging.getLogger().addHandler(h)
+    except OSError as exc:
+        logging.getLogger("clearmatch").warning("could not open the log file: %s", exc)
+
+
+_file_log()
 log = logging.getLogger("clearmatch")
 
 
