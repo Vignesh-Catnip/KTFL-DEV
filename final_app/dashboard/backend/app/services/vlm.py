@@ -43,14 +43,21 @@ FIELD RULES
 - vendor         : the SELLER company printed at the top. NEVER "Kalyani Technoforge".
 - invoice_number : value under "Invoice No." (e.g. "428/26-27", "AB2627143", "BM/26-27/1328").
 - invoice_date   : the "Dated" value next to the invoice number.
-- po_number      : "Buyer's Order No." — KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531).
-                   Strip any "PO-" prefix. If MORE THAN ONE different PO is printed anywhere on the
-                   invoice, list every one of them comma-separated in "po_numbers_all".
-                   If the printed Order No. is missing, unclear, or not a KTFL PO, also look for a
-                   HANDWRITTEN PO note - people scribble it near the transporter / "To Place" box, the
-                   receiving stamp, or in a side margin, often in SHORT FORM: "51/2448", "81-7531",
-                   "PO 51.2448". Read it exactly as written (keep the "/" "-" "." ) into "po_number" -
-                   it will be expanded automatically (51/2448 means PO 5100002448). Never invent one.
+- po_number      : ONLY take this from a field that is actually LABELLED as the purchase order, such as
+                   "PO No.", "P.O. No.", "Purchase Order", "Buyer's Order No.", "Order No.", "Order Ref.".
+                   Never pick a bare 10-digit (or short-form) number that has no such label next to it -
+                   it could be an invoice no., GSTIN digits, a vehicle/gate/LR/scroll number etc.
+                   KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531). Strip any "PO-" prefix.
+                   If MORE THAN ONE different PO is printed anywhere on the invoice, list every one of
+                   them comma-separated in "po_numbers_all".
+                   If the LABELLED Order No. is missing or unclear, also look for a HANDWRITTEN PO note
+                   next to one of those same labels (PO/Order/Buyer's Order) - people scribble it near
+                   the transporter / "To Place" box, the receiving stamp, or in a side margin, often in
+                   SHORT FORM: "51/2448", "81-7531", "PO 51.2448". Read it exactly as written (keep the
+                   "/" "-" "." ) into "po_number" - it will be expanded automatically (51/2448 means PO
+                   5100002448). If there is no such label anywhere, leave po_number empty - do not guess
+                   from an unlabelled number; it will be looked up from SAP using the GRN / invoice no. /
+                   line items instead.
 - vendor_code    : "Vendor Code" printed on the invoice, if present.
 - gstin          : the SELLER's GSTIN (15 chars). Never KTFL's own GSTIN (starts 27AABCK0618A).
 - hsn_sac        : the HSN/SAC code of the goods (4–8 digits) EXACTLY as printed on the invoice.
