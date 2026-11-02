@@ -14,7 +14,7 @@ from ..config import get_settings
 from ..database import session_factory
 from ..models import Job
 from .persist import audit
-from . import robot, workflow
+from . import pdfio, robot, workflow
 from .pipeline import process_pdf
 
 log = logging.getLogger("clearmatch.worker")
@@ -96,13 +96,15 @@ def _settled(p: Path, seconds: int) -> bool:
 
 
 def scan_folder(folder: Path, settle: int = 0) -> int:
-    """Input -> processing: queue every settled PDF of `folder` and move it to the processing folder.
+    """Input -> processing: queue every settled PDF or image (jpg/png/tif...) of `folder` and move it to the processing folder.
     Returns how many were queued."""
     n = 0
     SessionLocal = session_factory()
     f = workflow.folders()
     processing = f["processing"] if f["input"] is not None and f["input"] == folder else folder.parent / "processing"
-    for pdf in sorted(folder.glob("*.pdf")) + sorted(folder.glob("*.PDF")):
+    wanted = (".pdf",) + pdfio.IMAGE_EXTS
+    files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in wanted)
+    for pdf in files:
         if not _settled(pdf, settle):
             continue
         try:
