@@ -84,6 +84,12 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
     if grn:
         h["grn_number"] = grn
         h["field_sources"]["grn_number"] = "VISION"
+    # a number starting 50 is a goods-receipt number, never a PO (KTFL POs are 51 / 61 / 81 / 83 ...): the model
+    # sometimes reads the handwritten GRN as the PO -> drop it, the PO is then looked up in SQL from GRN / invoice no.
+    if h.get("po_number") and (h["po_number"].startswith("50") or h["po_number"] == h.get("grn_number")):
+        log.info("%s: '%s' looks like a GRN, not a PO - ignored", filename, h["po_number"])
+        h["po_number"] = ""
+    h["po_numbers_printed"] = [p for p in h.get("po_numbers_printed", []) if not p.startswith("50")]
 
     step("Checking SAP")
     notes = check_against_sap(db, h, lines, gateway)
