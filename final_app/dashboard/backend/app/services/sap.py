@@ -494,6 +494,11 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             gp = [r for r in gr_rows if clean(r["EBELN"]) == h["po_number"]] or gr_rows
             gp = [r for r in gp if clean(r["MBLNR"]) == h["grn_number"]] or gp
         h["line_mismatches"], extra = compare_lines(vision_lines, gp, ekpo_map)
+        for l in vision_lines:                       # HSN of the PO item THIS invoice line was matched to
+            item = ekpo_map.get((l.get("gr_po", ""), l.get("gr_item", "")))
+            if item:
+                vals = sorted({norm_hsn(item.get(f"HSNP_{c}")) for c in hc["EKPO"] if norm_hsn(item.get(f"HSNP_{c}"))})
+                l["sap_item_hsn"] = ", ".join(vals)
         if extra:
             notes.append(f"{len(extra)} SAP GR rows are not matched to any invoice line "
                          f"(e.g. {clean(extra[0].get('SGTXT'))[:30]} qty {to_float(extra[0]['MENGE']):g})")
