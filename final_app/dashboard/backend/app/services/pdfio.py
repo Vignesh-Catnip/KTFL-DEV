@@ -9,6 +9,13 @@ import pymupdf
 from ..config import get_settings
 
 
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".gif", ".webp")
+
+
+def is_image_name(name: str) -> bool:
+    return str(name).lower().endswith(IMAGE_EXTS)
+
+
 def page_count(path: str | Path) -> int:
     with pymupdf.open(str(path)) as doc:
         return doc.page_count
