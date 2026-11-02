@@ -30,6 +30,15 @@ Vehicle No, Gate Pass No, Delivery Note No, Buyer's Order No.
 Return ONLY: {"grn_number": "<value or empty string>"}
 """
 
+ROTATE_PROMPT = """
+This is one page of a scanned business document, possibly turned sideways or upside down.
+How many degrees must it be rotated CLOCKWISE so that the printed text reads upright, left to right?
+Look at the big printed words (e.g. "TAX INVOICE", company names, table headings).
+Answer 0 if it is already upright, 90 if the top of the text is currently on the LEFT side of the picture,
+270 if the top of the text is currently on the RIGHT side, 180 if upside down.
+Return ONLY: {"rotate": 0}
+"""
+
 GRN_RETRY_HINT = """
 Your previous answer was "{bad}" which cleans to "{bad_clean}" ({n} digits).
 A valid GRN has EXACTLY 10 digits and starts with "50". Re-read the handwriting stroke by stroke.
@@ -88,6 +97,7 @@ Return exactly:
 class VlmClient(Protocol):
     def extract_invoice(self, images: list[str], text_layer: str) -> dict: ...
     def read_grn(self, images: list[str]) -> str: ...
+    def page_rotation(self, image_b64: str) -> int: ...
     def health(self) -> tuple[bool, str]: ...
 
 
@@ -135,6 +145,15 @@ class OllamaVlm:
             log.warning("main pass failed (%s) - retrying compact", exc)
             short = prompt + "\nIMPORTANT: keep it compact. At most 25 line items, item text max 40 characters."
             return self._ask(short, images[:2])
+
+    def page_rotation(self, image_b64: str) -> int:
+        """0 / 90 / 180 / 270 degrees clockwise to make a scanned page upright."""
+        try:
+            v = int(float(self._ask(ROTATE_PROMPT, [image_b64], 24).get("rotate")))
+        except Exception as exc:
+            log.warning("page orientation not understood: %s", exc)
+            return 0
+        return v if v in (0, 90, 180, 270) else 0
 
     def read_grn(self, images: list[str], max_retry: int = 2) -> str:
         best = ""
