@@ -71,7 +71,7 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
 
     step("Checking page orientation")
     try:
-        pdfio.fix_orientation(path, getattr(vlm, "page_rotation", None))
+        pdfio.fix_orientation(path, getattr(vlm, "page_is_upright", None))
     except Exception:
         log.exception("page orientation check failed - reading the pages as they are")
     step("Reading invoice")
