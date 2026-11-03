@@ -4,7 +4,8 @@ from __future__ import annotations
 import re
 
 from ..config import get_settings
-from .textutil import (clean, clean_po, fix_amounts, fix_gstin, repair_gstin, format_date, is_valid_po, to_float)
+from .textutil import (clean, clean_po, fix_amounts, fix_gstin, repair_gstin, split_double_gstin,
+                       format_date, is_valid_po, to_float)
 
 
 def new_header(filename: str = "") -> dict:
@@ -58,7 +59,8 @@ def normalize(data: dict, filename: str):
     if isinstance(hw, list):
         hw = ", ".join(map(str, hw))
 
-    gstin = repair_gstin(fix_gstin(clean(data.get("gstin")).upper().replace(" ", "")))
+    gstin_raw = clean(data.get("gstin")).upper().replace(" ", "")
+    gstin = repair_gstin(fix_gstin(split_double_gstin(gstin_raw)))
     if any(gstin.startswith(p) for p in cfg.gstin_prefixes):
         gstin = ""                                         # the buyer's own GSTIN is never the vendor's
 
