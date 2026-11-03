@@ -57,14 +57,16 @@ FIELD RULES
                    Never pick a bare 10-digit (or short-form) number that has no such label next to it -
                    it could be an invoice no., GSTIN digits, a vehicle/gate/LR/scroll number etc.
                    KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531). Strip any "PO-" prefix.
+                   NEVER use the CIN number (Company Identification Number) as a PO. CIN always starts
+                   with U or L followed by 5 digits and letters (e.g. "U27106DL2005PLC142596") — ignore it.
                    If MORE THAN ONE different PO is printed anywhere on the invoice, list every one of
                    them comma-separated in "po_numbers_all".
                    If the LABELLED Order No. is missing or unclear, also look for a HANDWRITTEN PO note
-                   next to one of those same labels (PO/Order/Buyer's Order) - people scribble it near
-                   the transporter / "To Place" box, the receiving stamp, or in a side margin, often in
-                   SHORT FORM: "51/2448", "81-7531", "PO 51.2448". Read it exactly as written (keep the
-                   "/" "-" "." ) into "po_number" - it will be expanded automatically (51/2448 means PO
-                   5100002448). If there is no such label anywhere, leave po_number empty - do not guess
+                   written in pen/pencil near the TRANSPORTER / "To Place" box or in the RIGHT MARGIN of
+                   the invoice - people scribble it there in SHORT FORM such as "po- 51/2496", "51-2496",
+                   "PO 81.7531". Read it exactly as written (keep the "/" "-" ".") into "po_number" - it
+                   will be expanded automatically (51/2496 means PO 5100002496, 81-7531 means 8100007531).
+                   If there is no such label anywhere, leave po_number empty - do not guess
                    from an unlabelled number; it will be looked up from SAP using the GRN / invoice no. /
                    line items instead.
 - vendor_code    : "Vendor Code" printed on the invoice, if present.
