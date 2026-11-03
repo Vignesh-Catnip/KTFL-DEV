@@ -153,10 +153,10 @@ def validate(h: dict, lines: list[dict]) -> dict:
                          "SAP could not be reached - the invoice has not been cross-checked yet"))
     else:
         if h.get("po_number") and is_valid_po(h["po_number"]) and not h.get("po_in_sap"):
-            iss.append(issue("PO_NOT_IN_SAP", RECON, "SAP",
+            iss.append(issue("PO_NOT_IN_SAP", RECON, "MISSING",
                              f"PO {h['po_number']} not found in SAP (EKKO)", "po_number", h["po_number"]))
         if h.get("grn_number") and not h.get("grn_in_sap"):
-            iss.append(issue("GRN_NOT_IN_SAP", RECON, "SAP",
+            iss.append(issue("GRN_NOT_IN_SAP", RECON, "MISSING",
                              f"GRN {h['grn_number']} not found in SAP (MSEG) by stamp, invoice no, PO or lines",
                              "grn_number", h["grn_number"]))
     if h.get("multi_po_flag"):
