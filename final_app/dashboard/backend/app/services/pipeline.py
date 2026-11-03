@@ -10,6 +10,7 @@ part after a person corrected data on the dashboard.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,7 +24,7 @@ from .normalize import normalize
 from .persist import (apply_state, audit, find_duplicate, header_from_invoice, save_new_invoice,
                       sync_lines)
 from .sap import SapGateway, get_sap, sap_enrich
-from .textutil import clean_grn
+from .textutil import clean_grn, grn_is_valid
 from .validate import validate
 from .vlm import VlmClient, get_vlm
 
@@ -84,12 +85,31 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
     if grn:
         h["grn_number"] = grn
         h["field_sources"]["grn_number"] = "VISION"
+
+    # Filename GRN fallback: if the PDF is named exactly like a GRN (e.g. "5000402140.pdf"),
+    # and the VLM either missed it or read only a partial number, use the filename.
+    stem = re.sub(r"[^\d]", "", Path(filename).stem)
+    if grn_is_valid(stem):
+        if not grn_is_valid(h.get("grn_number", "")):
+            log.info("%s: GRN from filename (%s) used (VLM read '%s')", filename, stem, h.get("grn_number"))
+            h["grn_number"] = stem
+            h["field_sources"]["grn_number"] = "FILENAME"
+        elif h.get("grn_number") != stem:
+            log.info("%s: filename GRN %s differs from VLM GRN %s - keeping VLM", filename, stem, h["grn_number"])
     # a number starting 50 is a goods-receipt number, never a PO (KTFL POs are 51 / 61 / 81 / 83 ...): the model
     # sometimes reads the handwritten GRN as the PO -> drop it, the PO is then looked up in SQL from GRN / invoice no.
     if h.get("po_number") and (h["po_number"].startswith("50") or h["po_number"] == h.get("grn_number")):
         log.info("%s: '%s' looks like a GRN, not a PO - ignored", filename, h["po_number"])
         h["po_number"] = ""
     h["po_numbers_printed"] = [p for p in h.get("po_numbers_printed", []) if not p.startswith("50")]
+
+    # CIN (Company Identification Number) is NOT a PO. SLR Metaliks prints CIN on the invoice
+    # in the same area as Order No. and the model picks it up as the PO.
+    # CIN format: U or L, then 5 digits, 2 letters, 4 digits, 3 letters, 6 digits (21 chars total).
+    _CIN_RE = re.compile(r"^[UL]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$", re.IGNORECASE)
+    if h.get("po_number") and _CIN_RE.match(h["po_number"]):
+        log.info("%s: '%s' looks like a CIN number, not a PO - dropping", filename, h["po_number"])
+        h["po_number"] = ""
 
     step("Checking SAP")
     notes = check_against_sap(db, h, lines, gateway)
