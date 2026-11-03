@@ -146,6 +146,22 @@ def snap_gst_rate(rate, component: bool = False):
     return float(best) if abs(best - rate) <= 0.4 else round(rate, 2)
 
 
+def split_double_gstin(g: str) -> str:
+    """Sometimes OCR reads two GSTINs joined: 'AAHCR8563K/27AAHCR8563K1ZP' or
+    '27AABCK0618A1Z7/27AAHCR8563K1ZP'. Pick the one that is NOT KTFL's own GSTIN.
+    If both are foreign (or we cannot tell), return the last 15-char segment."""
+    parts = re.split(r"[/\s]+", g)
+    # keep only parts that look like a GSTIN (≥14 chars, starts with 2 digits + letters)
+    candidates = [p for p in parts if re.match(r"^\d{2}[A-Z]", p) and len(p) >= 14]
+    if not candidates:
+        return g
+    if len(candidates) == 1:
+        return candidates[0]
+    # prefer the valid one; if both valid, return the longer / last one
+    valid = [c for c in candidates if gstin_ok(fix_gstin(c[:15]))]
+    return valid[-1] if valid else candidates[-1]
+
+
 def fix_gstin(g: str) -> str:
     """Fix OCR confusion by position: 27ABRP19475K1ZQ -> 27ABRPI9475K1ZQ."""
     if len(g) != 15:
