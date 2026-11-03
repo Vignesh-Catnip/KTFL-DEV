@@ -262,6 +262,25 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         if not grn_rows:
             notes.append(f"GRN {grn} not found in SAP (MSEG)" +
                          (" - looking it up by invoice no / PO / line items" if allow_grn_switch else ""))
+            # GRN suffix search: VLM may have misread a few digits. If the extracted GRN is
+            # 8-9 digits (close but not right), search by the last 6 digits - accept only when
+            # exactly one GRN matches (ambiguous -> skip, let the invoice-reference path take over).
+            if allow_grn_switch and grn.startswith("50") and 8 <= len(grn) <= 9:
+                suffix = grn[-6:]
+                suffix_rows_raw = live(gw.rows(
+                    f"SELECT {mcols} FROM dbo.MSEG m "
+                    f"WHERE m.MBLNR LIKE :pat AND m.BWART IN :bwart{gw.mandt('m')}",
+                    pat=f"50%{suffix}", bwart=types))
+                matched_grns = sorted({clean(r["MBLNR"]) for r in suffix_rows_raw})
+                if len(matched_grns) == 1:
+                    new_grn = matched_grns[0]
+                    grn_rows = [r for r in suffix_rows_raw if clean(r["MBLNR"]) == new_grn]
+                    notes.append(f"GRN suffix search: '{grn}' matched exactly one GRN in SAP: {new_grn}")
+                    h["grn_number"] = new_grn
+                    h["field_sources"]["grn_number"] = "SAP_SUFFIX"
+                    grn = new_grn
+                elif len(matched_grns) > 1:
+                    notes.append(f"GRN suffix search: '{grn}' matched {len(matched_grns)} GRNs {matched_grns} - ambiguous, skipping")
 
     # 2) GR lines by the vendor's invoice reference (MSEG.XBLNR_MKPF) - spaces ignored
     inv_rows: list[dict] = []
