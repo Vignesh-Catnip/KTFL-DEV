@@ -75,6 +75,8 @@ FIELD RULES
                    If the invoice does not print an HSN/SAC code, return "" - never guess one.
 - plant / ship-to: if a KTFL plant code or unit is printed (e.g. "Plant: 1200"), put it in "plant_hint".
 - Amounts        : ₹6,19,763.14 -> 619763.14  (remove ₹ and thousands separators, keep the decimal).
+                   If the invoice prints "1,000.00" extract it as 1000.00 (preserve .00, do not round to 1000).
+                   Line item amounts must be extracted exactly as printed — if the invoice shows "5,250.00" return 5250.00, not 5250.
 - subtotal       : total taxable value BEFORE GST.
 - cgst/sgst/igst : the GST AMOUNTS in rupees, not the percentages.
 - gst_rate_percent: the GST RATE printed on the invoice as a number (18 for 9%+9% or 18%). 0 if none.
