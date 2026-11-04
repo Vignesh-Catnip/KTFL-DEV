@@ -215,7 +215,7 @@ section{display:block;width:100%;min-width:0}
 .doctab{border:0;background:transparent;padding:9px 14px;border-radius:7px;font-weight:600;font-size:13px;color:var(--muted)}
 .doctab:hover{background:#fff;color:var(--ink-soft)}
 .doctab.on{background:#fff;color:#000;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.1)}
-.docview{padding:22px;flex:1;overflow-y:auto;min-height:0;height:100%}  /* fills remaining height */
+.docview{padding:16px;flex:1;overflow-y:auto;min-height:0;height:100%;display:flex;flex-direction:column}  /* fills remaining height */
 .docpane{display:none}
 .docpane.on{display:block}
 
@@ -368,7 +368,7 @@ tbody tr.click{cursor:pointer}
 .login input{width:100%;border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:10px 12px;outline:none}
 .login input:focus{border-color:#000;box-shadow:0 0 0 3px rgba(0,0,0,.12)}
 .login .btn{width:100%;justify-content:center;margin-top:18px}
-.imgpane{max-width:100%;border:1px solid var(--line);border-radius:8px;display:block;margin:0 auto}
+.imgpane{width:100%;height:100%;object-fit:contain;border:1px solid var(--line);border-radius:8px;display:block;margin:0 auto;max-height:calc(100vh - 320px)}
 .pagebar{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:12px;font-size:13px}
 .mrow.hd{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
 .mrow.hd span:not(:first-child){text-align:right}
