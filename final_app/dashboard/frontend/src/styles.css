@@ -90,7 +90,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .sidebar-toggle:hover{background:rgba(0,0,0,.12)}
 .sidebar-toggle svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
 
-.main{flex:1;min-width:0;padding:26px 30px 60px;overflow-y:auto;height:100%;}
+.main{flex:1;min-width:0;padding:26px 30px 60px;overflow-y:auto;height:100%;min-width:0;}
 
 /* ---------- Screens ---------- */
 .screen{display:none;animation:fade .28s ease}
@@ -175,6 +175,8 @@ tbody tr:last-child td{border-bottom:0}
 .tag.blocked{color:#8b1a1a;background:#fde8e8;border:1px solid #f09090}
 
 /* ---------- Reconciliation screen ---------- */
+/* Recon page section wrapper */
+section{display:block;width:100%;min-width:0}
 .recon-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
 .back{width:40px;height:40px;flex-shrink:0;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);
   display:grid;place-items:center}
@@ -196,7 +198,7 @@ tbody tr:last-child td{border-bottom:0}
 /* ===== RECON GRID: left fixed, right scrolls independently ===== */
 .recon-grid{
   display:grid;
-  grid-template-columns:1.05fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:20px;
   align-items:start;        /* both panels start at top */
 }
