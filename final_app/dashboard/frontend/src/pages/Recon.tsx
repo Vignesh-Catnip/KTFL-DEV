@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, type CompareRow, type InvoiceDetail } from '../api'
+import { api, type CompareRow, type CompareLine, type InvoiceDetail } from '../api'
 import { useAuth } from '../auth'
 import { Icon, ICONS, MiroTag, QueueTag, dt, inr, useToast } from '../ui'
 
 const EDITABLE: Record<string, string> = { po_number: 'po_number', grn_number: 'grn_number', hsn_sac: 'hsn_sac', invoice_date: 'invoice_date' }
+
+/** SAC codes starting with 99 = service codes — flag on material invoice */
+const isSacServiceCode = (hsn: string | null) => hsn ? /^99/.test(hsn.trim()) : false
 const RESOLUTIONS = [
   ['Invoice corrected to GRN', false], ['Accept variance - approved deviation', true],
   ['Raise query with vendor', false], ['Debit note requested', false],
@@ -121,6 +124,15 @@ function GrnCopy({ d }: { d: InvoiceDetail }) {
     </div>
   )
 }
+/** Find HSN value from a po_items row — EKPO.J_1BNBM only (new snapshots: HSNP_J_1BNBM) */
+function poHsn(r: Record<string, unknown>): string {
+  // New snapshots: SAP service adds HSNP_ prefix → HSNP_J_1BNBM
+  if (r.HSNP_J_1BNBM) return String(r.HSNP_J_1BNBM)
+  // Old snapshots: plain column name
+  if (r.J_1BNBM) return String(r.J_1BNBM)
+  return '—'
+}
+
 function PoCopy({ d }: { d: InvoiceDetail }) {
   const items = d.compare.po_items
   if (!items.length) return <div className="empty">PO not found in SAP.</div>
@@ -137,9 +149,83 @@ function PoCopy({ d }: { d: InvoiceDetail }) {
       <table className="ptable">
         <thead><tr><th>Item</th><th>Description</th><th>HSN</th><th className="r">Qty</th><th className="r">Net value</th></tr></thead>
         <tbody>{items.map((r, i) => (
-          <tr key={i}><td className="mono">{s(r.EBELP)}</td><td>{s(r.TXZ01)}</td><td className="mono">{s(r.STAWN) || '—'}</td><td className="r">{s(r.MENGE)} {s(r.MEINS)}</td><td className="r">{inr(Number(r.NETWR))}</td></tr>
+          <tr key={i}><td className="mono">{s(r.EBELP)}</td><td>{s(r.TXZ01)}</td><td className="mono">{poHsn(r)}</td><td className="r">{s(r.MENGE)} {s(r.MEINS)}</td><td className="r">{inr(Number(r.NETWR))}</td></tr>
         ))}</tbody>
       </table>
+    </div>
+  )
+}
+
+function LineItemsSection({ lines, invoiceHsn, writable, onSaved, invoiceId }: {
+  lines: CompareLine[]; invoiceHsn: string | null; writable: boolean; onSaved: () => void; invoiceId: number
+}) {
+  const toast = useToast()
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editVals, setEditVals] = useState<{ item: string; quantity: string; rate: string; amount: string; hsn_sac: string }>({ item: '', quantity: '', rate: '', amount: '', hsn_sac: '' })
+  const [saving, setSaving] = useState(false)
+
+  const startEdit = (l: CompareLine) => {
+    setEditId(l.id)
+    setEditVals({ item: l.item, quantity: String(l.quantity), rate: String(l.rate), amount: String(l.amount), hsn_sac: l.hsn_sac ?? '' })
+  }
+  const cancelEdit = () => setEditId(null)
+  const saveEdit = async () => {
+    if (editId == null) return
+    setSaving(true)
+    try {
+      await api.edit(invoiceId, { [`line_${editId}`]: editVals })
+      toast('Line updated', 'Changes saved')
+      setEditId(null)
+      onSaved()
+    } catch (e) { toast('Save failed', (e as Error).message, true) } finally { setSaving(false) }
+  }
+
+  const hasSacService = lines.some(l => isSacServiceCode(l.hsn_sac)) || isSacServiceCode(invoiceHsn)
+  return (
+    <div className="msec">
+      <div className="lbl"><span className="t">Line items</span><span className="h">Invoice / GRN</span></div>
+      {hasSacService && (
+        <div className="sac-warn">⚠️ SAC code starting 99 detected — this is a <b>service HSN</b>. Material invoices should have goods HSN (e.g. 7326xxxx). Please verify with vendor.</div>
+      )}
+      <div style={{ overflowX: 'auto' }}>
+        <table className="ltable">
+          <thead><tr><th>Item</th><th>Invoice HSN</th><th>SAP HSN</th><th className="r">Qty</th><th className="r">GR qty</th><th className="r">Amount</th><th className="r">GR value</th><th /></tr></thead>
+          <tbody>{lines.map(l => editId === l.id ? (
+            <tr key={l.id} className="editing">
+              <td><input className="line-edit" value={editVals.item} onChange={e => setEditVals(v => ({ ...v, item: e.target.value }))} /></td>
+              <td><input className="line-edit" style={{ width: 90 }} value={editVals.hsn_sac} onChange={e => setEditVals(v => ({ ...v, hsn_sac: e.target.value }))} /></td>
+              <td className="mono" style={{ fontSize: 11, color: '#666' }}>{l.sap_item_hsn || '—'}</td>
+              <td><input className="line-edit" style={{ width: 70, textAlign: 'right' }} value={editVals.quantity} onChange={e => setEditVals(v => ({ ...v, quantity: e.target.value }))} /></td>
+              <td style={{ textAlign: 'right' }}>{l.gr_quantity ?? '—'}</td>
+              <td><input className="line-edit" style={{ width: 90, textAlign: 'right' }} value={editVals.amount} onChange={e => setEditVals(v => ({ ...v, amount: e.target.value }))} /></td>
+              <td style={{ textAlign: 'right' }}>{l.gr_amount == null ? '—' : inr(l.gr_amount)}</td>
+              <td style={{ display: 'flex', gap: 4 }}>
+                <button className="btn sm primary" onClick={saveEdit} disabled={saving}>✓</button>
+                <button className="btn sm" onClick={cancelEdit}>✕</button>
+              </td>
+            </tr>
+          ) : (
+            <tr key={l.id} className={l.line_status !== 'OK' && l.line_status !== 'NA' ? 'bad' : ''}>
+              <td title={l.item}>{l.item.slice(0, 32)}</td>
+              <td className="mono" style={{ fontSize: 11.5 }}>
+                {l.hsn_sac || '—'}{isSacServiceCode(l.hsn_sac) && <span className="sac-badge">SVC</span>}
+              </td>
+              <td className="mono" style={{ fontSize: 11, color: l.sap_item_hsn && l.hsn_sac && l.sap_item_hsn !== l.hsn_sac ? '#8b1a1a' : '#666' }}
+                  title={l.sap_item_hsn ? `SAP PO line HSN: ${l.sap_item_hsn}` : 'SAP HSN not available'}>
+                {l.sap_item_hsn || '—'}
+              </td>
+              <td style={{ textAlign: 'right' }}>{l.quantity}</td>
+              <td style={{ textAlign: 'right' }}>{l.gr_quantity ?? '—'}</td>
+              <td style={{ textAlign: 'right' }}>{inr(l.amount)}</td>
+              <td style={{ textAlign: 'right' }}>{l.gr_amount == null ? '—' : inr(l.gr_amount)}</td>
+              <td style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                {l.line_status === 'OK' ? <span className="mstat ok"><Icon d={ICONS.check} size={14} /></span> : l.line_status === 'NA' ? '' : <span className="tag review">{l.line_status}</span>}
+                {writable && <button className="btn sm ghost" style={{ padding: '2px 7px' }} onClick={() => startEdit(l)} title="Edit line">✎</button>}
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -236,10 +322,11 @@ export default function Recon() {
 
         <div className="match">
           <div className="match-h"><b>Match details</b><span className="conf">{Math.round((d.confidence || 0) * 100)}% AI confidence</span></div>
+          <div className="match-scroll">
           <div className="msec">
             <div className="lbl"><span className="t">Invoice vs SAP</span></div>
             <div className="mrow hd"><span>Field</span><span>Invoice</span><span>GRN</span><span /></div>
-            {d.compare.rows.map(r => (
+            {d.compare.rows.filter(r => r.field !== 'invoice_date').map(r => (
               <div className="mrow" key={r.field}>
                 <span className="field-k">{r.label}</span>
                 {EDITABLE[r.field] && writable ? (
@@ -280,22 +367,7 @@ export default function Recon() {
             </div>
           )}
 
-          <div className="msec">
-            <div className="lbl"><span className="t">Line items</span><span className="h">Invoice / GRN</span></div>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ltable">
-                <thead><tr><th>Item</th><th className="r">Qty</th><th className="r">GR qty</th><th className="r">Amount</th><th className="r">GR value</th><th /></tr></thead>
-                <tbody>{d.compare.lines.map(l => (
-                  <tr key={l.id} className={l.line_status !== 'OK' && l.line_status !== 'NA' ? 'bad' : ''}>
-                    <td title={l.item}>{l.item.slice(0, 30)}</td>
-                    <td style={{ textAlign: 'right' }}>{l.quantity}</td><td style={{ textAlign: 'right' }}>{l.gr_quantity ?? '—'}</td>
-                    <td style={{ textAlign: 'right' }}>{inr(l.amount)}</td><td style={{ textAlign: 'right' }}>{l.gr_amount == null ? '—' : inr(l.gr_amount)}</td>
-                    <td>{l.line_status === 'OK' ? <span className="mstat ok"><Icon d={ICONS.check} size={14} /></span> : l.line_status === 'NA' ? '' : <span className="tag review">{l.line_status}</span>}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          </div>
+          <LineItemsSection lines={d.compare.lines} invoiceHsn={d.hsn_sac} writable={writable} onSaved={load} invoiceId={iid} />
 
           <div className={'variance-bar ' + (d.variance_amount ? 'nonzero' : 'zero')}>
             <span className="lft">{d.variance_amount ? 'Amount variance' : 'No amount variance'}</span>
@@ -324,6 +396,7 @@ export default function Recon() {
             <div className="lbl"><span className="t">History</span></div>
             <div className="hist">{d.history.slice(0, 8).map((h, i) => <div key={i}><b>{h.action}</b> · {h.actor || 'system'} · {dt(h.at)}</div>)}</div>
           </div>
+          </div>{/* end match-scroll */}
         </div>
       </div>
     </section>
