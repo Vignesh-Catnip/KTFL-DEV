@@ -27,7 +27,6 @@ SEED = """
 150 X8 33 Invoice-Gujarat 2026
 150 X9 34 Invoice - Khed2 2027
 150 XA 35 Invoice - HT Rngn 2081
-150 XD 71 Invoice - INMT1 2022
 150 XE 72 Invoice - YIPL1 2301
 150 XG 81 Invoice - AMBT3 2028
 150 XH 82 Invoice - 2029 2029
@@ -46,7 +45,17 @@ def seed_rows() -> list[tuple[str, str, str, str, str]]:
 
 
 def load_master(db: Session) -> int:
-    """Insert the standard rows that are missing (never changes or deletes rows a person added / edited)."""
+    """Insert the standard rows that are missing (never changes or deletes rows a person added / edited).
+    Also removes XD (INMT1) from plant 2022 — plant 2022 uses X4 (AMBT1) only for material invoices."""
+    # Remove old XD entry for plant 2022 if present
+    removed = db.execute(
+        DocTypeMaster.__table__.delete().where(
+            (DocTypeMaster.plant_code == "2022") & (DocTypeMaster.doc_type == "XD")
+        )
+    ).rowcount
+    if removed:
+        log.info("Removed XD (INMT1) from plant 2022 doc-type master")
+
     have = {(r.client, r.doc_type, r.plant_code) for r in db.scalars(select(DocTypeMaster))}
     n = 0
     for client, dt, rng, desc, plant in seed_rows():
