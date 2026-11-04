@@ -225,7 +225,7 @@ def validate(h: dict, lines: list[dict]) -> dict:
     # ---------------------------------------------------------------- an approved deviation waives RECON
     if h.get("approved_variance"):
         for i in iss:
-            if i["severity"] == RECON and i["category"] != "MISSING":     # missing data can never be waived
+            if i["severity"] == RECON and i.get("category") != "MISSING":     # missing data can never be waived
                 i["severity"] = WAIVED
 
     # ---------------------------------------------------------------- how much of the invoice was read?
@@ -256,8 +256,8 @@ def validate(h: dict, lines: list[dict]) -> dict:
         "status": status,
         "red_flag": [i["message"] for i in iss if i["code"] == "MULTI_PO"],       # information only
         "missing": [i["message"] for i in iss if i["severity"] == BLOCK and i["code"] != "MULTI_PO"],
-        "mismatch": [i["message"] for i in iss if i["severity"] == RECON and i["category"] != "DATA"],
-        "doubt": [i["message"] for i in iss if i["severity"] == RECON and i["category"] == "DATA"],
+        "mismatch": [i["message"] for i in iss if i["severity"] == RECON and i.get("category") != "DATA"],
+        "doubt": [i["message"] for i in iss if i["severity"] == RECON and i.get("category") == "DATA"],
     }
     return h
 
@@ -270,16 +270,17 @@ def to_num(v) -> float:
 
 
 def exception_type(issues: list[dict]) -> str:
-    """Single label for the Error-flow list: the most serious open issue decides."""
-    open_ = [i for i in issues if i["severity"] in (BLOCK, RECON)]
+    """Single label for the Error-flow list: the most serious open issue decides.
+    Uses .get() for 'category' to safely handle legacy issue dicts that may be missing the key."""
+    open_ = [i for i in issues if i.get("severity") in (BLOCK, RECON)]
     if not open_:
         return ""
-    if any(i["severity"] == BLOCK for i in open_):
+    if any(i.get("severity") == BLOCK for i in open_):
         return "Blocked"
-    if any(i["category"] == "MISSING" for i in open_):
+    if any(i.get("category") == "MISSING" for i in open_):
         return "Data missing"
     for cat, label in (("QUANTITY", "Quantity mismatch"), ("PRICE", "Price variance"),
                        ("TAX", "Tax / HSN"), ("HSN", "Tax / HSN")):
-        if any(i["category"] == cat for i in open_):
+        if any(i.get("category") == cat for i in open_):
             return label
     return "Other mismatch"
