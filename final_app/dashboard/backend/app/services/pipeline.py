@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -122,6 +123,29 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
         return PipelineResult("DUPLICATE", dup.id, dup.queue, notes, duplicate_of=dup.id)
 
     inv = save_new_invoice(db, h, lines, source_path=str(path), page_count=pdfio.page_count(path))
+
+    # SAC 99xx check: material invoices (non-subcon) with a service HSN starting 99 should be
+    # flagged and their PDF copied to an exception subfolder for human review.
+    _sac = (h.get("hsn_sac") or "").strip()
+    _line_hsns = [str(l.get("hsn_sac") or "").strip() for l in lines]
+    _has_sac99 = _sac.startswith("99") or any(s.startswith("99") for s in _line_hsns)
+    # Only flag if this looks like a material invoice (PO starting 51/61, not 81/82/83)
+    _po = (h.get("po_number") or "").strip()
+    _is_material = bool(re.match(r"^(51|61)\d{8}", _po)) or not bool(re.match(r"^(81|82|83)\d{8}", _po))
+    if _has_sac99 and _is_material:
+        exc_dir = path.parent / "exceptions" / "sac99"
+        exc_dir.mkdir(parents=True, exist_ok=True)
+        dest = exc_dir / path.name
+        try:
+            shutil.copy2(str(path), str(dest))
+            log.warning("SAC 99xx on material invoice %s — PDF copied to %s", filename, dest)
+            inv.issues = list(inv.issues or []) + [{"severity": "RECON", "message": "SAC code starts with 99 (service HSN) on a material invoice — verify HSN with vendor"}]
+            if inv.queue == "MATCHED":
+                inv.queue = "RECONCILE"
+                inv.status = "SAC_SERVICE"
+        except Exception:
+            log.exception("Could not copy SAC-99 PDF to exception folder")
+
     audit(db, f"EXTRACTED_{h['queue']}", inv.id,
           {"file": filename, "source": source, "model": get_vlm_name(), "queue": h["queue"],
            "issues": [i["message"] for i in h["issues"] if i["severity"] in ("BLOCK", "RECON")],
