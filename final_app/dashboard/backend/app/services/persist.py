@@ -90,6 +90,10 @@ def sync_lines(inv: Invoice, lines: list[dict]) -> None:
         row.gr_amount = l.get("gr_amount")
         row.gr_row = l.get("gr_row")
         row.line_status = l.get("line_status")
+        # SAP HSN for this PO line item (compare only — never overwrites the invoice's own HSN)
+        sap_hsn = l.get("sap_item_hsn")
+        if sap_hsn:
+            row.sap_item_hsn = sap_hsn
     for row in existing[len(lines):]:
         inv.lines.remove(row)
 
