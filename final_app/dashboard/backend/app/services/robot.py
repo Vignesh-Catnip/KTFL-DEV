@@ -263,17 +263,40 @@ def stop_current() -> bool:
 
 
 # ------------------------------------------------------------------------------ background timer
+_PERIODIC_CHECK_SECONDS = 60   # check for waiting MATCHED invoices every minute
+
 def _loop() -> None:
     global _auto_due
+    last_periodic: float = 0.0
     while not _stop.is_set():
+        now_t = time.time()
+
+        # 1. Event-driven: a matched invoice arrived and scheduled an auto-run
         due = _auto_due
-        if due and time.time() >= due and _running_id is None:
+        if due and now_t >= due and _running_id is None:
             _auto_due = None
             try:
                 r = trigger("AUTO", "AUTO")
-                log.info("auto-start robot: %s", r)
+                log.info("auto-start robot (event): %s", r)
             except Exception:
-                log.exception("auto start failed")
+                log.exception("auto start failed (event)")
+
+        # 2. Periodic: every minute check whether any MATCHED invoices are waiting
+        elif _running_id is None and (now_t - last_periodic) >= _PERIODIC_CHECK_SECONDS:
+            last_periodic = now_t
+            cfg = get_settings()
+            if cfg.robot_enabled and cfg.robot_auto_run and configured()[0]:
+                try:
+                    with session_factory()() as db:
+                        waiting = pending_count(db)
+                    if waiting > 0:
+                        log.info("Periodic check: %d matched invoice(s) waiting — starting robot", waiting)
+                        trigger("AUTO", "AUTO_PERIODIC")
+                    else:
+                        log.debug("Periodic check: no matched invoices waiting")
+                except Exception:
+                    log.exception("periodic matched-invoice check failed")
+
         _stop.wait(3)
 
 
