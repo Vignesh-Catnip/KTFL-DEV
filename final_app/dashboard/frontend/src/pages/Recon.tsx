@@ -19,15 +19,16 @@ function Stat({ s }: { s: CompareRow['status'] }) {
   return <span className="mstat bad" title={s === 'MISSING' ? 'Missing' : 'Does not match'}><Icon d={ICONS.x} size={14} /></span>
 }
 
-/** full-screen viewer: sharper image (render zoom 3), +/- buttons, mouse wheel, drag to move, double-click to toggle, Esc to close */
+/** full-screen viewer: sharper image (render zoom 3), +/- zoom, ⟲⟳ rotate, mouse wheel, drag, double-click to toggle, Esc to close */
 function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number; pages: number; onClose: () => void; onPage: (p: number) => void }) {
   const [src, setSrc] = useState('')
   const [z, setZ] = useState(1)
+  const [rot, setRot] = useState(0)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null)
   useEffect(() => {
     let url = ''
-    setSrc(''); setZ(1); setPos({ x: 0, y: 0 })
+    setSrc(''); setZ(1); setRot(0); setPos({ x: 0, y: 0 })
     api.blobUrl(`/api/invoices/${id}/page/${page}.png?zoom=3`).then(u => { url = u; setSrc(u) }).catch(() => setSrc(''))
     return () => { if (url) URL.revokeObjectURL(url) }
   }, [id, page])
@@ -38,11 +39,13 @@ function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number
       if (e.key === '-') setZ(v => Math.max(0.3, v / 1.25))
       if (e.key === 'ArrowRight' && page < pages) onPage(page + 1)
       if (e.key === 'ArrowLeft' && page > 1) onPage(page - 1)
+      if (e.key === 'r') setRot(v => (v + 90) % 360)
+      if (e.key === 'R') setRot(v => (v - 90 + 360) % 360)
     }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
   }, [page, pages, onClose, onPage])
-  const reset = () => { setZ(1); setPos({ x: 0, y: 0 }) }
+  const reset = () => { setZ(1); setRot(0); setPos({ x: 0, y: 0 }) }
   const openPdf = async () => { const u = await api.blobUrl(`/api/invoices/${id}/file`); window.open(u, '_blank') }
   return (
     <div className="viewer" role="dialog" aria-label="Invoice viewer" onClick={onClose}>
@@ -51,6 +54,8 @@ function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number
         <button className="btn sm" onClick={() => setZ(v => Math.max(0.3, v / 1.25))} aria-label="Zoom out">−</button>
         <span style={{ minWidth: 48, textAlign: 'center' }}>{Math.round(z * 100)}%</span>
         <button className="btn sm" onClick={() => setZ(v => Math.min(6, v * 1.25))} aria-label="Zoom in">+</button>
+        <button className="btn sm" onClick={() => setRot(v => (v - 90 + 360) % 360)} aria-label="Rotate left" title="Rotate left (Shift+R)">⟲</button>
+        <button className="btn sm" onClick={() => setRot(v => (v + 90) % 360)} aria-label="Rotate right" title="Rotate right (R)">⟳</button>
         <button className="btn sm" onClick={reset}>Fit</button>
         <button className="btn sm" onClick={openPdf}>Open PDF</button>
         <button className="btn sm" onClick={onClose}>Close ✕</button>
@@ -62,7 +67,7 @@ function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number
         onMouseUp={() => { drag.current = null }} onMouseLeave={() => { drag.current = null }}
         onDoubleClick={() => (z === 1 ? setZ(2.5) : reset())}>
         {src ? <img src={src} alt={`Invoice page ${page}`} draggable={false}
-          style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${z})`, cursor: drag.current ? 'grabbing' : 'grab' }} />
+          style={{ transform: `translate(${pos.x}px, ${pos.y}px) rotate(${rot}deg) scale(${z})`, cursor: drag.current ? 'grabbing' : 'grab', transition: drag.current ? 'none' : 'transform 0.2s ease' }} />
           : <span className="spin" />}
       </div>
     </div>
@@ -81,9 +86,9 @@ function InvoicePages({ id, pages }: { id: number; pages: number }) {
     return () => { if (url) URL.revokeObjectURL(url) }
   }, [id, p])
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {pages > 1 && (
-        <div className="pagebar">
+        <div className="pagebar" style={{ flexShrink: 0 }}>
           <button className="btn sm" disabled={p <= 1} onClick={() => setP(p - 1)}>‹</button>
           <span>Page {p} of {pages}</span>
           <button className="btn sm" disabled={p >= pages} onClick={() => setP(p + 1)}>›</button>
@@ -91,7 +96,7 @@ function InvoicePages({ id, pages }: { id: number; pages: number }) {
       )}
       {err ? <div className="empty">{err}</div> : src ? (
         <>
-          <div className="muted" style={{ textAlign: 'center', fontSize: 12, marginBottom: 6 }}>Click the invoice to open it full screen and zoom</div>
+          <div className="muted" style={{ textAlign: 'center', fontSize: 12, marginBottom: 6, flexShrink: 0 }}>Click to view full screen · zoom · rotate</div>
           <img className="imgpane" style={{ cursor: 'zoom-in' }} src={src} alt={`Invoice page ${p}`} onClick={() => setBig(true)} />
         </>
       ) : <div className="empty"><span className="spin" /></div>}
@@ -283,7 +288,7 @@ export default function Recon() {
   }
 
   return (
-    <section>
+    <section style={{ maxWidth: '100%', width: '100%' }}>
       <div className="recon-top">
         <button className="back" onClick={() => nav(-1)} aria-label="Back"><Icon d={ICONS.back} size={18} /></button>
         <div className="recon-title">
@@ -350,7 +355,7 @@ export default function Recon() {
               <div className="cellbox po mono">plant {d.plant_code || '—'}</div>
               <Stat s={d.doc_type ? 'OK' : 'MISSING'} />
             </div>
-            <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP’s HSN, used just to compare.</div>
+            <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
           </div>
 
           {open.length > 0 && (
