@@ -10,8 +10,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import AuditLog, Invoice, QUEUES, User
-from ..schemas import InvoiceEdit, ResolveIn
+from ..models import AuditLog, Invoice, InvoiceLine, QUEUES, User
+from ..schemas import InvoiceEdit, ResolveIn  # LineEdit kept in schemas for future typed use
 from ..security import current_user, require
 from ..config import get_settings
 from ..services import doctype, pdfio, robot
@@ -82,29 +82,81 @@ def detail(invoice_id: int, db: Session = Depends(get_db), _: User = Depends(cur
 
 
 @router.patch("/{invoice_id}")
-def edit(invoice_id: int, body: InvoiceEdit, db: Session = Depends(get_db),
+def edit(invoice_id: int, body: dict, db: Session = Depends(get_db),
          user: User = Depends(require("approver"))):
     inv = _get(db, invoice_id)
     if inv.miro_status in ("POSTED", "PARKED"):
         raise HTTPException(409, f"Invoice already {inv.miro_status} in SAP - it cannot be edited")
-    changes = body.model_dump(exclude_unset=True)
-    if not changes:
+
+    # Separate line edits (key = "line_NNN") from header edits
+    line_changes: dict[int, dict] = {}
+    header_raw: dict = {}
+    for k, v in body.items():
+        if k.startswith("line_"):
+            try:
+                lid = int(k[5:])
+                if isinstance(v, dict):
+                    line_changes[lid] = v
+            except ValueError:
+                pass
+        else:
+            header_raw[k] = v
+
+    # Apply line edits
+    line_before: dict = {}
+    for lid, vals in line_changes.items():
+        line = db.get(InvoiceLine, lid)
+        if line is None or line.invoice_id != inv.id:
+            raise HTTPException(404, f"Line {lid} not found on this invoice")
+        line_before[lid] = {"item": line.item, "quantity": line.quantity, "amount": line.amount, "hsn_sac": line.hsn_sac}
+        if "item" in vals:
+            line.item = str(vals["item"]).strip()[:255]
+        if "quantity" in vals:
+            try:
+                line.quantity = float(str(vals["quantity"]).replace(",", ""))
+            except ValueError:
+                pass
+        if "amount" in vals:
+            try:
+                line.amount = float(str(vals["amount"]).replace(",", ""))
+            except ValueError:
+                pass
+        if "hsn_sac" in vals:
+            line.hsn_sac = str(vals["hsn_sac"]).strip()[:50] or None
+        if "rate" in vals:
+            try:
+                line.rate = float(str(vals["rate"]).replace(",", ""))
+            except ValueError:
+                pass
+
+    # Apply header edits via schema validation
+    changes: dict = {}
+    before: dict = {}
+    if header_raw:
+        parsed = InvoiceEdit.model_validate(header_raw)
+        changes = parsed.model_dump(exclude_unset=True)
+        for k, v in changes.items():
+            col = _EDIT_COL.get(k, k)
+            before[k] = getattr(inv, col)
+            if isinstance(v, str):
+                v = v.strip()
+            setattr(inv, col, v)
+            if k == "doc_type":
+                inv.doc_type = (v or "").upper() or None
+
+    if not changes and not line_changes:
         raise HTTPException(422, "Nothing to change")
-    before = {}
-    for k, v in changes.items():
-        col = _EDIT_COL.get(k, k)
-        before[k] = getattr(inv, col)
-        if isinstance(v, str):
-            v = v.strip()
-        setattr(inv, col, v)
-        if k == "doc_type":
-            inv.doc_type = (v or "").upper() or None
-    if find_duplicate(db, header_from_invoice(inv)[0] | {"invoice_number": inv.invoice_number,
+
+    if changes and find_duplicate(db, header_from_invoice(inv)[0] | {"invoice_number": inv.invoice_number,
                                                           "po_number": inv.po_number}, exclude_id=inv.id):
         db.rollback()
         raise HTTPException(409, "Another invoice with the same invoice number and PO already exists")
+
     recheck_invoice(db, inv, actor=user.username, manual_fields=set(changes), action="EDITED")
-    audit(db, "FIELDS_EDITED", inv.id, {"before": before, "after": changes}, user.username)
+    if line_before:
+        audit(db, "LINES_EDITED", inv.id, {"before": line_before, "lines": {str(k): v for k, v in line_changes.items()}}, user.username)
+    if changes:
+        audit(db, "FIELDS_EDITED", inv.id, {"before": before, "after": changes}, user.username)
     return {"queue": inv.queue, "status": inv.status}
 
 
