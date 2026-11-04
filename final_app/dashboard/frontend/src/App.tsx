@@ -17,6 +17,7 @@ function Shell() {
   const { user, logout } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [health, setHealth] = useState<{ sap: boolean; ollama: boolean; sapDetail: string; robot?: { enabled: boolean; configured: boolean; running: boolean; mode: string; waiting: number } } | null>(null)
+  const [sideOpen, setSideOpen] = useState(true)
   const loc = useLocation()
 
   useEffect(() => {
@@ -37,6 +38,9 @@ function Shell() {
       <header className="appbar">
         <div className="appbar-inner">
           <div className="brand-left">
+            <button className="sidebar-toggle" onClick={() => setSideOpen(o => !o)} aria-label="Toggle sidebar" title="Toggle sidebar">
+              <Icon d={ICONS.menu} />
+            </button>
             <img src={logoLeft} alt="" />
             <div className="brand-div" />
             <div className="product"><b>SAP MIRO Invoice Verification</b></div>
@@ -59,7 +63,7 @@ function Shell() {
         <div className="brand-accent" />
       </header>
       <div className="shell">
-        <aside className="side">
+        <aside className={'side' + (sideOpen ? '' : ' side-closed')}>
           <div className="side-inner">
             <div className="grp">Workspace</div>
             <NavLink className={({ isActive }) => 'nav-i' + (isActive ? ' on' : '')} to="/" end>
