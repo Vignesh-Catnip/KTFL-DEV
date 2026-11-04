@@ -24,6 +24,7 @@ export const ICONS = {
   refresh: ['M21 12a9 9 0 1 1-3-6.7L21 8', 'M21 3v5h-5'],
   dl: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3'],
   arrow: ['M5 12h14', 'M13 6l6 6-6 6'],
+  menu: ['M3 6h18', 'M3 12h18', 'M3 18h18'],
 }
 
 const QTAG: Record<string, [string, string]> = {
