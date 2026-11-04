@@ -139,7 +139,7 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
         try:
             shutil.copy2(str(path), str(dest))
             log.warning("SAC 99xx on material invoice %s — PDF copied to %s", filename, dest)
-            inv.issues = list(inv.issues or []) + [{"severity": "RECON", "message": "SAC code starts with 99 (service HSN) on a material invoice — verify HSN with vendor"}]
+            inv.issues = list(inv.issues or []) + [{"code": "SAC_SERVICE", "severity": "RECON", "category": "DATA", "field": "hsn_sac", "message": "SAC code starts with 99 (service HSN) on a material invoice — verify HSN with vendor", "invoice_value": _sac or (_line_hsns[0] if _line_hsns else ""), "sap_value": "", "variance": None}]
             if inv.queue == "MATCHED":
                 inv.queue = "RECONCILE"
                 inv.status = "SAC_SERVICE"
