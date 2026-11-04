@@ -137,6 +137,7 @@ class InvoiceLine(Base):
     gr_amount: Mapped[float | None] = mapped_column(Float)
     gr_row: Mapped[str | None] = mapped_column(String(60))                      # "MBLNR/EBELP"
     line_status: Mapped[str | None] = mapped_column(String(20))                 # OK / QTY / AMOUNT / MISSING
+    sap_item_hsn: Mapped[str | None] = mapped_column(String(100))               # HSN from EKPO for this line (compare only)
 
     invoice = relationship("Invoice", back_populates="lines")
 
