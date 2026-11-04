@@ -51,12 +51,11 @@ def build_compare(inv: Invoice) -> dict:
              inv.sap_tax_code, inv.sap_tax_code, st("gst_tax_code")),
         _row("hsn_sac", "HSN / SAC / NCM", inv_hsn, grn_hsn, po_hsn or sap_hsn, hsn_state,
              "HSN is read from the invoice only; SAP values are shown for comparison"),
-        _row("invoice_date", "Invoice date", inv.invoice_date, inv.grn_date, inv.po_date, st("invoice_date"),
-             "second column = GRN date, third = PO date"),
     ]
     lines = [{
         "id": l.id, "item": l.item, "quantity": l.quantity, "uom": l.uom, "rate": l.rate, "amount": l.amount,
-        "hsn_sac": l.hsn_sac, "gr_quantity": l.gr_quantity, "gr_amount": l.gr_amount, "gr_row": l.gr_row,
+        "hsn_sac": l.hsn_sac, "sap_item_hsn": l.sap_item_hsn,
+        "gr_quantity": l.gr_quantity, "gr_amount": l.gr_amount, "gr_row": l.gr_row,
         "line_status": l.line_status or "NA",
     } for l in inv.lines]
     return {"rows": rows, "lines": lines,
