@@ -52,7 +52,8 @@ export interface InvoiceRow {
 export interface CompareRow { field: string; label: string; invoice: string; grn: string; po: string; status: 'OK' | 'MISMATCH' | 'MISSING' | 'NA'; note: string }
 export interface CompareLine {
   id: number; item: string; quantity: number; uom: string | null; rate: number; amount: number
-  hsn_sac: string | null; gr_quantity: number | null; gr_amount: number | null; gr_row: string | null; line_status: string
+  hsn_sac: string | null; sap_item_hsn: string | null
+  gr_quantity: number | null; gr_amount: number | null; gr_row: string | null; line_status: string
 }
 export interface DocTypeOption { doc_type: string; number_range: string | null; description: string | null }
 export interface InvoiceDetail extends InvoiceRow {
