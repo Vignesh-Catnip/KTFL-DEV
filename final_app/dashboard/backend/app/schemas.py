@@ -27,6 +27,15 @@ class InvoiceEdit(BaseModel):
     total: float | None = None
 
 
+class LineEdit(BaseModel):
+    """Fields a person may correct on a single invoice line."""
+    item: str | None = None
+    quantity: float | None = None
+    rate: float | None = None
+    amount: float | None = None
+    hsn_sac: str | None = None
+
+
 class ResolveIn(BaseModel):
     resolution: str = Field(min_length=2, max_length=40)       # e.g. "Accept variance", "Debit note"
     note: str = ""
