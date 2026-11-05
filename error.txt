@@ -1,18 +1,4 @@
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>git add .gitignore
+git rm -r --cached --ignore-unmatch final_app/dashboard/backend/data/uploads
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>git add -A
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>git status
-On branch clean-branch
-Changes to be committed:
-  (use "git restore --staged <file>..." to unstage)
-        modified:   .gitignore
-        modified:   final_app/dashboard/backend/data/logs/backend.log
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-        modified:   final_app/dashboard/backend/data/logs/backend.log
-
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>
+git add .gitignore
+git status
