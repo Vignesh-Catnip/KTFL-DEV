@@ -1,4 +1,4 @@
-
+git config lfs.https://github.com/Vignesh-Catnip/KTFL-DEV.git/info/lfs.locksverify false
 (venv) C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend>uvicorn app.main:app --host 0.0.0.0 --port 7000
 ←[32mINFO←[0m:     Started server process [←[36m27116←[0m]
 ←[32mINFO←[0m:     Waiting for application startup.
