@@ -5,3 +5,4 @@ dashboard/dashboard.zip
 *.mp4
 *.zip
 video/
+/final_app/dashboard/backend/data/uploads/
