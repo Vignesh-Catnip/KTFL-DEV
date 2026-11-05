@@ -1,55 +1,8 @@
-
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>git add .gitignore
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION>git status
-On branch clean-branch
-Changes to be committed:
-  (use "git restore --staged <file>..." to unstage)
-        deleted:    final_app/dashboard/backend/data/uploads/1793794963801_20261102143242690.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794963837_5000298627.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794963860_5000340789 (1).pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964094_5000340790.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964113_5000340791.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964142_5000340793.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964161_5000341287.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964182_5000344355.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964200_5000360088 material.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964222_5000360144 material.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964240_5000365809.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964262_5000370742.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964292_5000373614.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964328_5000373619.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964348_5000376005.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964370_5000377736.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964391_5000377743.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964416_5000377914.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964434_5000387769.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964469_5000392138.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964561_5000392913.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964589_5000393525.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964609_5000395483.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964762_5000396086.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964812_5000396179.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964838_5000402140.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964859_5000402702.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964887_5000407239.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964907_5000407251.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964934_5000410006.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964955_5000410881.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794964985_5000410882.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965010_5000412955.pdf
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965029_IMG_20261030_145045.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965048_IMG_20261030_145052.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965067_IMG_20261030_145059.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965101_IMG_20261030_145105.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965125_IMG_20261030_145114.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965249_IMG_20261030_145651.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965268_IMG_20261030_145740.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/1793794965288_IMG_20261030_145818.jpg
-        deleted:    final_app/dashboard/backend/data/uploads/exceptions/sac99/1793794963837_5000298627.pdf
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-        modified:   final_app/dashboard/backend/data/logs/backend.log
+dashboard.zip 
+dashboard/dashboard.zip 
+dashboard.zip 
+dashboard/dashboard.zip 
+*.mp4
+*.zip
+video/
+/final_app/dashboard/backend/data/uploads/
