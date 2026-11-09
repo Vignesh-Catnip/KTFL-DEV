@@ -18,7 +18,7 @@ import re
 from ..config import get_settings
 from ..models import (QUEUE_BLOCKED, QUEUE_MATCHED, QUEUE_RECONCILE, STATUS_MANUAL, STATUS_MATCHED,
                       STATUS_REVIEW)
-from .textutil import (GSTIN_RE, GST_STANDARD_RATES, grn_is_valid, is_valid_po, norm_hsn)
+from .textutil import (GSTIN_RE, GST_STANDARD_RATES, grn_is_valid, is_service_po, is_valid_po, norm_hsn)
 
 BLOCK, RECON, INFO, WAIVED = "BLOCK", "RECON", "INFO", "WAIVED"
 
@@ -117,11 +117,19 @@ def validate(h: dict, lines: list[dict]) -> dict:
     need("invoice_date", "Invoice date", "MISSING_INVOICE_DATE")
     need("vendor", "Vendor name", "MISSING_VENDOR")
     need("gstin", "Vendor GSTIN", "MISSING_GSTIN")
-    if not is_valid_po(h.get("po_number", "")):
+
+    # ---- Service PO block (81/82/83): these invoices must NOT be extracted or posted ----
+    _po = h.get("po_number", "")
+    if is_service_po(_po):
+        iss.append(issue("SERVICE_PO_NOT_ALLOWED", BLOCK, "MISSING",
+                         f"PO {_po} is a service PO (prefix {_po[:2]}) — only material POs (51/61) "
+                         f"can be extracted and posted through ClearMatch. "
+                         f"Service invoices (81/82/83) must be processed manually.",
+                         "po_number", _po))
+    elif not is_valid_po(_po):
         iss.append(issue("MISSING_PO", BLOCK, "MISSING",
-                         "PO number is missing" if not h.get("po_number")
-                         else f"PO '{h['po_number']}' is not a valid 10-digit number", "po_number",
-                         h.get("po_number", "")))
+                         "PO number is missing" if not _po
+                         else f"PO '{_po}' is not a valid 10-digit number", "po_number", _po))
     if not h.get("grn_number"):
         iss.append(issue("MISSING_GRN", BLOCK, "MISSING", "GRN number is missing", "grn_number"))
     elif not grn_is_valid(h["grn_number"]):
