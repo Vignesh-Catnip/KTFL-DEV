@@ -1,295 +1,334 @@
-"""Small parsing / formatting helpers (numbers, PO / GRN / GSTIN clean-up, dates)."""
+"""
+Starts the MIRO robot (Robot Framework, SAP GUI scripting) from the dashboard and reports what it did.
+
+ * MATCHED invoices are picked up automatically (debounced) - robot_auto_run
+ * "Push to SAP MIRO" and "Run robot now" start it immediately
+ * only ONE robot process at a time (one SAP GUI session); a start request while it runs is remembered
+   and the robot is started again right after, so nothing waits for the next schedule
+ * the robot reads its own .env (PG + SAP credentials). The dashboard never reads or shows them; it only
+   looks for MIRO_MODE to display the mode.
+"""
 from __future__ import annotations
 
-import json
+import logging
+import os
 import re
-from datetime import date, datetime
+import signal
+import subprocess
+import sys
+import threading
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from sqlalchemy import func, or_, select
+
+from ..config import get_settings
+from ..database import session_factory
+from ..models import AuditLog, Invoice, RobotRun
+from .persist import audit
+
+log = logging.getLogger("clearmatch.robot")
+
+_lock = threading.RLock()
+_running_id: int | None = None
+_rerun = False
+_auto_due: float | None = None
+_proc: subprocess.Popen | None = None
+_stop = threading.Event()
+_thread: threading.Thread | None = None
 
 
-def to_float(v) -> float:
-    if v is None:
-        return 0.0
-    if isinstance(v, bool):
-        return float(v)
-    if isinstance(v, (int, float)):
-        return float(v)
-    s = re.sub(r"[^0-9.\-]", "", str(v).replace(",", "").replace("₹", ""))
+def now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+# ------------------------------------------------------------------------------ configuration
+def robot_paths():
+    """(robot folder, task file). Forgiving: ROBOT_DIR may also be given as the task file or the tasks folder."""
+    cfg = get_settings()
+    if not cfg.robot_dir.strip():
+        return None, None
+    root = Path(cfg.robot_dir.strip().strip('"').strip("'")).expanduser()
+    task_rel = cfg.robot_task.strip() or "tasks/miro_posting.robot"
+    if root.suffix.lower() == ".robot":                      # ROBOT_DIR=...\miro_robot\tasks\miro_posting.robot
+        task = root
+        root = root.parent.parent if root.parent.name.lower() == "tasks" else root.parent
+        return root, task
+    if root.name.lower() == "tasks":                        # ROBOT_DIR=...\miro_robot\tasks
+        root = root.parent
+    return root, root / task_rel
+
+
+def configured() -> tuple[bool, str]:
+    cfg = get_settings()
+    if not cfg.robot_enabled:
+        return False, "Robot is switched off (ROBOT_ENABLED=false)"
+    root, task = robot_paths()
+    if root is None:
+        return False, "ROBOT_DIR is not set"
+    if not root.is_dir():
+        return False, f"ROBOT_DIR folder not found: {root}"
+    if not task.is_file():
+        return False, f"Robot task file not found: {task}"
+    return True, ""
+
+
+def robot_mode() -> str:
+    """CHECK / PARK / POST. Only the MIRO_MODE line of the robot's .env is read - nothing else."""
+    cfg = get_settings()
+    if cfg.robot_mode.strip():
+        return cfg.robot_mode.strip().upper()
+    root, _ = robot_paths()
+    if root and (root / ".env").is_file():
+        try:
+            for line in (root / ".env").read_text(encoding="utf-8", errors="ignore").splitlines():
+                m = re.match(r"\s*MIRO_MODE\s*=\s*([A-Za-z]+)", line)
+                if m:
+                    return m.group(1).upper()
+        except OSError:
+            pass
+    return os.environ.get("MIRO_MODE", "CHECK").upper()
+
+
+def pending_count(db, mode: str | None = None) -> int:
+    """Matched invoices the robot still has to handle in the current mode.
+    CHECK mode (dry run) never writes invoices.miro_status - its result is only in audit_logs (MIRO_CHECK_*).
+    An invoice that already has such a result (and was not changed since) is NOT waiting, so a restart of the
+    dashboard or a new run does not start the robot again for invoices that were already checked."""
+    mode = mode or robot_mode()
+    cond = or_(Invoice.miro_status.is_(None), Invoice.miro_status == "")
+    if mode != "CHECK":
+        cond = or_(cond, Invoice.miro_status == "CHECKED",
+                   (Invoice.miro_status == "FAILED") & (func.coalesce(Invoice.miro_attempts, 0) < 3))
+    # Exclude service POs (81/82/83) — robot must never auto-post service invoices
+    from sqlalchemy import not_
+    service_po_filter = not_(or_(
+        Invoice.po_number.like("81%"),
+        Invoice.po_number.like("82%"),
+        Invoice.po_number.like("83%"),
+    ))
+    q = select(Invoice).where(Invoice.status == "MATCHED", Invoice.queue == "MATCHED", cond, service_po_filter)
+    n = 0
+    checked: dict[int, datetime] = {}
+    if mode == "CHECK":
+        for inv_id, at in db.execute(select(AuditLog.invoice_id, func.max(AuditLog.created_at)).where(
+                AuditLog.action.like("MIRO_CHECK_%")).group_by(AuditLog.invoice_id)).all():
+            if inv_id is not None:
+                checked[inv_id] = at
+    for inv in db.scalars(q):
+        at = checked.get(inv.id)
+        if at is not None:
+            a = at if at.tzinfo else at.replace(tzinfo=timezone.utc)
+            u = inv.updated_at
+            u = (u if u.tzinfo else u.replace(tzinfo=timezone.utc)) if u else None
+            if u is None or u <= a + timedelta(seconds=3):
+                continue                                          # already dry-run checked, unchanged since
+        n += 1
+    return n
+
+
+# ------------------------------------------------------------------------------ status / start
+def status() -> dict:
+    ok, why = configured()
+    with session_factory()() as db:
+        last = db.scalar(select(RobotRun).order_by(RobotRun.id.desc()).limit(1))
+        mode = robot_mode()
+        return {"enabled": get_settings().robot_enabled, "configured": ok, "problem": why, "mode": mode,
+                "running": _running_id is not None, "running_id": _running_id,
+                "auto_run": get_settings().robot_auto_run, "waiting": pending_count(db, mode) if ok else 0,
+                "next_auto_in": max(0, int(_auto_due - time.time())) if _auto_due else None,
+                "last": run_dict(last) if last else None}
+
+
+def run_dict(r: RobotRun) -> dict:
+    return {"id": r.id, "status": r.status, "trigger": r.trigger, "by": r.triggered_by, "mode": r.mode,
+            "started_at": r.started_at.isoformat() if r.started_at else None,
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "exit_code": r.exit_code, "summary": r.summary or {}, "error": r.error,
+            "has_report": bool(r.report_path)}
+
+
+def trigger(by: str | None = "system", reason: str = "MANUAL") -> dict:
+    """Start the robot now (or remember to run again when the current run ends)."""
+    global _running_id, _rerun, _auto_due, _thread
+    ok, why = configured()
+    if not ok:
+        return {"started": False, "queued": False, "reason": why}
+    with _lock:
+        _auto_due = None
+        if _running_id is not None:
+            _rerun = True
+            return {"started": False, "queued": True, "run_id": _running_id,
+                    "reason": "Robot is already running - it will run again right after this run"}
+        with session_factory()() as db:
+            run = RobotRun(trigger=reason, triggered_by=by, mode=robot_mode(), status="RUNNING")
+            db.add(run)
+            db.commit()
+            _running_id = run.id
+        t = threading.Thread(target=_execute, args=(run.id, by), daemon=True, name=f"robot-run-{run.id}")
+        t.start()
+        return {"started": True, "queued": False, "run_id": run.id, "reason": ""}
+
+
+def schedule_auto() -> None:
+    """A matched invoice appeared: start the robot after robot_auto_delay_seconds of quiet."""
+    global _auto_due
+    cfg = get_settings()
+    if cfg.robot_enabled and cfg.robot_auto_run and configured()[0]:
+        _auto_due = time.time() + cfg.robot_auto_delay_seconds
+
+
+def _kill(proc: subprocess.Popen) -> None:
     try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
-
-
-def clean(v) -> str:
-    return str(v).strip() if v not in (None, "None", "null") else ""
-
-
-def clean_po(v) -> str:
-    """Handles the full 10-digit PO as printed, and the short hand some people write by the gate /
-    transporter stamp: '51/2448', '51-2448', '81.7531' -> 51 + 00 + 2448 = 5100002448 (pad the gap so
-    it is 10 digits), same idea as clean_grn. Only expanded when it starts with KTFL's own PO prefixes
-    51 or 81 - any other short number is left alone rather than guessed into a PO."""
-    s = clean(v)
-    s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
-    s = "".join(_OCR_DIGITS.get(c, c) for c in s)
-    m = re.search(r"\d{10}", s)
-    if m:
-        return m.group(0)
-    m = re.match(r"^\s*(\d{2,4})\s*[-/.]\s*(\d{3,8})\s*$", s)
-    if m:
-        a, b = m.group(1), m.group(2)
-        if a[:2] in ("51", "81") and 0 < 10 - len(a) - len(b) < 10:
-            return a + "0" * (10 - len(a) - len(b)) + b
-    return s
-
-
-def is_valid_po(po: str) -> bool:
-    return bool(re.fullmatch(r"\d{10}", po or ""))
-
-
-# KTFL PO prefix classification:
-#   Material POs : 51xxxxxxxx, 61xxxxxxxx  -> allowed for extraction and SAP posting
-#   Service POs  : 81xxxxxxxx, 82xxxxxxxx, 83xxxxxxxx -> NOT allowed; block at extraction
-_SERVICE_PO_PREFIXES = ("81", "82", "83")
-_MATERIAL_PO_PREFIXES = ("51", "61")
-
-
-def is_service_po(po: str) -> bool:
-    """Returns True if the PO is a KTFL service PO (81/82/83 prefix). These must NOT be extracted or posted."""
-    po = (po or "").strip()
-    if not is_valid_po(po):
-        return False
-    return po[:2] in _SERVICE_PO_PREFIXES
-
-
-def is_material_po(po: str) -> bool:
-    """Returns True if the PO is a KTFL material PO (51/61 prefix). Only these are allowed."""
-    po = (po or "").strip()
-    if not is_valid_po(po):
-        return False
-    return po[:2] in _MATERIAL_PO_PREFIXES
-
-
-_OCR_DIGITS = {'S': '5', 's': '5', 'O': '0', 'o': '0', 'I': '1', 'l': '1', 'Z': '2', 'z': '2',
-               'B': '8', 'G': '6', 'T': '7', 'A': '4', 'q': '9'}
-
-
-def clean_grn(v) -> str:
-    """'50-343863' -> '5000343863' (pads the gap so the GRN is 10 digits); OCR letters -> digits."""
-    s = clean(v)
-    if not s:
-        return s
-    s = "".join(_OCR_DIGITS.get(c, c) for c in s)
-    m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", s)
-    if m:
-        a, b = m.group(1), m.group(2)
-        return a + "0" * max(0, 10 - len(a) - len(b)) + b
-    return re.sub(r"[^\d]", "", s)
-
-
-def grn_is_valid(g: str) -> bool:
-    return len(g or "") == 10 and g.startswith("50")
-
-
-def strip_zeros(v) -> str:
-    return str(v or "").strip().lstrip("0")
-
-
-def norm_key(s: str | None) -> str:
-    """Upper-case and strip ALL whitespace - OCR spacing noise must never defeat a comparison."""
-    return re.sub(r"\s+", "", (s or "")).upper()
-
-
-def norm_doc(v) -> str:
-    return re.sub(r"\s+", "", str(v or "")).lstrip("0")
-
-
-def norm_hsn(v) -> str:
-    return re.sub(r"\D", "", str(v or ""))
-
-
-def norm_text(v) -> str:
-    return re.sub(r"[^A-Z0-9]", "", str(v or "").upper())
-
-
-def fmt_sap_date(v) -> str:
-    if v is None or str(v).strip() in ("", "00000000"):
-        return ""
-    if isinstance(v, (datetime, date)):
-        return v.strftime("%d.%m.%Y")
-    s = str(v).strip()
-    for f, n in (("%Y%m%d", 8), ("%Y-%m-%d", 10), ("%Y-%m-%d %H:%M:%S", 19)):
-        try:
-            return datetime.strptime(s[:n], f).strftime("%d.%m.%Y")
-        except ValueError:
-            pass
-    return s
-
-
-_DATE_FORMATS = ("%d.%m.%Y", "%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d-%m-%y", "%d/%m/%y",
-                 "%d-%b-%y", "%d-%b-%Y", "%B %d, %Y", "%b %d, %Y", "%d %B %Y", "%d %b %Y")
-
-
-def format_date(raw: str) -> str:
-    """Any invoice date format -> dd.mm.yyyy (unchanged when it cannot be parsed)."""
-    if not raw:
-        return ""
-    raw = raw.strip()
-    for f in _DATE_FORMATS:
-        try:
-            dt = datetime.strptime(raw, f)
-            if dt.year < 100:
-                dt = dt.replace(year=dt.year + 2000)
-            return dt.strftime("%d.%m.%Y")
-        except ValueError:
-            pass
-    return raw
-
-
-def fix_amounts(sub, cgst, sgst, igst, tax, total):
-    if tax == 0:
-        tax = round(cgst + sgst + igst, 2)
-    if sub == 0 and total > 0:
-        sub = round(total - tax, 2)
-    if total == 0:
-        total = round(sub + tax, 2)
-    return sub, cgst, sgst, igst, tax, total
-
-
-GST_STANDARD_RATES = (0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18, 28)
-GST_COMPONENT_RATES = (0, 0.05, 0.125, 0.5, 0.75, 1.5, 2.5, 3, 3.75, 6, 9, 14)
-
-
-def snap_gst_rate(rate, component: bool = False):
-    """17.96 -> 18 ; 8.97 -> 9 (component). Left alone when farther than 0.4 % from a legal rate."""
-    if rate is None:
-        return None
-    table = GST_COMPONENT_RATES if component else GST_STANDARD_RATES
-    best = min(table, key=lambda r: abs(r - rate))
-    return float(best) if abs(best - rate) <= 0.4 else round(rate, 2)
-
-
-def split_double_gstin(g: str) -> str:
-    """Sometimes OCR reads two GSTINs joined: 'AAHCR8563K/27AAHCR8563K1ZP' or
-    '27AABCK0618A1Z7/27AAHCR8563K1ZP'. Pick the one that is NOT KTFL's own GSTIN.
-    If both are foreign (or we cannot tell), return the last 15-char segment."""
-    parts = re.split(r"[/\s]+", g)
-    # keep only parts that look like a GSTIN (≥14 chars, starts with 2 digits + letters)
-    candidates = [p for p in parts if re.match(r"^\d{2}[A-Z]", p) and len(p) >= 14]
-    if not candidates:
-        return g
-    if len(candidates) == 1:
-        return candidates[0]
-    # prefer the valid one; if both valid, return the longer / last one
-    valid = [c for c in candidates if gstin_ok(fix_gstin(c[:15]))]
-    return valid[-1] if valid else candidates[-1]
-
-
-def fix_gstin(g: str) -> str:
-    """Fix OCR confusion by position: 27ABRP19475K1ZQ -> 27ABRPI9475K1ZQ."""
-    if len(g) != 15:
-        return g
-    to_digit = {"O": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2", "G": "6"}
-    to_letter = {"0": "O", "1": "I", "5": "S", "8": "B", "2": "Z", "6": "G"}
-    out = []
-    for i, ch in enumerate(g):
-        if i in (0, 1, 7, 8, 9, 10):
-            out.append(to_digit.get(ch, ch))
-        elif i in (2, 3, 4, 5, 6, 11):
-            out.append(to_letter.get(ch, ch))
-        elif i == 13:
-            out.append("Z")
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=30)
         else:
-            out.append(ch)
-    return "".join(out)
-
-
-GSTIN_RE = re.compile(r"^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z][A-Z0-9]$")
-_GST_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-_LOOKALIKE = {"0": "ODQ", "1": "ILT", "2": "Z", "5": "S", "6": "G", "8": "BR", "7": "T", "4": "A", "9": "Q"}
-_LOOKALIKE = {**_LOOKALIKE, **{c: k for k, v in _LOOKALIKE.items() for c in v}}
-
-
-def gstin_ok(g: str) -> bool:
-    """15 characters, right pattern AND the GSTIN check character (last) agrees with the other 14."""
-    if not GSTIN_RE.match(g or ""):
-        return False
-    total = 0
-    for i, c in enumerate(g[:14]):
-        v = _GST_CHARS.index(c) * (1 if i % 2 == 0 else 2)
-        total += v // 36 + v % 36
-    return g[14] == _GST_CHARS[(36 - total % 36) % 36]
-
-
-def repair_gstin(g: str) -> str:
-    """A GSTIN the model misread by ONE character (extra character, or a look-alike such as 8<->R, 0<->O, 5<->S)
-    is put right when exactly one correction makes it a valid GSTIN (pattern + check character). Otherwise it is
-    returned unchanged - a wrong guess is worse than a flagged one."""
-    g = (g or "").strip().upper().replace(" ", "")
-    if gstin_ok(g) or not g:
-        return g
-    cands: set[str] = set()
-    if len(g) == 16:                                          # one extra character
-        cands = {g[:i] + g[i + 1:] for i in range(16)}
-    elif len(g) == 15:                                        # one look-alike character
-        for i, c in enumerate(g):
-            for r in _LOOKALIKE.get(c, ""):
-                cands.add(g[:i] + r + g[i + 1:])
-    found = {c for c in cands if gstin_ok(c)}
-    return found.pop() if len(found) == 1 else g
-
-
-def extract_json(raw) -> dict:
-    """Pull the JSON object out of a model answer (think blocks, code fences, cut-off output)."""
-    if isinstance(raw, list):
-        raw = "".join(str(x.get("text", "") if isinstance(x, dict) else x) for x in raw)
-    t = re.sub(r"<think>.*?</think>", "", str(raw), flags=re.DOTALL | re.I).strip()
-    t = re.sub(r"^```(?:json)?", "", t, flags=re.I)
-    t = re.sub(r"```$", "", t).strip()
-    try:
-        return json.loads(t)
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
     except Exception:
-        pass
-    s, e = t.find("{"), t.rfind("}")
-    if s >= 0 and e > s:
         try:
-            return json.loads(t[s:e + 1])
+            proc.kill()
         except Exception:
             pass
-    return repair_json(t)
 
 
-def repair_json(t: str) -> dict:
-    """Output was cut off / has a broken comma: walk back to the last complete object and close the
-    open brackets, so the header and every line item that WAS completed are still kept."""
-    s = t.find("{")
-    if s < 0:
-        raise ValueError("No valid JSON in response")
-    body = t[s:]
-    cuts = [m.end() for m in re.finditer(r"[}\]]", body)]
-    for end in reversed(cuts[-80:]):
-        cand = body[:end].rstrip().rstrip(",")
-        for closer in ("", "}", "]}", "}]}", "]}}"):
+def _command(out_dir: Path) -> list[str]:
+    cfg = get_settings()
+    root, task = robot_paths()
+    py = cfg.robot_python.strip() or sys.executable
+    return [py, "-m", "robot", "--outputdir", str(out_dir), "--consolewidth", "120", str(task)]
+
+
+def _summarise(db, started: datetime) -> dict:
+    """What changed while the robot ran: new miro_status values and MIRO_* audit rows."""
+    since = started - timedelta(seconds=5)
+    counts: dict[str, int] = {}
+    for st, n in db.execute(select(Invoice.miro_status, func.count()).where(Invoice.miro_updated_at >= since)
+                            .group_by(Invoice.miro_status)).all():
+        counts[st or "NONE"] = n
+    for act, n in db.execute(select(AuditLog.action, func.count()).where(
+            AuditLog.created_at >= since, AuditLog.action.like("MIRO_CHECK_%")).group_by(AuditLog.action)).all():
+        counts[act.replace("MIRO_CHECK_", "CHECK_")] = n
+    return counts
+
+
+def _execute(run_id: int, by: str | None) -> None:
+    global _running_id, _rerun, _proc
+    cfg = get_settings()
+    root, _ = robot_paths()
+    log_dir = Path(cfg.robot_log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f"run_{run_id}.log"
+    out_dir = root / "output" / f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    status_, error, code = "DONE", None, None
+    started = now()
+    try:
+        env = dict(os.environ)
+        if cfg.robot_mode.strip():
+            env["MIRO_MODE"] = cfg.robot_mode.strip().upper()
+        kw: dict = {}
+        if os.name == "nt":
+            kw["creationflags"] = 0x08000000                    # CREATE_NO_WINDOW
+        else:
+            kw["start_new_session"] = True
+        with open(log_file, "wb") as fh:
+            _proc = subprocess.Popen(_command(out_dir), cwd=str(root), stdout=fh, stderr=subprocess.STDOUT, env=env, **kw)
             try:
-                out = json.loads(cand + closer)
-                if isinstance(out, dict):
-                    return out
+                code = _proc.wait(timeout=cfg.robot_timeout_minutes * 60)
+            except subprocess.TimeoutExpired:
+                _kill(_proc)
+                status_, error = "TIMEOUT", f"Robot stopped after {cfg.robot_timeout_minutes} minutes"
+        if status_ == "DONE" and code != 0:
+            status_, error = "FAILED", f"Robot finished with {code} failed task(s) - see the log"
+    except Exception as exc:
+        log.exception("robot run failed to start")
+        status_, error = "FAILED", f"{type(exc).__name__}: {exc}"
+    finally:
+        _proc = None
+    with session_factory()() as db:
+        run = db.get(RobotRun, run_id)
+        run.status, run.exit_code, run.error, run.finished_at = status_, code, error, now()
+        run.log_path = str(log_file)
+        report = out_dir / "log.html"
+        run.report_path = str(report) if report.is_file() else None
+        run.summary = _summarise(db, started)
+        audit(db, "ROBOT_RUN", None, {"run_id": run_id, "status": status_, "summary": run.summary,
+                                      "mode": run.mode}, by, commit=False)
+        db.commit()
+    with _lock:
+        again, _rerun, _running_id = _rerun, False, None
+    if again:
+        trigger(by, "AUTO")
+
+
+def stop_current() -> bool:
+    p = _proc
+    if p and p.poll() is None:
+        _kill(p)
+        return True
+    return False
+
+
+# ------------------------------------------------------------------------------ background timer
+_PERIODIC_CHECK_SECONDS = 60   # check for waiting MATCHED invoices every minute
+
+def _loop() -> None:
+    global _auto_due
+    last_periodic: float = 0.0
+    while not _stop.is_set():
+        now_t = time.time()
+
+        # 1. Event-driven: a matched invoice arrived and scheduled an auto-run
+        due = _auto_due
+        if due and now_t >= due and _running_id is None:
+            _auto_due = None
+            try:
+                r = trigger("AUTO", "AUTO")
+                log.info("auto-start robot (event): %s", r)
             except Exception:
-                continue
-    raise ValueError("No valid JSON in response (repair failed)")
+                log.exception("auto start failed (event)")
+
+        # 2. Periodic: every minute check whether any MATCHED invoices are waiting
+        elif _running_id is None and (now_t - last_periodic) >= _PERIODIC_CHECK_SECONDS:
+            last_periodic = now_t
+            cfg = get_settings()
+            if cfg.robot_enabled and cfg.robot_auto_run and configured()[0]:
+                try:
+                    with session_factory()() as db:
+                        waiting = pending_count(db)
+                    if waiting > 0:
+                        log.info("Periodic check: %d matched invoice(s) waiting — starting robot", waiting)
+                        trigger("AUTO", "AUTO_PERIODIC")
+                    else:
+                        log.debug("Periodic check: no matched invoices waiting")
+                except Exception:
+                    log.exception("periodic matched-invoice check failed")
+
+        _stop.wait(3)
 
 
-def json_safe(obj):
-    """Make SAP rows (Decimal / date / bytes) storable in a JSON column."""
-    from decimal import Decimal
-    if isinstance(obj, dict):
-        return {str(k): json_safe(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple, set)):
-        return [json_safe(v) for v in obj]
-    if isinstance(obj, Decimal):
-        return float(obj)
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    if isinstance(obj, bytes):
-        return obj.decode("utf-8", "replace")
-    return obj
+def start() -> None:
+    """Called at application start-up."""
+    global _thread, _running_id
+    with session_factory()() as db:                              # a restart killed the robot's watcher, not the robot
+        for r in db.scalars(select(RobotRun).where(RobotRun.status == "RUNNING")):
+            r.status, r.error, r.finished_at = "INTERRUPTED", "Dashboard restarted while the robot was running", now()
+        db.commit()
+        waiting = pending_count(db) if configured()[0] else 0
+    _running_id = None
+    _stop.clear()
+    cfg = get_settings()
+    if cfg.robot_enabled:
+        ok, why = configured()
+        if not ok:
+            log.warning("Robot not usable: %s", why)
+        else:
+            log.info("Robot ready (mode %s, folder %s)", robot_mode(), cfg.robot_dir)
+            if waiting and cfg.robot_auto_run:
+                schedule_auto()
+        _thread = threading.Thread(target=_loop, daemon=True, name="robot-auto")
+        _thread.start()
+
+
+def stop() -> None:
+    _stop.set()
