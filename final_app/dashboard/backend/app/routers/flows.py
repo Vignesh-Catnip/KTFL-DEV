@@ -1,12 +1,14 @@
 """Error Flow, Auto Flow (SAP posting log), Audit trail, Jobs / uploads, stats and health."""
 from __future__ import annotations
 
+import io
 import time
 from pathlib import Path
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -233,6 +235,140 @@ def app_config(_: User = Depends(current_user)):
             "poll_seconds": cfg.watcher_poll_seconds, "min_completeness": cfg.min_completeness,
             "worker_enabled": cfg.worker_enabled,
             "folders": {k: (str(v) if v else None) for k, v in workflow.folders().items()}}
+
+
+@router.get("/export/excel")
+def export_excel(
+    date_from: str | None = Query(None, description="Start date YYYY-MM-DD (inclusive)"),
+    date_to: str | None = Query(None, description="End date YYYY-MM-DD (inclusive)"),
+    day_wise: bool = Query(True, description="One sheet per day"),
+    db: Session = Depends(get_db),
+    _: User = Depends(current_user)
+):
+    """Export invoice reconciliation data to Excel. Returns one sheet per day (day_wise=true)
+    or a single sheet. Columns: Invoice Number, Date, Vendor, PO, GRN, HSN, Extracted Details,
+    SAP Details, Matching Status, Reconciliation Status, Error Reason, SAP Posting Status,
+    SAP Journal Entry Number."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+    except ImportError:
+        raise HTTPException(500, "openpyxl is not installed. Run: pip install openpyxl")
+
+    # Build date filter
+    stmt = select(Invoice)
+    if date_from:
+        try:
+            df = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            stmt = stmt.where(Invoice.created_at >= df)
+        except ValueError:
+            raise HTTPException(422, "date_from must be YYYY-MM-DD")
+    if date_to:
+        try:
+            dt = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+            stmt = stmt.where(Invoice.created_at <= dt)
+        except ValueError:
+            raise HTTPException(422, "date_to must be YYYY-MM-DD")
+
+    invoices = db.scalars(stmt.order_by(Invoice.created_at)).all()
+
+    HEADERS = [
+        "Invoice Number", "Invoice Date", "Vendor", "PO Number", "GRN Number",
+        "HSN/SAC", "Extracted Total", "SAP GRN Amount", "Tax Code", "SAP HSN",
+        "Matching Status", "Reconciliation Status", "Error Reason",
+        "SAP Posting Status", "SAP Journal Entry Number",
+        "Plant", "Company Code", "Confidence", "Created At"
+    ]
+
+    HEADER_FILL = PatternFill("solid", fgColor="1F4E79")
+    HEADER_FONT = Font(bold=True, color="FFFFFF")
+
+    def _row(inv: Invoice) -> list:
+        issues = inv.issues or []
+        err_msgs = "; ".join(i.get("message", "") for i in issues
+                             if i.get("severity") in ("BLOCK", "RECON"))
+        recon_status = "Exception" if inv.queue == "BLOCKED" else (
+            "Pending Review" if inv.queue == "RECONCILE" else "Matched")
+        # HSN: combine header HSN + line HSNs if multiple
+        line_hsns = list({str(l.hsn_sac).strip() for l in inv.lines if l.hsn_sac and str(l.hsn_sac).strip()})
+        hsn_display = inv.hsn_sac or ""
+        if line_hsns:
+            all_hsns = list({hsn_display} | set(line_hsns)) if hsn_display else line_hsns
+            hsn_display = " | ".join(sorted(all_hsns))
+        return [
+            inv.invoice_number or "",
+            inv.invoice_date or "",
+            inv.vendor or "",
+            inv.po_number or "",
+            inv.grn_number or "",
+            hsn_display,
+            round(float(inv.total or 0), 2),
+            round(float(inv.grn_amount or 0), 2) if inv.grn_amount is not None else "",
+            inv.sap_tax_code or "",
+            inv.sap_hsn or "",
+            inv.status or "",
+            recon_status,
+            err_msgs,
+            inv.miro_status or "WAITING",
+            inv.miro_doc_number or "",
+            inv.plant_code or "",
+            inv.company_code or "",
+            round(float(inv.confidence or 0), 2),
+            iso(inv.created_at) or "",
+        ]
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)  # remove default sheet
+
+    if day_wise:
+        # Group invoices by date
+        from collections import defaultdict
+        by_day: dict[str, list] = defaultdict(list)
+        for inv in invoices:
+            d = (inv.created_at.astimezone(timezone.utc) if inv.created_at and inv.created_at.tzinfo
+                 else inv.created_at or datetime.now(timezone.utc)).strftime("%Y-%m-%d") if inv.created_at else "Unknown"
+            by_day[d].append(inv)
+
+        for day in sorted(by_day.keys()):
+            ws = wb.create_sheet(title=day[:31])
+            ws.append(HEADERS)
+            for cell in ws[1]:
+                cell.fill = HEADER_FILL
+                cell.font = HEADER_FONT
+                cell.alignment = Alignment(horizontal="center")
+            for inv in by_day[day]:
+                ws.append(_row(inv))
+            # auto column width
+            for col in ws.columns:
+                max_len = max((len(str(c.value or "")) for c in col), default=10)
+                ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
+    else:
+        ws = wb.create_sheet(title="Invoices")
+        ws.append(HEADERS)
+        for cell in ws[1]:
+            cell.fill = HEADER_FILL
+            cell.font = HEADER_FONT
+            cell.alignment = Alignment(horizontal="center")
+        for inv in invoices:
+            ws.append(_row(inv))
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
+
+    if not wb.sheetnames:
+        wb.create_sheet(title="No Data")
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    suffix = f"_{date_from}_to_{date_to}" if date_from or date_to else ""
+    fname = f"ktfl_invoices{suffix}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+    )
 
 
 @router.get("/health")
