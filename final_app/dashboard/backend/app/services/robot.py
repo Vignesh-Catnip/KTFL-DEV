@@ -101,7 +101,14 @@ def pending_count(db, mode: str | None = None) -> int:
     if mode != "CHECK":
         cond = or_(cond, Invoice.miro_status == "CHECKED",
                    (Invoice.miro_status == "FAILED") & (func.coalesce(Invoice.miro_attempts, 0) < 3))
-    q = select(Invoice).where(Invoice.status == "MATCHED", Invoice.queue == "MATCHED", cond)
+    # Exclude service POs (81/82/83) — robot must never auto-post service invoices
+    from sqlalchemy import not_
+    service_po_filter = not_(or_(
+        Invoice.po_number.like("81%"),
+        Invoice.po_number.like("82%"),
+        Invoice.po_number.like("83%"),
+    ))
+    q = select(Invoice).where(Invoice.status == "MATCHED", Invoice.queue == "MATCHED", cond, service_po_filter)
     n = 0
     checked: dict[int, datetime] = {}
     if mode == "CHECK":
