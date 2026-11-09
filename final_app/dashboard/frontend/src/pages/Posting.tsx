@@ -39,6 +39,9 @@ export default function Posting() {
         <button className="btn" onClick={() => api.download('/api/posting/export.csv' + (f ? `?status=${f}` : ''), 'sap_posting_log.csv')}>
           <Icon d={ICONS.dl} size={15} />Export CSV
         </button>
+        <button className="btn" onClick={() => api.download('/api/export/excel', 'ktfl_invoices.xlsx')}>
+          <Icon d={ICONS.dl} size={15} />Export Excel
+        </button>
       </div>
       {err && <div className="err">{err}</div>}
       <div className="panel" style={{ padding: 16, marginBottom: 16 }}>
