@@ -1,1 +1,287 @@
-pip install openpyxl
+(venv) C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend>uvicorn app.main:app --host 0.0.0.0 --port 7000
+←[32mINFO←[0m:     Started server process [←[36m48412←[0m]
+←[32mINFO←[0m:     Waiting for application startup.
+2026-11-09 23:49:36,808 INFO clearmatch: GST master loaded: 61 codes
+2026-11-09 23:49:36,820 INFO clearmatch: Document type master: 0 rows added
+2026-11-09 23:49:36,831 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-09 23:49:36,860 INFO clearmatch.robot: Robot ready (mode POST, folder C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot)
+←[32mINFO←[0m:     Application startup complete.
+←[32mINFO←[0m:     Uvicorn running on ←[1mhttp://0.0.0.0:7000←[0m (Press CTRL+C to quit)
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET / HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /assets/index-CHOCu1c4.js HTTP/1.1←[0m" ←[33m304 Not Modified←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /assets/index-BtHMeOQn.css HTTP/1.1←[0m" ←[33m304 Not Modified←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/auth/me HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/config HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:49:39,580 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49755 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49765 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:49:54,397 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49766 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49767 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:50:09,418 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/exceptions HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:50:16,874 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49789 - "←[1mGET /api/invoices?page=1&size=25 HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49768 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:50:19,580 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49788 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49810 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:50:35,645 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49811 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49812 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:50:50,364 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49812 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49822 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:05,320 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49822 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:17,020 INFO clearmatch.worker: extraction started: job 569  20261102143242690.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49830 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:19,609 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49830 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49830 - "←[1mGET /api/config HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49830 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:22,359 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49839 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49843 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:37,375 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:40,284 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:51:42,883 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:51:42,888 INFO clearmatch.sap: HSN / NCM columns used for the SAP check: EKPO.J_1BNBM
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:45,334 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:51:45,399 INFO clearmatch.worker: extraction finished: job 569  20261102143242690.pdf  -> CREATED / RECONCILE  invoice_id=626
+2026-11-09 23:51:45,414 INFO clearmatch.worker: extraction started: job 570  5000298627.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/invoices/626 HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49872 - "←[1mGET /api/invoices/626/page/1.png HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:51:51,151 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49844 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49873 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:05,944 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49874 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49890 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:21,203 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49891 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:23,375 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:52:26,823 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:52:28,139 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:52:28,178 WARNING clearmatch.pipeline: SAC 99xx on material invoice 5000298627.pdf — PDF copied to data\uploads\exceptions\sac99\1794248477016_5000298627.pdf
+2026-11-09 23:52:28,184 INFO clearmatch.worker: extraction finished: job 570  5000298627.pdf  -> CREATED / RECONCILE  invoice_id=627
+2026-11-09 23:52:28,196 INFO clearmatch.worker: extraction started: job 571  5000340789 (1).pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49892 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:35,853 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49892 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:41,981 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:52:45,150 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:52:46,383 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:52:46,418 INFO clearmatch.worker: extraction finished: job 571  5000340789 (1).pdf  -> CREATED / RECONCILE  invoice_id=628
+2026-11-09 23:52:46,430 INFO clearmatch.worker: extraction started: job 572  5000340790.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49903 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:52:50,887 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49903 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49911 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:05,853 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49911 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:06,783 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:53:09,921 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:53:11,047 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:53:11,068 INFO clearmatch.worker: extraction finished: job 572  5000340790.pdf  -> CREATED / RECONCILE  invoice_id=629
+2026-11-09 23:53:11,078 INFO clearmatch.worker: extraction started: job 573  5000340791.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49914 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:20,890 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49914 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:22,556 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:53:25,461 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/config HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:26,495 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-09 23:53:26,534 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:26,561 INFO clearmatch.worker: extraction finished: job 573  5000340791.pdf  -> CREATED / RECONCILE  invoice_id=630
+2026-11-09 23:53:26,571 INFO clearmatch.worker: extraction started: job 574  5000340793.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/jobs HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49924 - "←[1mGET /api/exceptions HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49929 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:33,683 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49930 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:39,756 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:53:42,713 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:53:43,870 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:53:43,897 INFO clearmatch.worker: extraction finished: job 574  5000340793.pdf  -> CREATED / RECONCILE  invoice_id=631
+2026-11-09 23:53:43,907 INFO clearmatch.worker: extraction started: job 575  5000341287.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:49931 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:48,738 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49931 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49942 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49931 - "←[1mGET /api/invoices/626 HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:53,746 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49942 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:53:58,512 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:01,821 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:02,932 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:54:02,951 INFO clearmatch.worker: extraction finished: job 575  5000341287.pdf  -> CREATED / RECONCILE  invoice_id=632
+2026-11-09 23:54:02,965 INFO clearmatch.worker: extraction started: job 576  5000344355.pdf  (WATCH)
+2026-11-09 23:54:05,137 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49945 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:08,714 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49945 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49954 - "←[1mGET /api/exceptions HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49954 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:14,649 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49954 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:23,506 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:26,970 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:28,077 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:29,031 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49960 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:29,636 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49961 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:31,280 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:31,281 INFO clearmatch.pipeline: 5000344355.pdf: GRN from filename (5000344355) used (VLM read '500344355')
+2026-11-09 23:54:32,445 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:54:32,465 INFO clearmatch.worker: extraction finished: job 576  5000344355.pdf  -> CREATED / RECONCILE  invoice_id=633
+2026-11-09 23:54:32,477 INFO clearmatch.worker: extraction started: job 577  5000360088 material.pdf  (WATCH)
+2026-11-09 23:54:34,660 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49984 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:44,964 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49985 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:45,672 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:48,697 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:54:49,842 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:54:49,864 INFO clearmatch.worker: extraction finished: job 577  5000360088 material.pdf  -> CREATED / RECONCILE  invoice_id=634
+2026-11-09 23:54:49,878 INFO clearmatch.worker: extraction started: job 578  5000360144 material.pdf  (WATCH)
+2026-11-09 23:54:52,216 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49990 - "←[1mGET /api/invoices/627 HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:49990 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:50000 - "←[1mGET /api/invoices/627/page/1.png HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:54:57,127 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:49990 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:50002 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     127.0.0.1:50001 - "←[1mGET /api/exceptions HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:55:04,530 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:50002 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:55:06,847 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:55:09,941 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-09 23:55:09,960 INFO clearmatch.pipeline: 5000360144 material.pdf: filename GRN 5000360144 differs from VLM GRN 5000360149 - keeping VLM
+2026-11-09 23:55:11,219 ERROR clearmatch.pipeline: SAP lookup failed
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\pipeline.py", line 51, in check_against_sap
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=allow_grn_switch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app\services\sap.py", line 471, in sap_enrich
+    if hc["MARC"] and po_scope:
+       ~~^^^^^^^^
+KeyError: 'MARC'
+2026-11-09 23:55:11,249 INFO clearmatch.worker: extraction finished: job 578  5000360144 material.pdf  -> CREATED / RECONCILE  invoice_id=635
+2026-11-09 23:55:11,262 INFO clearmatch.worker: extraction started: job 579  5000365809.pdf  (WATCH)
+←[32mINFO←[0m:     127.0.0.1:50006 - "←[1mGET /api/stats HTTP/1.1←[0m" ←[32m200 OK←[0m
+2026-11-09 23:55:20,380 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+←[32mINFO←[0m:     127.0.0.1:50006 - "←[1mGET /api/health HTTP/1.1←[0m" ←[32m200 OK←[0m
+←[32mINFO←[0m:     Shutting down
+←[32mINFO←[0m:     Waiting for application shutdown.
+←[32mINFO←[0m:     Application shutdown complete.
+←[32mINFO←[0m:     Finished server process [←[36m48412←[0m]
+
+(venv) C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend>
