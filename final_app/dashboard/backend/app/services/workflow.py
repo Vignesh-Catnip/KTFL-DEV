@@ -97,6 +97,34 @@ def place_failed(job: Job) -> None:
         job.folder_path = str(new)
 
 
+def move_to_exception(inv, reason: str = "already_posted") -> None:
+    """Move a PDF that was attempted to be posted again to the KTFL_EXTRACTION exception folder.
+    This prevents duplicate posting by physically separating already-posted invoice PDFs.
+    Called when a robot run encounters an invoice already in POSTED/PARKED state."""
+    f = folders()
+    if f["input"] is None:
+        return
+    # Exception folder: <base>/KTFL_EXTRACTION/exceptions/<reason>
+    base = f["input"].parent
+    exc_dir = base / "KTFL_EXTRACTION" / "exceptions" / reason
+    exc_dir.mkdir(parents=True, exist_ok=True)
+    # Find the job for this invoice
+    with session_factory()() as db:
+        from sqlalchemy import select as _select
+        from ..models import Job as _Job
+        job = db.scalar(_select(_Job).where(_Job.invoice_id == inv.id, _Job.status == "DONE"))
+        if job and job.folder_path:
+            cur = Path(job.folder_path)
+            if cur.is_file():
+                name = final_name(inv, cur)
+                new = move(cur, exc_dir, name)
+                if new:
+                    job.folder_path = str(new)
+                    db.commit()
+                    log.info("Moved already-%s invoice %s PDF to exception folder: %s",
+                             inv.miro_status, inv.id, new)
+
+
 def sweep() -> int:
     """Keep the output / finish folders in line with the dashboard:
        invoice queue changed (e.g. Reconcile -> Matched after a correction) -> output\\<new queue>
