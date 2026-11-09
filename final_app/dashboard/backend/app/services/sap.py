@@ -35,7 +35,9 @@ MSEG_COLS = """MBLNR, MJAHR, BWART, EBELN, EBELP, LIFNR, WERKS, MENGE, MEINS, ER
 
 # ------------------------------------------------------------------------------ gateway
 
-HSN_TABLES = ("MSEG", "EKPO", "MARC")
+# RESTRICTION: Only EKKO, EKPO, and MSEG tables are permitted for SAP SQL Server data validation.
+# Do NOT add any other tables. MARC and all other tables are excluded per AP team agreement.
+HSN_TABLES = ("MSEG", "EKPO")
 _IDENT = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,40}$")
 
 
