@@ -18,6 +18,7 @@ from ..services import doctype, pdfio, robot
 from ..services.compare import build_compare
 from ..services.persist import audit, find_duplicate, header_from_invoice
 from ..services.pipeline import recheck_invoice
+from ..services.textutil import is_service_po
 from .common import apply_effective, invoice_row, iso
 
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
@@ -188,6 +189,11 @@ def push(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(re
     inv = _get(db, invoice_id)
     if inv.queue != "MATCHED" or inv.status != "MATCHED":
         raise HTTPException(409, "Only a fully matched invoice can be pushed to SAP MIRO")
+    # Block service POs (81/82/83) from SAP posting — must be processed manually
+    if is_service_po(inv.po_number or ""):
+        raise HTTPException(409,
+            f"Service PO {inv.po_number} (prefix {(inv.po_number or '')[:2]}) cannot be posted through ClearMatch. "
+            f"Only material invoices with PO starting 51 or 61 are allowed. Process this invoice manually in SAP.")
     if inv.miro_status in ("POSTED", "PARKED"):
         raise HTTPException(409, f"Invoice is already {inv.miro_status} in SAP — duplicate posting prevented. "
                                f"SAP Journal Entry: {inv.miro_doc_number or 'see SAP logs'}")
