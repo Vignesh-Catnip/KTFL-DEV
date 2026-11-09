@@ -122,7 +122,6 @@ _last_error = ""
 
 
 def get_sap(force: bool = False) -> SapGateway | None:
-    """The shared gateway, or None when SAP is disabled / unreachable (retried at most once a minute)."""
     global _gateway, _last_attempt, _last_error
     cfg = get_settings()
     if not cfg.sap_enabled:
@@ -149,7 +148,6 @@ def get_sap(force: bool = False) -> SapGateway | None:
 
 
 def set_sap(gw: SapGateway | None) -> None:
-    """Tests (and the app on shutdown) replace the shared gateway."""
     global _gateway, _last_attempt
     _gateway = gw
     _last_attempt = 0.0
@@ -171,8 +169,6 @@ def sap_status() -> dict:
     return {"enabled": True, "connected": False, "detail": _last_error or "not connected"}
 
 
-# ------------------------------------------------------------------------------ enrichment
-
 def _mismatch(h: dict, field: str, invoice_value, sap_value, label: str | None = None) -> None:
     h["sap_mismatches"].append({
         "code": "FIELD_MISMATCH", "field": field, "invoice_value": str(invoice_value),
@@ -181,11 +177,6 @@ def _mismatch(h: dict, field: str, invoice_value, sap_value, label: str | None =
 
 
 def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_switch: bool = True) -> list[str]:
-    """Cross-check the invoice against SAP. Mutates `h` and `lines`; returns audit notes.
-
-    allow_grn_switch=False is used after a person typed the GRN by hand: SAP must confirm that exact
-    GRN, it is never silently replaced by a different one.
-    """
     cfg = get_settings()
     notes: list[str] = []
     h["sap_mismatches"], h["line_mismatches"] = [], []
@@ -197,8 +188,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     base_amount_tol, round_tol = cfg.amount_tolerance, cfg.round_tolerance
 
     def fill(field, value, source, overwrite=False):
-        """Fill an empty field from SAP. A different non-empty value is reported, not overwritten
-        (unless overwrite=True for fields where SAP is authoritative)."""
         if value in (None, "", 0, 0.0):
             return
         cur = h.get(field)
@@ -220,11 +209,9 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     types = list(gw.grn_types)
     hc = gw.hsn_columns()
     mcols = MSEG_COLS + "".join(f", m.{c} AS HSNM_{c}" for c in hc["MSEG"])
-    pcols = "".join(f", p.{c} AS HSNP_{c}" for c in hc["EKPO"])         # only the configured HSN column(s)
+    pcols = "".join(f", p.{c} AS HSNP_{c}" for c in hc["EKPO"])
 
     def live(rows):
-        """Drop reversed documents; prefer rows carrying item text (SGTXT) - same as the manual check
-        XBLNR_MKPF = invoice AND EBELN = PO AND SGTXT is not null."""
         rows = [r for r in rows if not clean(r.get("SMBLN"))]
         txt = [r for r in rows if clean(r.get("SGTXT"))]
         return txt or rows
@@ -236,7 +223,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         return g
 
     def score(rows, use_po=True):
-        """How well a GR document fits THIS invoice: line amounts, quantities, item text, PO."""
         sc = 0.0
         amts = [to_float(r["DMBTR"]) for r in rows]
         qtys = [to_float(r["MENGE"]) for r in rows]
@@ -256,7 +242,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             sc += 3
         return sc
 
-    # 1) GR lines for the GRN read from the stamp (goods receipt movements only: 101/105)
+    # 1) GR lines for the GRN read from the stamp
     grn_rows: list[dict] = []
     if grn:
         grn_rows = live(gw.rows(f"SELECT {mcols} FROM dbo.MSEG m WHERE m.MBLNR = :grn "
@@ -264,9 +250,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         if not grn_rows:
             notes.append(f"GRN {grn} not found in SAP (MSEG)" +
                          (" - looking it up by invoice no / PO / line items" if allow_grn_switch else ""))
-            # GRN suffix search: VLM may have misread a few digits. If the extracted GRN is
-            # 8-9 digits (close but not right), search by the last 6 digits - accept only when
-            # exactly one GRN matches (ambiguous -> skip, let the invoice-reference path take over).
             if allow_grn_switch and grn.startswith("50") and 8 <= len(grn) <= 9:
                 suffix = grn[-6:]
                 suffix_rows_raw = live(gw.rows(
@@ -284,7 +267,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
                 elif len(matched_grns) > 1:
                     notes.append(f"GRN suffix search: '{grn}' matched {len(matched_grns)} GRNs {matched_grns} - ambiguous, skipping")
 
-    # 2) GR lines by the vendor's invoice reference (MSEG.XBLNR_MKPF) - spaces ignored
+    # 2) GR lines by vendor's invoice reference
     inv_rows: list[dict] = []
     inv_all: list[dict] = []
     if inv_no and (allow_grn_switch or not grn_rows):
@@ -292,9 +275,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
                           WHERE UPPER(REPLACE(LTRIM(RTRIM(m.XBLNR_MKPF)),' ','')) = :inv
                             AND m.BWART IN :bwart{gw.mandt('m')}""", inv=norm_key(inv_no), bwart=types)
         raw = [r for r in raw if not clean(r.get("SMBLN"))]
-
-        # The same invoice no (e.g. "428/26-27") is used by many vendors: keep only rows whose PO belongs
-        # to THE invoice's vendor (vendor from the PO header EKKO.LIFNR - MSEG.LIFNR is often blank).
         po_vendor: dict[str, str] = {}
         pos_raw = sorted({clean(r["EBELN"]) for r in raw if clean(r["EBELN"])} |
                          ({po_now} if is_valid_po(po_now) else set()))
@@ -328,7 +308,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     if grn_rows and po_ok(grn_rows) and (not groups or grn in groups or not allow_grn_switch):
         resolved = (grn, grn_rows)
     elif allow_grn_switch:
-        if not groups:                                      # no invoice-ref match -> try by PO
+        if not groups:
             pos_try = sorted(set(h["po_numbers_printed"]) | ({po_now} if is_valid_po(po_now) else set()))
             if pos_try:
                 po_rows = live(gw.rows(f"""SELECT {mcols} FROM dbo.MSEG m
@@ -338,7 +318,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         best = max(groups.items(), key=lambda kv: (score(kv[1]), len(kv[1])), default=None)
         ok = bool(best) and (bool(inv_groups) or score(best[1], use_po=False) >= 1)
         if ok and grn_rows and score(grn_rows, use_po=False) >= score(best[1], use_po=False):
-            ok = False                                      # the stamp GRN fits at least as well
+            ok = False
         if ok:
             resolved = best
             if len(groups) > 1:
@@ -364,14 +344,13 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     if gr_rows:
         own_gr = [r for r in gr_rows if clean(r["EBELN"]) == h["po_number"]] or gr_rows
         fill("grn_date", fmt_sap_date(own_gr[0]["BUDAT_MKPF"]), "SAP_MSEG")
-        if clean(own_gr[0]["WERKS"]):                       # the GRN's plant is authoritative
-            h["plant_code"] = clean(own_gr[0]["WERKS"])      # plant code is taken from SQL (GRN plant is authoritative)
+        if clean(own_gr[0]["WERKS"]):
+            h["plant_code"] = clean(own_gr[0]["WERKS"])
             src["plant_code"] = "SAP_MSEG"
             h["plant_source"] = "SAP_MSEG"
             h["sap_plant"] = h["plant_code"]
         g = [r for r in own_gr if clean(r["MBLNR"]) == h["grn_number"]] or own_gr
         if not h.get("invoice_number"):
-            # invoice number not read from the PDF -> the vendor reference stored with the goods receipt
             refs = sorted({clean(r.get("XBLNR_MKPF")) for r in g if clean(r.get("XBLNR_MKPF"))})
             if len(refs) == 1:
                 h["invoice_number"] = refs[0]
@@ -384,12 +363,11 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         if vals and all(v > 0 for v in vals):
             h["grn_amount"] = round(sum(vals), 2)
             src["grn_amount"] = "SAP_MSEG"
-        else:       # job-work / free-of-charge GR lines carry 0.00 - the value is not comparable
+        else:
             h["grn_amount"] = None
             notes.append("GR value not compared with invoice (GR lines carry zero value, e.g. job-work)")
         fill("sap_tax_code", clean(own_gr[0].get("MWSKZ")), "SAP_MSEG")
 
-    # all POs this invoice touches in SAP -> multiple POs = red flag
     sap_pos = sorted({clean(r["EBELN"]) for r in (gr_rows + inv_rows) if clean(r["EBELN"])})
     if not is_valid_po(h["po_number"]) and sap_pos:
         h["po_number"] = sap_pos[0]
@@ -398,10 +376,8 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     all_pos = sorted(set(sap_pos) | set(h["po_numbers_printed"]) |
                      ({h["po_number"]} if is_valid_po(h["po_number"]) else set()))
     h["po_list"] = ", ".join(all_pos)
-    # Multi-PO is no longer flagged or specially checked: the invoice's own PO (as printed / typed) decides
-    # what is checked, even when SAP shows the invoice number touching several POs/GRNs elsewhere.
     h["multi_po_flag"], h["red_flag_reason"] = False, ""
-    scope_rows = gr_rows                     # the goods-receipt rows this invoice is checked against
+    scope_rows = gr_rows
 
     snapshot = {"checked_at": datetime.now(timezone.utc).isoformat(), "grn": h["grn_number"],
                 "po": None, "po_items": [], "gr_rows": [], "pos": all_pos}
@@ -417,7 +393,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     main = next((r for r in ekko if clean(r["EBELN"]) == h["po_number"]), None)
     h["po_in_sap"] = main is not None
     if main:
-        h["sap_vendor_code"] = strip_zeros(main["LIFNR"])    # reference only (vendor / currency are NOT copied into the invoice)
+        h["sap_vendor_code"] = strip_zeros(main["LIFNR"])
         h["sap_currency"] = clean(main["WAERS"])
         fill("po_date", fmt_sap_date(main["BEDAT"]), "SAP_EKKO")
         if clean(main.get("BUKRS")):
@@ -426,7 +402,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     else:
         notes.append(f"PO {h['po_number']} not found in SAP (EKKO)")
 
-    # 5) PO items (EKPO) - plant fall-back, tax code, and the SAP HSN (compare only!)
+    # 5) PO items (EKPO)
     ekpo = gw.rows(f"""SELECT p.EBELN, p.EBELP, p.TXZ01, p.MATNR, p.WERKS, p.MENGE, p.MEINS,
                               p.NETPR, p.PEINH, p.NETWR, p.BRTWR, p.MWSKZ{pcols}
                        FROM dbo.EKPO p
@@ -436,7 +412,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     own = [r for r in ekpo if clean(r["EBELN"]) == h["po_number"]] or ekpo
     if own:
         if src.get("plant_code") != "SAP_MSEG" and clean(own[0]["WERKS"]):
-            h["plant_code"] = clean(own[0]["WERKS"])      # no GRN plant -> PO item plant (also from SQL)
+            h["plant_code"] = clean(own[0]["WERKS"])
             src["plant_code"] = "SAP_EKPO"
             h["plant_source"] = "SAP_EKPO"
             h["sap_plant"] = h["plant_code"]
@@ -450,7 +426,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
     snapshot["gr_rows"] = (scope_rows if h["multi_po_flag"]
                            else [r for r in own_gr if clean(r["MBLNR"]) == h["grn_number"]] or own_gr)
 
-    # HSN / SAC / NCM as SAP knows it - for COMPARISON only, never copied into the invoice
+    # HSN / SAC / NCM — COMPARISON only, never copied into the invoice
     hsn_src: dict[str, list[str]] = {}
 
     def _collect(label, rows, getter):
@@ -459,7 +435,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             hsn_src[label] = vals
 
     po_scope = ekpo if h["multi_po_flag"] else own
-    # only the PO items that are on THIS goods receipt: the PO may also hold other materials (other HSN codes)
     grn_items = {(clean(r["EBELN"]), clean(r["EBELP"])) for r in snapshot["gr_rows"]}
     if grn_items:
         po_scope = [r for r in po_scope if (clean(r["EBELN"]), clean(r["EBELP"])) in grn_items] or po_scope
@@ -468,18 +443,11 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
         _collect(f"EKPO.{c}", po_scope, lambda r, k=key: r.get(k))
     for c in hc["MSEG"]:
         _collect(f"MSEG.{c}", snapshot["gr_rows"], lambda r, c=c: r.get(f"HSNM_{c}"))
-    if hc["MARC"] and po_scope:
-        mats = sorted({clean(r.get("MATNR")) for r in po_scope if clean(r.get("MATNR"))})
-        if mats:
-            cols = ", ".join(f"c.{x}" for x in hc["MARC"])
-            marc = gw.rows(f"SELECT c.MATNR, c.WERKS, {cols} FROM dbo.MARC c WHERE c.MATNR IN :mats{gw.mandt('c')}",
-                           mats=mats)
-            for col in hc["MARC"]:
-                _collect(f"MARC.{col}", marc, lambda r, col=col: r.get(col))
+    # MARC table access is FORBIDDEN — only EKKO, EKPO, MSEG are permitted per security restriction
     h["sap_hsn"] = ", ".join(sorted({v for vs in hsn_src.values() for v in vs}))
     snapshot["hsn"] = hsn_src
 
-    # 6) invoice lines: take them from SAP only when the vision pass found none (HSN stays blank)
+    # 6) invoice lines from SAP when vision found none
     if not lines:
         rows = [r for r in gr_rows if clean(r["MBLNR"]) == h["grn_number"]] or gr_rows
         for r in rows:
@@ -506,7 +474,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             if not l.get("plant_code"):
                 l["plant_code"] = h["plant_code"]
 
-    # 7) line-by-line: invoice quantity / amount vs SAP goods receipt
+    # 7) line-by-line comparison
     vision_lines = [l for l in lines if l.get("source", "VISION") == "VISION"]
     if gr_rows and vision_lines:
         if h["multi_po_flag"]:
@@ -515,7 +483,7 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             gp = [r for r in gr_rows if clean(r["EBELN"]) == h["po_number"]] or gr_rows
             gp = [r for r in gp if clean(r["MBLNR"]) == h["grn_number"]] or gp
         h["line_mismatches"], extra = compare_lines(vision_lines, gp, ekpo_map)
-        for l in vision_lines:                       # HSN of the PO item THIS invoice line was matched to
+        for l in vision_lines:
             item = ekpo_map.get((l.get("gr_po", ""), l.get("gr_item", "")))
             if item:
                 vals = sorted({norm_hsn(item.get(f"HSNP_{c}")) for c in hc["EKPO"] if norm_hsn(item.get(f"HSNP_{c}"))})
@@ -527,10 +495,6 @@ def sap_enrich(gw: SapGateway | None, h: dict, lines: list[dict], allow_grn_swit
             notes.append("MISMATCH " + m["message"])
         if not h["line_mismatches"]:
             notes.append(f"All {len(vision_lines)} invoice lines match SAP GR (qty and amount)")
-
-    # 8) taxable value: only filled from the GRN when the invoice has none; differences are judged
-    #    (with tolerance) in validate()
-    # (the taxable value is NEVER taken from SQL - it is only compared with the GRN value in validate())
 
     h["sap_snapshot"] = json_safe(snapshot)
     return notes
