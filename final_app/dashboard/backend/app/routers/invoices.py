@@ -188,7 +188,10 @@ def push(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(re
     inv = _get(db, invoice_id)
     if inv.queue != "MATCHED" or inv.status != "MATCHED":
         raise HTTPException(409, "Only a fully matched invoice can be pushed to SAP MIRO")
-    if inv.miro_status in ("POSTED", "PARKED", "IN_PROGRESS", "UNKNOWN"):
+    if inv.miro_status in ("POSTED", "PARKED"):
+        raise HTTPException(409, f"Invoice is already {inv.miro_status} in SAP — duplicate posting prevented. "
+                               f"SAP Journal Entry: {inv.miro_doc_number or 'see SAP logs'}")
+    if inv.miro_status in ("IN_PROGRESS", "UNKNOWN"):
         raise HTTPException(409, f"Invoice is already {inv.miro_status} in SAP")
     inv.miro_status, inv.miro_message = None, None
     inv.pushed_by, inv.pushed_at = user.username, datetime.now(timezone.utc)
