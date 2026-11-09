@@ -47,6 +47,29 @@ def is_valid_po(po: str) -> bool:
     return bool(re.fullmatch(r"\d{10}", po or ""))
 
 
+# KTFL PO prefix classification:
+#   Material POs : 51xxxxxxxx, 61xxxxxxxx  -> allowed for extraction and SAP posting
+#   Service POs  : 81xxxxxxxx, 82xxxxxxxx, 83xxxxxxxx -> NOT allowed; block at extraction
+_SERVICE_PO_PREFIXES = ("81", "82", "83")
+_MATERIAL_PO_PREFIXES = ("51", "61")
+
+
+def is_service_po(po: str) -> bool:
+    """Returns True if the PO is a KTFL service PO (81/82/83 prefix). These must NOT be extracted or posted."""
+    po = (po or "").strip()
+    if not is_valid_po(po):
+        return False
+    return po[:2] in _SERVICE_PO_PREFIXES
+
+
+def is_material_po(po: str) -> bool:
+    """Returns True if the PO is a KTFL material PO (51/61 prefix). Only these are allowed."""
+    po = (po or "").strip()
+    if not is_valid_po(po):
+        return False
+    return po[:2] in _MATERIAL_PO_PREFIXES
+
+
 _OCR_DIGITS = {'S': '5', 's': '5', 'O': '0', 'o': '0', 'I': '1', 'l': '1', 'Z': '2', 'z': '2',
                'B': '8', 'G': '6', 'T': '7', 'A': '4', 'q': '9'}
 
