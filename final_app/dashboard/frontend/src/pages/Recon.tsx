@@ -74,6 +74,20 @@ function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number
   )
 }
 
+/** HSN display: single code or multiple codes shown cleanly as tags */
+function HsnDisplay({ value }: { value: string | null | undefined }) {
+  if (!value) return <div className="cellbox mono">—</div>
+  const codes = value.split(/[|,;]/).map(s => s.trim()).filter(Boolean)
+  if (codes.length <= 1) return <div className="cellbox mono">{value || '—'}</div>
+  return (
+    <div className="cellbox" style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: '3px 6px' }}>
+      {codes.map((c, i) => (
+        <span key={i} style={{ background: '#e8f4f8', borderRadius: 3, padding: '1px 5px', fontSize: 11.5, fontFamily: 'monospace' }}>{c}</span>
+      ))}
+    </div>
+  )
+}
+
 function InvoicePages({ id, pages }: { id: number; pages: number }) {
   const [p, setP] = useState(1)
   const [src, setSrc] = useState('')
@@ -330,7 +344,24 @@ export default function Recon() {
           <div className="match-scroll">
           <div className="msec">
             <div className="lbl"><span className="t">Invoice vs SAP</span></div>
-            <div className="mrow hd"><span>Field</span><span>Invoice</span><span>GRN</span><span /></div>
+
+            {/* Invoice Date — label above field, separate from compare rows */}
+            {(() => {
+              const dateRow = d.compare.rows.find(r => r.field === 'invoice_date')
+              return (
+                <div className="invoice-date-block" style={{ marginBottom: 10, padding: '8px 10px', background: '#f8f9fa', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Invoice Date</div>
+                  {EDITABLE['invoice_date'] && writable ? (
+                    <input className={'cellbox' + (edits['invoice_date'] !== undefined ? ' edited' : '')} aria-label="Invoice date"
+                      style={{ width: '100%' }}
+                      value={edits['invoice_date'] ?? (dateRow?.invoice ?? d.invoice_date ?? '')}
+                      onChange={e => setEdits({ ...edits, invoice_date: e.target.value })} />
+                  ) : <div className="cellbox mono" style={{ width: '100%' }}>{(dateRow?.invoice ?? d.invoice_date) || '—'}</div>}
+                </div>
+              )
+            })()}
+
+            <div className="mrow hd"><span>Field</span><span>Invoice</span><span>GRN / SAP</span><span /></div>
             {d.compare.rows.filter(r => r.field !== 'invoice_date').map(r => (
               <div className="mrow" key={r.field}>
                 <span className="field-k">{r.label}</span>
@@ -338,6 +369,9 @@ export default function Recon() {
                   <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
                     value={edits[EDITABLE[r.field]] ?? r.invoice}
                     onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
+                ) : r.field === 'hsn_sac' ? (
+                  /* HSN: show single or multiple codes cleanly */
+                  <HsnDisplay value={r.invoice} />
                 ) : <div className="cellbox mono">{r.invoice || '—'}</div>}
                 <div className="cellbox po mono" title={r.po ? `PO: ${r.po}` : ''}>{r.field === 'hsn_sac' ? r.po || '—' : r.grn || '—'}</div>
                 <Stat s={r.status} />
