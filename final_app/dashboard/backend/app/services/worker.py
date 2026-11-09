@@ -23,6 +23,59 @@ _threads: list[threading.Thread] = []
 _wake = threading.Event()
 
 
+def _friendly_error(exc: Exception, raw: str) -> str:
+    """Convert a technical exception into a human-readable extraction error message."""
+    msg = str(exc).lower()
+    cls = type(exc).__name__
+
+    if "timeout" in msg or "timed out" in msg:
+        return "Extraction Failed – The model took too long to respond. Please retry."
+    if "connectionerror" in cls or "connection refused" in msg or "connect" in msg:
+        return "Extraction Failed – Cannot reach the AI model (Ollama). Check that the model server is running."
+    if "json" in msg or "parse" in msg or "decode" in msg:
+        return "Extraction Failed – PDF/Image is unclear or the model returned unreadable output. Please retry with a clearer scan."
+    if "image" in msg or "pdf" in msg or "corrupt" in msg or "invalid" in msg:
+        return "Extraction Failed – PDF/Image could not be read. The file may be corrupted or password-protected."
+    if "memory" in msg or "out of memory" in msg:
+        return "Extraction Failed – Server ran out of memory processing this file. Try a smaller or simpler PDF."
+    if "permission" in msg or "access" in msg:
+        return "Extraction Failed – File access error. The PDF could not be read from storage."
+    # generic fallback — still better than a raw traceback
+    return f"Extraction Failed – {cls}: {str(exc)[:200]}"
+
+
+def re_enqueue_failed(db, job_id: int, user: str | None = None) -> "Job":
+    """Re-queue a FAILED job for extraction retry. Returns the updated job."""
+    job = db.get(Job, job_id)
+    if job is None:
+        raise ValueError(f"Job {job_id} not found")
+    if job.status != "FAILED":
+        raise ValueError(f"Job {job_id} is not in FAILED state (current: {job.status})")
+    # Move the file back from error folder to upload dir so it can be re-processed
+    cfg = get_settings()
+    stored = Path(job.stored_path) if job.stored_path else None
+    if stored is None or not stored.is_file():
+        # Try to find the file in the error folder
+        f = workflow.folders()
+        if f["error"]:
+            candidate = f["error"] / (stored.name if stored else job.filename)
+            if candidate.is_file():
+                dest_dir = Path(cfg.upload_dir)
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                new_path = dest_dir / f"{int(time.time() * 1000)}_{job.filename}"
+                import shutil as _shutil
+                _shutil.copyfile(str(candidate), str(new_path))
+                job.stored_path = str(new_path)
+    job.status = "QUEUED"
+    job.error = None
+    job.stage = "Queued for retry"
+    job.started_at = None
+    job.finished_at = None
+    db.commit()
+    _wake.set()
+    return job
+
+
 def now():
     return datetime.now(timezone.utc)
 
@@ -71,9 +124,13 @@ def run_job(job_id: int) -> None:
             db.rollback()
             log.exception("job %s failed", job_id)
             job = db.get(Job, job_id)
-            job.status, job.error, job.stage = "FAILED", f"{type(exc).__name__}: {exc}"[:1000], "Failed"
+            # Produce a meaningful error message instead of a generic one
+            raw_err = f"{type(exc).__name__}: {exc}"
+            friendly = _friendly_error(exc, raw_err)
+            job.status, job.error, job.stage = "FAILED", friendly[:1000], "Failed"
             workflow.place_failed(job)                                           # processing -> error
-            audit(db, "EXTRACTION_FAILED", None, {"file": job.filename, "error": job.error}, job.created_by)
+            audit(db, "EXTRACTION_FAILED", None, {"file": job.filename, "error": job.error,
+                                                   "raw_error": raw_err[:500]}, job.created_by)
         job.finished_at = now()
         db.commit()
 
