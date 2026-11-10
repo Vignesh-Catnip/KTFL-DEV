@@ -15,6 +15,7 @@ from ..schemas import InvoiceEdit, ResolveIn  # LineEdit kept in schemas for fut
 from ..security import current_user, require
 from ..config import get_settings
 from ..services import doctype, pdfio, robot
+from ..services.sap import get_sap, sap_enrich
 from ..services.compare import build_compare
 from ..services.persist import audit, find_duplicate, header_from_invoice
 from ..services.pipeline import recheck_invoice
@@ -210,6 +211,60 @@ def push(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(re
     else:
         msg = f"Invoice is queued for the robot. Robot not started: {r['reason']}"
     return {"ok": True, "message": msg, "robot": r}
+
+
+@router.post("/{invoice_id}/sap-lookup")
+def sap_lookup(invoice_id: int, body: dict, db: Session = Depends(get_db),
+               user: User = Depends(require("approver"))):
+    """Re-query SAP for a manually entered PO or GRN and return matched_details.
+
+    Body: {"po_number": "...", "grn_number": "..."}  (at least one required)
+    Returns the SAP data found (po_date, grn_date, grn_amount, vendor_code, plant_code,
+    sap_tax_code, company_code, po_in_sap, grn_in_sap) plus any notes.
+    Only EKKO, EKPO, MSEG tables are used (security constraint).
+    """
+    inv = _get(db, invoice_id)
+    gw = get_sap()
+    if gw is None:
+        raise HTTPException(503, "SAP is not connected - cannot look up data")
+
+    # Build a lightweight header dict for sap_enrich
+    h, lines = header_from_invoice(inv)
+    # Override with user-supplied values
+    if "po_number" in body and body["po_number"]:
+        h["po_number"] = str(body["po_number"]).strip()
+    if "grn_number" in body and body["grn_number"]:
+        h["grn_number"] = str(body["grn_number"]).strip()
+
+    if not h.get("po_number") and not h.get("grn_number"):
+        raise HTTPException(422, "Provide at least one of po_number or grn_number")
+
+    # Run SAP enrichment — allow_grn_switch=False since the user typed the GRN explicitly
+    notes = sap_enrich(gw, h, lines, allow_grn_switch=not bool(body.get("grn_number")))
+
+    # Return useful matched_details fields
+    result = {
+        "po_in_sap": h.get("po_in_sap", False),
+        "grn_in_sap": h.get("grn_in_sap", False),
+        "grn_number": h.get("grn_number", ""),
+        "po_number": h.get("po_number", ""),
+        "po_date": h.get("po_date", ""),
+        "grn_date": h.get("grn_date", ""),
+        "grn_amount": h.get("grn_amount"),
+        "vendor_code": h.get("vendor_code", ""),
+        "sap_vendor_code": h.get("sap_vendor_code", ""),
+        "plant_code": h.get("plant_code", ""),
+        "sap_tax_code": h.get("sap_tax_code", ""),
+        "company_code": h.get("company_code", ""),
+        "po_list": h.get("po_list", ""),
+        "sap_hsn": h.get("sap_hsn", ""),
+        "notes": notes,
+        "field_sources": h.get("field_sources", {}),
+    }
+    audit(db, "SAP_MANUAL_LOOKUP", inv.id,
+          {"po": body.get("po_number"), "grn": body.get("grn_number"), "found": result["po_in_sap"] or result["grn_in_sap"]},
+          user.username)
+    return result
 
 
 @router.get("/{invoice_id}/page/{page}.png")
