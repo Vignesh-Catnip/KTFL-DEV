@@ -106,6 +106,7 @@ export const api = {
     files.forEach(f => fd.append('files', f))
     return request<{ jobs: { id: number; filename: string }[] }>('/api/jobs/upload', { method: 'POST', body: fd })
   },
+  post: <T = unknown>(path: string, body: unknown) => request<T>(path, { method: 'POST', ...json(body) }),
   pageUrl: (id: number, page: number) => `${BASE}/api/invoices/${id}/page/${page}.png`,
   /** page images / CSV need the bearer token, so they are fetched and turned into blob URLs */
   blobUrl: async (path: string) => {
