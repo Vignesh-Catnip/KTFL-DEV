@@ -1,7 +1,15 @@
-ALTER TABLE robot_runs ALTER COLUMN trigger TYPE VARCHAR(30);
--- All table sequences reset to 1
-SELECT setval(pg_get_serial_sequence('invoices', 'id'), COALESCE((SELECT MAX(id) FROM invoices), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('invoice_lines', 'id'), COALESCE((SELECT MAX(id) FROM invoice_lines), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('robot_runs', 'id'), COALESCE((SELECT MAX(id) FROM robot_runs), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('extraction_jobs', 'id'), COALESCE((SELECT MAX(id) FROM extraction_jobs), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('audit_logs', 'id'), COALESCE((SELECT MAX(id) FROM audit_logs), 0) + 1, false);
+-- RECONCILE + BLOCKED queue, data mismatch உள்ள 12 invoices மட்டும்
+SELECT 
+    id,
+    filename,
+    vendor,
+    invoice_number,
+    po_number,
+    subtotal,
+    total,
+    queue,
+    error_message
+FROM invoices
+WHERE queue IN ('RECONCILE', 'BLOCKED')
+ORDER BY created_at DESC
+LIMIT 12;
