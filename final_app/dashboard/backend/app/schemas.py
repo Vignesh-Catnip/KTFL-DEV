@@ -18,6 +18,7 @@ class InvoiceEdit(BaseModel):
     plant_code: str | None = None
     doc_type: str | None = None
     vendor_code: str | None = None
+    gstin: str | None = None
     hsn_sac: str | None = None
     subtotal: float | None = None
     cgst: float | None = None
@@ -25,6 +26,7 @@ class InvoiceEdit(BaseModel):
     igst: float | None = None
     total_tax: float | None = None
     total: float | None = None
+    gst_tax_code: str | None = None
 
 
 class LineEdit(BaseModel):
