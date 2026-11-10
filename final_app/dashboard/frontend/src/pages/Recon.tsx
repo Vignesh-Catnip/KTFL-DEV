@@ -270,9 +270,10 @@ function InvoiceDateRow({ editVal, dateRow, invoiceDate, writable, onChange }: {
   )
 }
 
-function GstTaxRow({ editVal, invoiceVal, sapVal, onChange }: {
-  editVal: string | undefined; invoiceVal: string | null; sapVal: string | null; onChange: (v: string) => void
+function GstTaxRow({ show, editVal, invoiceVal, sapVal, onChange }: {
+  show: boolean; editVal: string | undefined; invoiceVal: string | null; sapVal: string | null; onChange: (v: string) => void
 }): JSX.Element {
+  if (!show) return <></>
   const stat: CompareRow['status'] = invoiceVal && sapVal ? (invoiceVal === sapVal ? 'OK' : 'MISMATCH') : 'NA'
   return (
     <div className="mrow" style={{ marginTop: 6 }}>
@@ -438,35 +439,36 @@ export default function Recon() {
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
 
             {/* GST Tax Code edit row */}
-            {writable ? <GstTaxRow
+            <GstTaxRow
+              show={writable}
               editVal={edits.gst_tax_code}
               invoiceVal={d.gst_tax_code}
               sapVal={d.sap_tax_code}
               onChange={v => setEdits({ ...edits, gst_tax_code: v })}
-            /> : null}
+            />
 
             {/* SAP re-lookup button when PO or GRN is manually edited */}
-            {writable && (edits.po_number !== undefined || edits.grn_number !== undefined) && (
+            {(writable && (edits.po_number !== undefined || edits.grn_number !== undefined)) ? (
               <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button className="btn sm" onClick={onSapLookup} disabled={sapLooking}>
                   {sapLooking ? '…' : '🔍'} Re-check SAP with entered PO/GRN
                 </button>
-                {sapResult && (
+                {sapResult != null ? (
                   <span style={{ fontSize: 12, color: (sapResult.po_in_sap || sapResult.grn_in_sap) ? '#16a34a' : '#dc2626' }}>
                     {(sapResult.po_in_sap || sapResult.grn_in_sap)
                       ? `✓ Found — PO: ${sapResult.po_number || '—'}  GRN: ${sapResult.grn_number || '—'}  Plant: ${sapResult.plant_code || '—'}`
                       : '✗ Not found in SAP'}
                   </span>
-                )}
+                ) : null}
               </div>
-            )}
-            {sapResult && (sapResult.po_in_sap || sapResult.grn_in_sap) && (
+            ) : null}
+            {(sapResult != null && (sapResult.po_in_sap || sapResult.grn_in_sap)) ? (
               <div style={{ marginTop: 8, padding: '8px 10px', background: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', fontSize: 12 }}>
                 <b>SAP matched details</b><br />
                 PO date: {String(sapResult.po_date || '—')} · GRN date: {String(sapResult.grn_date || '—')} · GRN amount: {sapResult.grn_amount ? `₹${Number(sapResult.grn_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}<br />
                 Vendor code: {String(sapResult.sap_vendor_code || sapResult.vendor_code || '—')} · Plant: {String(sapResult.plant_code || '—')} · Tax code: {String(sapResult.sap_tax_code || '—')} · Company: {String(sapResult.company_code || '—')}
               </div>
-            )}
+            ) : null}
           </div>
 
           {open.length > 0 && (
