@@ -1,11 +1,15 @@
+
 src/pages/Recon.tsx:415:13 - error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
 
-415             {writable ? (
-                ~~~~~~~~~~~~~
-416               <div className="mrow" style={{ marginTop: 6 }}>
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+415             {writable && (() => {
+                ~~~~~~~~~~~~~~~~~~~~~
+416               const gstStat: CompareRow['status'] = d.gst_tax_code && d.sap_tax_code ? (d.gst_tax_code === d.sap_tax_code ? 'OK' : 'MISMATCH') : 'NA'
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ...
-424               </div>
-    ~~~~~~~~~~~~~~~~~~~~
-425             ) : null}
-    ~~~~~~~~~~~~~~~~~~~~~
+427               )
+    ~~~~~~~~~~~~~~~
+428             })()}
+    ~~~~~~~~~~~~~~~~~
+
+
+Found 1 error in src/pages/Recon.tsx:415
