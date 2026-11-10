@@ -171,6 +171,25 @@ def validate(h: dict, lines: list[dict]) -> dict:
         iss.append(issue("MULTI_PO", INFO, "SAP", h.get("red_flag_reason") or "Invoice linked to several POs",
                          "po_number", h.get("po_list", "")))
 
+    # ---------------------------------------------------------------- PO / GRN confidence flags
+    # If PO or GRN was extracted by vision (not confirmed from SAP) and confidence < 70, warn
+    # This tells the reconciler to manually verify even if the value passed format checks
+    fs = h.get("field_sources") or {}
+    _po_src = (fs.get("po_number") or "").upper()
+    _grn_src = (fs.get("grn_number") or "").upper()
+    _conf = h.get("confidence") or 100
+
+    if _po and is_valid_po(_po) and _po_src == "VISION" and _conf < 70 and not sap_on:
+        iss.append(issue("PO_LOW_CONFIDENCE", RECON, "MISSING",
+                         f"PO {_po} was read by AI (confidence {int(_conf)}%) but SAP has not been checked — "
+                         f"please verify this PO number before posting",
+                         "po_number", _po))
+    if h.get("grn_number") and grn_is_valid(h["grn_number"]) and _grn_src == "VISION" and _conf < 70 and not sap_on:
+        iss.append(issue("GRN_LOW_CONFIDENCE", RECON, "MISSING",
+                         f"GRN {h['grn_number']} was read by AI (confidence {int(_conf)}%) but SAP has not been checked — "
+                         f"please verify this GRN number before posting",
+                         "grn_number", h["grn_number"]))
+
     # ---------------------------------------------------------------- values vs SAP -> RECONCILE
     for m in h.get("sap_mismatches", []):
         iss.append(issue(m.get("code", "FIELD_MISMATCH"), RECON, "SAP", m["message"], m.get("field", ""),
