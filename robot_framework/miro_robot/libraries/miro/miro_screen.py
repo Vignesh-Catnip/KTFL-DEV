@@ -184,6 +184,19 @@ class MiroScreen:
         self.leave()                                          # clean start, discards any half-entered doc
         self.collapsed = False
         self.s.okcode("/nMIRO")
+        # Dismiss any popups that appear after /nMIRO (e.g. session warnings, info dialogs)
+        for _ in range(5):
+            if not self.s.popup_open():
+                break
+            ptxt = self.s.popup_text()
+            if self.s.exists("wnd[1]/usr/ctxtBKPF-BUKRS"):
+                # Company-code popup — fill it and confirm
+                self.s.find("wnd[1]/usr/ctxtBKPF-BUKRS").Text = self.cfg.company_code
+                self.s.enter(1)
+                break
+            self.note(f"[open MIRO] popup dismissed: {ptxt[:120]}")
+            self.s.enter(1)
+        # Legacy path: company-code popup after /nMIRO (no loop caught it yet)
         if self.s.exists("wnd[1]/usr/ctxtBKPF-BUKRS"):
             self.s.find("wnd[1]/usr/ctxtBKPF-BUKRS").Text = self.cfg.company_code
             self.s.enter(1)
@@ -352,6 +365,19 @@ class MiroScreen:
         self.s.set_field("RM08M-EBELN", po)
         self.s.enter()
         self.handle_messages("purchase order")
+        # After PO entry SAP may show a full-screen message display (SAPMSSY0/120 or similar).
+        # This is NOT a wnd[1] popup - it replaces the main window. Detect and press Enter to return.
+        for _ in range(3):
+            info = self.s.screen_info()
+            txn = self.s.transaction().upper()
+            if "SAPMSSY0" in info or (txn not in ("MIRO", "") and "MRM" not in info):
+                _, stxt = self.s.status()
+                self.note(f"[purchase order] SAP showed message screen ({info}): {stxt} - pressing Enter to continue")
+                self.s.enter()
+                self.s.wait_ready()
+                self.handle_messages("purchase order after message screen")
+            else:
+                break
 
     # ------------------------------------------------------------ amount / balance
     def enter_amount(self, inv: dict) -> float:
