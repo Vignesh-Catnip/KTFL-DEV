@@ -4,7 +4,12 @@ import { api, type CompareRow, type CompareLine, type InvoiceDetail } from '../a
 import { useAuth } from '../auth'
 import { Icon, ICONS, MiroTag, QueueTag, dt, inr, useToast } from '../ui'
 
-const EDITABLE: Record<string, string> = { po_number: 'po_number', grn_number: 'grn_number', hsn_sac: 'hsn_sac', invoice_date: 'invoice_date' }
+const EDITABLE: Record<string, string> = {
+  po_number: 'po_number', grn_number: 'grn_number', hsn_sac: 'hsn_sac',
+  invoice_date: 'invoice_date', invoice_number: 'invoice_number', vendor: 'vendor',
+  gstin: 'gstin', subtotal: 'subtotal', cgst: 'cgst', sgst: 'sgst', igst: 'igst',
+  total: 'total', gst_tax_code: 'gst_tax_code',
+}
 
 /** SAC codes starting with 99 = service codes — flag on material invoice */
 const isSacServiceCode = (hsn: string | null) => hsn ? /^99/.test(hsn.trim()) : false
@@ -261,6 +266,8 @@ export default function Recon() {
   const [reso, setReso] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [sapLooking, setSapLooking] = useState(false)
+  const [sapResult, setSapResult] = useState<Record<string, unknown> | null>(null)
   const iid = Number(id)
 
   const load = useCallback(() => {
@@ -289,6 +296,19 @@ export default function Recon() {
       return queue
     } catch (e) { toast('Could not save', (e as Error).message, true); return null } finally { setBusy(false) }
   }
+  const onSapLookup = async () => {
+    const po = edits.po_number ?? d.po_number ?? ''
+    const grn = edits.grn_number ?? d.grn_number ?? ''
+    if (!po && !grn) return toast('SAP lookup', 'Enter a PO or GRN number first', true)
+    setSapLooking(true); setSapResult(null)
+    try {
+      const r = await api.post(`/api/invoices/${iid}/sap-lookup`, { po_number: po, grn_number: grn })
+      setSapResult(r)
+      if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
+      else toast('SAP lookup', 'Not found in SAP', true)
+    } catch (e) { toast('SAP lookup failed', (e as Error).message, true) } finally { setSapLooking(false) }
+  }
+
   const onSave = async () => {
     const q = await save()
     if (q) toast('Changes saved', q === 'MATCHED' ? 'Everything now agrees with SAP' : `Invoice is in the ${q.toLowerCase()} queue`)
@@ -390,6 +410,42 @@ export default function Recon() {
               <Stat s={d.doc_type ? 'OK' : 'MISSING'} />
             </div>
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
+
+            {/* GST Tax Code edit row */}
+            {writable && (
+              <div className="mrow" style={{ marginTop: 6 }}>
+                <span className="field-k">GST tax code</span>
+                <input className={'cellbox' + (edits.gst_tax_code !== undefined ? ' edited' : '')} aria-label="GST tax code"
+                  value={edits.gst_tax_code ?? d.gst_tax_code ?? ''}
+                  onChange={e => setEdits({ ...edits, gst_tax_code: e.target.value })}
+                  placeholder="e.g. I3, I8" />
+                <div className="cellbox po mono">{d.sap_tax_code || '—'}</div>
+                <Stat s={d.gst_tax_code && d.sap_tax_code ? (d.gst_tax_code === d.sap_tax_code ? 'OK' : 'MISMATCH') : 'NA'} />
+              </div>
+            )}
+
+            {/* SAP re-lookup button when PO or GRN is manually edited */}
+            {writable && (edits.po_number !== undefined || edits.grn_number !== undefined) && (
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button className="btn sm" onClick={onSapLookup} disabled={sapLooking}>
+                  {sapLooking ? '…' : '🔍'} Re-check SAP with entered PO/GRN
+                </button>
+                {sapResult && (
+                  <span style={{ fontSize: 12, color: (sapResult.po_in_sap || sapResult.grn_in_sap) ? '#16a34a' : '#dc2626' }}>
+                    {(sapResult.po_in_sap || sapResult.grn_in_sap)
+                      ? `✓ Found — PO: ${sapResult.po_number || '—'}  GRN: ${sapResult.grn_number || '—'}  Plant: ${sapResult.plant_code || '—'}`
+                      : '✗ Not found in SAP'}
+                  </span>
+                )}
+              </div>
+            )}
+            {sapResult && (sapResult.po_in_sap || sapResult.grn_in_sap) && (
+              <div style={{ marginTop: 8, padding: '8px 10px', background: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', fontSize: 12 }}>
+                <b>SAP matched details</b><br />
+                PO date: {String(sapResult.po_date || '—')} · GRN date: {String(sapResult.grn_date || '—')} · GRN amount: {sapResult.grn_amount ? `₹${Number(sapResult.grn_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}<br />
+                Vendor code: {String(sapResult.sap_vendor_code || sapResult.vendor_code || '—')} · Plant: {String(sapResult.plant_code || '—')} · Tax code: {String(sapResult.sap_tax_code || '—')} · Company: {String(sapResult.company_code || '—')}
+              </div>
+            )}
           </div>
 
           {open.length > 0 && (
