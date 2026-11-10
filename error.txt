@@ -4,17 +4,21 @@ C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>npm run 
 > clearmatch-dashboard@1.0.0 build
 > tsc --noEmit && vite build
 
-src/pages/Recon.tsx:432:13 - error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/Recon.tsx:441:13 - error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
 
-432             {writable && <GstTaxRow
-                ~~~~~~~~~~~~~~~~~~~~~~~
-433               editVal={edits.gst_tax_code}
+441             {writable ? <GstTaxRow
+                ~~~~~~~~~~~~~~~~~~~~~~
+442               editVal={edits.gst_tax_code}
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ...
-436               onChange={v => setEdits({ ...edits, gst_tax_code: v })}
+445               onChange={v => setEdits({ ...edits, gst_tax_code: v })}
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-437             />}
-    ~~~~~~~~~~~~~~~
+446             /> : null}
+    ~~~~~~~~~~~~~~~~~~~~~~
 
 
-Found 1 error in src/pages/Recon.tsx:432
+Found 1 error in src/pages/Recon.tsx:441
+
+
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>
+
