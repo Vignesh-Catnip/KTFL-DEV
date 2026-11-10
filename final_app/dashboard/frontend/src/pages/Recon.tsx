@@ -279,7 +279,7 @@ export default function Recon() {
   if (!d) return <div className="empty"><span className="spin" /></div>
 
   const locked = d.miro_status === 'POSTED' || d.miro_status === 'PARKED'
-  const writable = can('approver') && !locked
+  const writable = !!can('approver') && !locked
   const approve = RESOLUTIONS.find(r => r[0] === reso)?.[1] ?? false
   const open = d.issues.filter(i => i.severity === 'BLOCK' || i.severity === 'RECON')
   const confirmed = d.queue === 'MATCHED'
