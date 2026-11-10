@@ -44,6 +44,7 @@ export default function Exceptions() {
               <b className="mono" style={{ cursor: 'pointer', color: '#006CB7' }} onClick={() => nav(`/invoice/${i.id}`)}>{i.invoice_number || '—'}</b>
               <span>{i.vendor || '—'}</span>
               <span className="muted">PO {i.po_number || '—'} · GRN {i.grn_number || '—'}</span>
+              <span className="muted" title="PDF file name" style={{ fontSize: 12 }}>📄 {i.filename}</span>
               <QueueTag q={i.queue} />
               <span className="muted">{i.exception_type}</span>
               <span style={{ marginLeft: 'auto' }}>
