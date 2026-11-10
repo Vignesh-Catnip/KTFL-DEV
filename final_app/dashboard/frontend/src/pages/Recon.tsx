@@ -254,9 +254,25 @@ function LineItemsSection({ lines, invoiceHsn, writable, onSaved, invoiceId }: {
   )
 }
 
+function InvoiceDateRow({ editVal, dateRow, invoiceDate, writable, onChange }: {
+  editVal: string | undefined; dateRow: CompareRow | undefined; invoiceDate: string | null; writable: boolean; onChange: (v: string) => void
+}): JSX.Element {
+  return (
+    <div className="invoice-date-block" style={{ marginBottom: 10, padding: '8px 10px', background: '#f8f9fa', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Invoice Date</div>
+      {writable ? (
+        <input className={'cellbox' + (editVal !== undefined ? ' edited' : '')} aria-label="Invoice date"
+          style={{ width: '100%' }}
+          value={editVal ?? (dateRow?.invoice ?? invoiceDate ?? '')}
+          onChange={e => onChange(e.target.value)} />
+      ) : <div className="cellbox mono" style={{ width: '100%' }}>{(dateRow?.invoice ?? invoiceDate) || '—'}</div>}
+    </div>
+  )
+}
+
 function GstTaxRow({ editVal, invoiceVal, sapVal, onChange }: {
   editVal: string | undefined; invoiceVal: string | null; sapVal: string | null; onChange: (v: string) => void
-}) {
+}): JSX.Element {
   const stat: CompareRow['status'] = invoiceVal && sapVal ? (invoiceVal === sapVal ? 'OK' : 'MISMATCH') : 'NA'
   return (
     <div className="mrow" style={{ marginTop: 6 }}>
@@ -296,7 +312,7 @@ export default function Recon() {
   if (!d) return <div className="empty"><span className="spin" /></div>
 
   const locked = d.miro_status === 'POSTED' || d.miro_status === 'PARKED'
-  const writable = !!can('approver') && !locked
+  const writable: boolean = !!can('approver') && !locked
   const approve = RESOLUTIONS.find(r => r[0] === reso)?.[1] ?? false
   const open = d.issues.filter(i => i.severity === 'BLOCK' || i.severity === 'RECON')
   const confirmed = d.queue === 'MATCHED'
@@ -383,20 +399,13 @@ export default function Recon() {
             <div className="lbl"><span className="t">Invoice vs SAP</span></div>
 
             {/* Invoice Date — label above field, separate from compare rows */}
-            {(() => {
-              const dateRow = d.compare.rows.find(r => r.field === 'invoice_date')
-              return (
-                <div className="invoice-date-block" style={{ marginBottom: 10, padding: '8px 10px', background: '#f8f9fa', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Invoice Date</div>
-                  {EDITABLE['invoice_date'] && writable ? (
-                    <input className={'cellbox' + (edits['invoice_date'] !== undefined ? ' edited' : '')} aria-label="Invoice date"
-                      style={{ width: '100%' }}
-                      value={edits['invoice_date'] ?? (dateRow?.invoice ?? d.invoice_date ?? '')}
-                      onChange={e => setEdits({ ...edits, invoice_date: e.target.value })} />
-                  ) : <div className="cellbox mono" style={{ width: '100%' }}>{(dateRow?.invoice ?? d.invoice_date) || '—'}</div>}
-                </div>
-              )
-            })()}
+            <InvoiceDateRow
+              editVal={edits['invoice_date']}
+              dateRow={d.compare.rows.find(r => r.field === 'invoice_date')}
+              invoiceDate={d.invoice_date}
+              writable={writable}
+              onChange={v => setEdits({ ...edits, invoice_date: v })}
+            />
 
             <div className="mrow hd"><span>Field</span><span>Invoice</span><span>GRN / SAP</span><span /></div>
             {d.compare.rows.filter(r => r.field !== 'invoice_date').map(r => (
@@ -429,12 +438,12 @@ export default function Recon() {
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
 
             {/* GST Tax Code edit row */}
-            {writable && <GstTaxRow
+            {writable ? <GstTaxRow
               editVal={edits.gst_tax_code}
               invoiceVal={d.gst_tax_code}
               sapVal={d.sap_tax_code}
               onChange={v => setEdits({ ...edits, gst_tax_code: v })}
-            />}
+            /> : null}
 
             {/* SAP re-lookup button when PO or GRN is manually edited */}
             {writable && (edits.po_number !== undefined || edits.grn_number !== undefined) && (
