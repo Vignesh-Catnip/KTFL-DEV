@@ -254,6 +254,23 @@ function LineItemsSection({ lines, invoiceHsn, writable, onSaved, invoiceId }: {
   )
 }
 
+function GstTaxRow({ editVal, invoiceVal, sapVal, onChange }: {
+  editVal: string | undefined; invoiceVal: string | null; sapVal: string | null; onChange: (v: string) => void
+}) {
+  const stat: CompareRow['status'] = invoiceVal && sapVal ? (invoiceVal === sapVal ? 'OK' : 'MISMATCH') : 'NA'
+  return (
+    <div className="mrow" style={{ marginTop: 6 }}>
+      <span className="field-k">GST tax code</span>
+      <input className={'cellbox' + (editVal !== undefined ? ' edited' : '')} aria-label="GST tax code"
+        value={editVal ?? invoiceVal ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder="e.g. I3, I8" />
+      <div className="cellbox po mono">{sapVal || '—'}</div>
+      <Stat s={stat} />
+    </div>
+  )
+}
+
 export default function Recon() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -412,20 +429,12 @@ export default function Recon() {
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
 
             {/* GST Tax Code edit row */}
-            {writable && (() => {
-              const gstStat: CompareRow['status'] = d.gst_tax_code && d.sap_tax_code ? (d.gst_tax_code === d.sap_tax_code ? 'OK' : 'MISMATCH') : 'NA'
-              return (
-                <div className="mrow" style={{ marginTop: 6 }}>
-                  <span className="field-k">GST tax code</span>
-                  <input className={'cellbox' + (edits.gst_tax_code !== undefined ? ' edited' : '')} aria-label="GST tax code"
-                    value={edits.gst_tax_code ?? d.gst_tax_code ?? ''}
-                    onChange={e => setEdits({ ...edits, gst_tax_code: e.target.value })}
-                    placeholder="e.g. I3, I8" />
-                  <div className="cellbox po mono">{d.sap_tax_code || '—'}</div>
-                  <Stat s={gstStat} />
-                </div>
-              )
-            })()}
+            {writable && <GstTaxRow
+              editVal={edits.gst_tax_code}
+              invoiceVal={d.gst_tax_code}
+              sapVal={d.sap_tax_code}
+              onChange={v => setEdits({ ...edits, gst_tax_code: v })}
+            />}
 
             {/* SAP re-lookup button when PO or GRN is manually edited */}
             {writable && (edits.po_number !== undefined || edits.grn_number !== undefined) && (
