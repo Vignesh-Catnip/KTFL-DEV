@@ -201,7 +201,7 @@ class RobotRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(20), default="RUNNING", index=True)
     # RUNNING / DONE / FAILED / TIMEOUT / INTERRUPTED
-    trigger: Mapped[str] = mapped_column(String(10), default="MANUAL")          # AUTO / MANUAL
+    trigger: Mapped[str] = mapped_column(String(30), default="MANUAL")          # AUTO / MANUAL / AUTO_PERIODIC
     triggered_by: Mapped[str | None] = mapped_column(String(80))
     mode: Mapped[str | None] = mapped_column(String(10))
     exit_code: Mapped[int | None] = mapped_column(Integer)
