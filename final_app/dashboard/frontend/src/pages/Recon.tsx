@@ -302,7 +302,7 @@ export default function Recon() {
     if (!po && !grn) return toast('SAP lookup', 'Enter a PO or GRN number first', true)
     setSapLooking(true); setSapResult(null)
     try {
-      const r = await api.post(`/api/invoices/${iid}/sap-lookup`, { po_number: po, grn_number: grn })
+      const r = await api.post<Record<string, unknown>>(`/api/invoices/${iid}/sap-lookup`, { po_number: po, grn_number: grn })
       setSapResult(r)
       if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
       else toast('SAP lookup', 'Not found in SAP', true)
@@ -412,7 +412,7 @@ export default function Recon() {
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
 
             {/* GST Tax Code edit row */}
-            {writable && (
+            {writable ? (
               <div className="mrow" style={{ marginTop: 6 }}>
                 <span className="field-k">GST tax code</span>
                 <input className={'cellbox' + (edits.gst_tax_code !== undefined ? ' edited' : '')} aria-label="GST tax code"
@@ -420,9 +420,9 @@ export default function Recon() {
                   onChange={e => setEdits({ ...edits, gst_tax_code: e.target.value })}
                   placeholder="e.g. I3, I8" />
                 <div className="cellbox po mono">{d.sap_tax_code || '—'}</div>
-                <Stat s={d.gst_tax_code && d.sap_tax_code ? (d.gst_tax_code === d.sap_tax_code ? 'OK' : 'MISMATCH') : 'NA'} />
+                <Stat s={(d.gst_tax_code && d.sap_tax_code ? (d.gst_tax_code === d.sap_tax_code ? 'OK' : 'MISMATCH') : 'NA') as CompareRow['status']} />
               </div>
-            )}
+            ) : null}
 
             {/* SAP re-lookup button when PO or GRN is manually edited */}
             {writable && (edits.po_number !== undefined || edits.grn_number !== undefined) && (
