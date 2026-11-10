@@ -1,56 +1,25 @@
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>npm run build
 
 > clearmatch-dashboard@1.0.0 build
 > tsc --noEmit && vite build
 
-src/pages/Recon.tsx:306:20 - error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<Record<string, unknown> | null>'.
-
-306       setSapResult(r)
-                       ~
-
-src/pages/Recon.tsx:307:11 - error TS18046: 'r' is of type 'unknown'.
-
-307       if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
-              ~
-
-src/pages/Recon.tsx:307:27 - error TS18046: 'r' is of type 'unknown'.
-
-307       if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
-                              ~
-
-src/pages/Recon.tsx:307:82 - error TS18046: 'r' is of type 'unknown'.
-
-307       if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
-                                                                                     ~
-
-src/pages/Recon.tsx:307:110 - error TS18046: 'r' is of type 'unknown'.
-
-307       if (r.grn_in_sap || r.po_in_sap) toast('SAP lookup', `Found in SAP — PO: ${r.po_number || '—'}  GRN: ${r.grn_number || '—'}`)
-                                                                                                                 ~
-
 src/pages/Recon.tsx:415:13 - error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
 
-415             {writable && (
-                ~~~~~~~~~~~~~~
+415             {writable ? (
+                ~~~~~~~~~~~~~
 416               <div className="mrow" style={{ marginTop: 6 }}>
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ...
 424               </div>
     ~~~~~~~~~~~~~~~~~~~~
-425             )}
-    ~~~~~~~~~~~~~~
+425             ) : null}
+    ~~~~~~~~~~~~~~~~~~~~~
 
 
-Found 6 errors in the same file, starting at: src/pages/Recon.tsx:306
+Found 1 error in src/pages/Recon.tsx:415
 
-npm notice
-npm notice New major version of npm available! 11.19.0 -> 12.2.2
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
-npm notice To update run: npm install -g npm@12.2.2
-npm notice
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\frontend>
-
 
 
