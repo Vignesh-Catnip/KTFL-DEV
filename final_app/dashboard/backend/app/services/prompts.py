@@ -54,13 +54,21 @@ Read the invoice IMAGES. Return ONLY valid JSON.
 
 FIELD RULES
 - vendor         : the SELLER company printed at the top. NEVER "Kalyani Technoforge".
-- invoice_number : value under "Invoice No." (e.g. "428/26-27", "AB2627143", "BM/26-27/1328").
-- invoice_date   : the "Dated" value next to the invoice number.
-- po_number      : ONLY take this from a field that is actually LABELLED as the purchase order, such as
-                   "PO No.", "P.O. No.", "Purchase Order", "Buyer's Order No.", "Order No.", "Order Ref.".
+- invoice_number : value under "Invoice No.", "Invoice Number", "Tax Invoice No.", "Bill No.", "Inv. No."
+                   Copy the alphanumeric code EXACTLY character by character — do not add, drop, or swap
+                   any letter or digit. Common confusion pairs: I vs L vs 1, O vs 0, A vs 4, P vs R.
+                   Example: "KLALP2610003915" — verify each character: K-L-A-L-P (not KLAIP, not KLALB).
+                   If the invoice number spans two lines, join them without space.
+- invoice_date   : the "Dated", "Date", "Invoice Date", "Bill Date" value next to the invoice number.
+- po_number      : ONLY take this from a field that is actually LABELLED as the purchase order. Accepted
+                   labels (look for ALL of these on every invoice):
+                     "PO No.", "P.O. No.", "Purchase Order", "Buyer's Order No.", "Order No.", "Order Ref.",
+                     "Customer PO", "Customer PO No.", "Cust. PO", "Our PO", "Our PO No.", "Our Order No.",
+                     "FO No.", "F.O. No.", "FO Number", "Firm Order No.", "Firm Order",
+                     "Reference No.", "Ref. No.", "Your Order No.", "Your Ref."
                    Never pick a bare 10-digit (or short-form) number that has no such label next to it -
                    it could be an invoice no., GSTIN digits, a vehicle/gate/LR/scroll number etc.
-                   KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531). Strip any "PO-" prefix.
+                   KTFL POs are 10 digits starting 81 or 51 (e.g. 8100007531, 5100002503). Strip any "PO-" prefix.
                    NEVER use the CIN number (Company Identification Number) as a PO. CIN always starts
                    with U or L followed by 5 digits and letters (e.g. "U27106DL2005PLC142596") — ignore it.
                    If MORE THAN ONE different PO is printed anywhere on the invoice, list every one of
@@ -81,12 +89,24 @@ FIELD RULES
 - Amounts        : ₹6,19,763.14 -> 619763.14  (remove ₹ and thousands separators, keep the decimal).
                    If the invoice prints "1,000.00" extract it as 1000.00 (preserve .00, do not round to 1000).
                    Line item amounts must be extracted exactly as printed — if the invoice shows "5,250.00" return 5250.00, not 5250.
-- subtotal       : total taxable value BEFORE GST.
-- cgst/sgst/igst : the GST AMOUNTS in rupees, not the percentages.
+- subtotal       : total taxable value BEFORE GST. This may be labelled "Taxable Value", "Taxable Amount",
+                   "Assessable Value", "Basic Amount", "Total Taxable Value", or be the SUM of all line
+                   "Taxable Value" column cells. Sum them if no grand total row is printed.
+                   NEVER return 0 — if amounts are present anywhere on the invoice, extract them.
+- cgst/sgst/igst : the GST AMOUNTS in rupees (not percentages). These may appear as:
+                   - A summary table at the bottom: "CGST @ 9% = 55,789.00" → cgst = 55789.00
+                   - A separate column per line item: add up all CGST column values across all rows
+                   - Combined as "GST" or "Tax" with no CGST/SGST split: put the full amount in igst
+                     if the vendor's state ≠ Maharashtra (inter-state = IGST), else split equally into cgst+sgst
 - gst_rate_percent: the GST RATE printed on the invoice as a number (18 for 9%+9% or 18%). 0 if none.
-- total          : the final payable invoice total.
+- total          : the final payable invoice total. Look for labels: "Total", "Grand Total", "Invoice Total",
+                   "Net Payable", "Amount Payable", "Total Amount", "Bill Amount". If a "Round Off" row
+                   exists, use the value AFTER rounding. NEVER return 0 if amounts are visible on the invoice.
 - grn_number     : always "" (it is extracted separately).
-- Ignore Delivery Challan / E-way bill / weighment slip pages when collecting line items.
+- Ignore Delivery Challan / E-way bill / weighment slip / lorry receipt / LR copy pages when collecting
+                   line items and amounts — extract from the TAX INVOICE pages only.
+                   Exception: if the Tax Invoice page does not print HSN codes but the Delivery Challan does,
+                   copy the HSN code from the Challan into hsn_sac.
 
 LINE ITEMS: only the invoice's own goods rows that carry an amount. No duplicate rows.
 
