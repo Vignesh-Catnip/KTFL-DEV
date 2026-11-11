@@ -1,10 +1,32 @@
-IMG_20261030_145045.jpg
-5000412955.pdf
-5000410882.pdf
-5000410881.pdf
-5000407251.pdf
-5000402702.pdf
- 5000402140.pdf
-5000396179.pdf
-5000377914.pdf
- 5000373619.pdf
+SELECT 
+    id,
+    filename,
+    invoice_number,
+    invoice_date,
+    vendor,
+    po_number,
+    grn_number,
+    gstin,
+    subtotal,
+    cgst,
+    sgst,
+    igst,
+    total,
+    gst_tax_code,
+    status,
+    confidence,
+    miro_status,
+    created_at
+FROM invoices
+WHERE filename IN (
+    '5000412955.pdf',
+    '5000410882.pdf',
+    '5000410881.pdf',
+    '5000407251.pdf',
+    '5000402702.pdf',
+    '5000402140.pdf',
+    '5000396179.pdf',
+    '5000377914.pdf',
+    '5000373619.pdf'
+)
+ORDER BY filename;
