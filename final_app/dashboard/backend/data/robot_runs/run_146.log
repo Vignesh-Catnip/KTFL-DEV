@@ -1,0 +1,7 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.0s
+[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
+Enter Matched Invoices In MIRO                                                                                  7 invoice(s) with status MATCHED waiting for MIRO
