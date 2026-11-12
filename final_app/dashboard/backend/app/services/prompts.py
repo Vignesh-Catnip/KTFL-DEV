@@ -12,6 +12,8 @@ touching the extraction logic.
 GRN_PROMPT = r"""
 You are an expert OCR and optical inspection specialist. Your ONLY task is to find and extract the exact 10-digit KTFL GRN (Goods Receipt Note) number from this invoice document.
 
+CRITICAL RULE: Extract ONLY what is visually present on the current document. NEVER copy example numbers from this prompt!
+
 SEARCH LOCATIONS (SCAN IN THIS MANDATORY SEQUENCE):
 
 LOCATION 1 — INWARD / RECEIVING RUBBER STAMP:
@@ -22,34 +24,35 @@ LOCATION 1 — INWARD / RECEIVING RUBBER STAMP:
 
 LOCATION 2 — TOP MARGIN & HEADER PEN ANNOTATIONS (CRITICAL):
   - On many delivery invoices and photos, stores/security officers handwrite the 10-digit GRN number with date at the TOP LEFT, TOP RIGHT, or TOP CENTER margin in pen:
-    * Examples: "5000346213", "5000345215", "5000346220", "5000346227", "5000346407", "5000357265", "5000352298", "5000352298/17-8-26".
-  - Check for short-prefix shorthand:
-    * "5-341287" -> expand to "5000341287"
-    * "5-340791" -> expand to "5000340791"
-    * "5-340793" -> expand to "5000340793"
-    * "5einv40790" / "5000340790" -> "5000340790"
-  - If the bottom stamp's GRN row is blank, smudged, or unreadable, check the TOP MARGIN.
+    * Format: 10 digits starting with "5000" (often followed by a slash and date, e.g. "5000xxxxxx / DD-MM-YY").
+  - Check for short-prefix shorthand written at the top or right margin:
+    * "5-xxxxxx" -> expand to 10 digits by inserting "000" after "5": "5000xxxxxx"
+    * "S-xxxxxx" -> "5000xxxxxx"
+    * "5einvxxxxx" / "Seinvxxxxx" -> "50003xxxxx"
+  - If the bottom stamp's GRN row is blank, smudged, or unreadable, you MUST extract the 10-digit "5000xxxxxx" number from the TOP MARGIN.
 
 LOCATION 3 — STAMP-ADJACENT OR TABLE-ADJACENT HANDWRITING:
   - Check pen writing near the inspector/stores signature or alongside the item table.
 
 CHARACTER DISAMBIGUATION RULES:
-  - A valid KTFL GRN must be EXACTLY 10 digits and start with "50" (format: 50xxxxxxxx).
+  - A valid KTFL GRN must be EXACTLY 10 digits and start with "50" (format: 5000xxxxxx).
+  - Sometimes the initial "5" is written with a curved top loop that looks like "9" or "S" (e.g. "900038xxxx" or "S00041xxxx") -> Always normalize the leading digit to "5" ("500038xxxx", "500041xxxx").
   - Read every handwritten digit stroke by stroke:
     * 0 vs 8: Check for closed crossing loops in the center (8) vs single open/closed oval (0).
     * 4 vs 1: Check for horizontal bar and vertical crossing leg (4) vs single upright line (1).
     * 5 vs 6: Look for flat horizontal top roof and sharp corner (5) vs continuous curved loop (6).
-    * 3 vs 8: Check left side. Open loops on the left is 3; dual enclosed loops is 8.
-    * 7 vs 1: Check top horizontal bar. Distinct top horizontal bar is 7; straight vertical is 1.
-    * 9 vs 4: Check if top is curved/circular (9) vs sharp triangular corner with intersecting stems (4).
+    * 7 vs 1 vs 2: Check top horizontal bar. Distinct top horizontal bar with diagonal stem is 7; straight vertical is 1; curved top with flat base is 2.
+    * 3 vs 8: Open loops on the left is 3; dual enclosed loops is 8.
+    * 9 vs 4: Curved/circular top loop is 9; sharp triangular corner with intersecting stems is 4.
 
 STRICT REJECTION RULES (NEVER EXTRACT AS GRN):
-  * SCROLL NO: starts with "200" or "202" and has 10 to 13 digits (e.g. 2002056677, 2021022856, 2002052304, 2002051288) -> REJECT.
-  * Lorry Receipt (LR) No, Challan No, E-Way bill number, Vehicle No, Gate Pass No, Delivery Note No.
+  * SCROLL NO: starts with "200" or "202" and has 10 to 13 digits (e.g. 200205xxxx, 202102xxxx) -> REJECT.
+  * Gate Entry / Bill / Red ink slash numbers in top-right (e.g. "2728/4533", "2729/4538", "2734/228") -> REJECT.
+  * Lorry Receipt (LR) No (e.g. 8821, 8826, 8619), Challan No, E-Way bill number (12 digits), Vehicle No, PO No (starts with 51, 61, 81).
   * Vendor printed invoice number.
 
 If no valid 10-digit KTFL GRN starting with "50" is visible anywhere, return empty string "".
-NEVER invent, guess, or pad digits.
+NEVER invent, guess, or copy example digits.
 
 Return strictly a valid JSON object without markdown or code fences:
 {"grn_number": "<10-digit number starting with 50 or empty string>"}
@@ -70,12 +73,12 @@ Return ONLY: {"upright": true} or {"upright": false}
 # ---------------------------------------------------------------------------
 GRN_RETRY_HINT = r"""
 Your previous answer was "{bad}" which cleans to "{bad_clean}" ({n} digits).
-A valid KTFL GRN has EXACTLY 10 digits and starts with "50".
-Re-read the handwriting stroke by stroke. Look at BOTH:
-1. Inside the KTFL receiving rubber stamp ("GRN NO" line).
-2. The TOP MARGIN / HEADER where stores/security staff writes the 10-digit number in pen (e.g. 500034xxxx, 500035xxxx).
+A valid KTFL GRN has EXACTLY 10 digits and starts with "50" (format: 5000xxxxxx).
+Re-read the handwriting stroke by stroke on the current image. Look at BOTH:
+1. Inside the KTFL receiving rubber stamp ("GRN NO" line, directly below SCROLL NO).
+2. The TOP MARGIN / HEADER where stores/security staff writes the 10-digit number in pen (or "5-xxxxxx" shorthand).
 Pay special attention to ambiguous digits: 0 vs 8, 4 vs 1, 5 vs 6, 3 vs 8, 7 vs 1, 9 vs 4.
-Do NOT mistake SCROLL NO (starts with 200... or 202...) for GRN.
+Do NOT mistake SCROLL NO (starts with 200... or 202...) or PO NO (starts with 51... or 61...) for GRN.
 """
 
 # ---------------------------------------------------------------------------
@@ -85,128 +88,125 @@ PROMPT = r"""
 You are an expert Indian GST purchase-invoice extraction engine for manufacturing supply chains.
 The BUYER is Kalyani Technoforge Ltd (KTFL).
 Read all provided invoice pages/images carefully. Return ONLY a valid JSON object matching the exact schema.
+NEVER copy example numbers from this prompt — extract ONLY what is printed or handwritten on the actual document!
 
 ================================ FIELD RULES ================================
 
-── 1. VENDOR & GSTIN ────────────────────────────────────────────────────────
-- vendor: Full registered legal name of the SELLER printed at top letterhead.
-  * NEVER "Kalyani Technoforge", "KTFL", or "Kalyani Transmission" — that is the BUYER / CONSIGNEE.
+── 1. VENDOR & SELLER GSTIN (CRITICAL) ──────────────────────────────────────
+- vendor: Full registered legal name of the SELLER / SUPPLIER printed at top letterhead.
+  * NEVER extract "Kalyani Technoforge Ltd", "KTFL", "Kalyani Transmission", or "Rosario Investment Pvt Ltd" (Ship-To) — those are BUYER / CONSIGNEE entities.
   * Copy full legal entity suffix: "LIMITED", "PVT. LTD.", "PRIVATE LIMITED", "LLP", "& CO."
-  * Drop any financial year brackets from the vendor name:
+  * Drop any financial year brackets or suffixes from the vendor name:
     e.g., "EURO STEEL AND TRACER PRODUCTS (2026-27)" -> "EURO STEEL AND TRACER PRODUCTS"
     e.g., "BHARAT METALS 26-27" -> "BHARAT METALS"
-    e.g., "SLR METALIKS LIMITED" -> "SLR METALIKS LIMITED"
-    e.g., "AURANGABAD AUTO ANCILLARY PVT. LTD." -> "AURANGABAD AUTO ANCILLARY PVT. LTD."
+    e.g., "SRN Packagings - (F.Y-2026-27)" -> "SRN Packagings"
+  * If a weighment slip at the top-left partially covers the first letters of the letterhead (e.g. "..RO STEEL AND TRACER PRODUCTS"), check the bottom signature block ("For, EURO STEEL AND TRACER PRODUCTS") to get the complete vendor name.
 
 - gstin: Exactly 15-character alphanumeric GSTIN of the SELLER / SUPPLIER.
-  * Look specifically in the "Details of Supplier", "Seller", or Top Letterhead block (NEVER the Buyer block!).
-  * State code prefixes match seller state:
-    - Karnataka: 29 (e.g. "29AAJCS4396P1Z9", "29AAACK7315D1ZQ")
-    - Kerala: 32 (e.g. "32AAACH1201R1ZW")
-    - Maharashtra: 27 (e.g. "27AATFB3972H1ZZ", "27HBFPS2958A1ZG", "27AAACG1519K1ZP", "27AAYFV1317R1Z6", "27AADCK8810E1ZN", "27ASVPB4182F2ZI", "27ABCCS2447R1ZQ", "27AAXPG9799D1ZS", "27AAHCR8563K1ZP", "27AAAFCE6816Q1Z0", "27AABCI4883P1ZV", "27AADFO8995R1Z0", "27AADFU4266H1ZZ", "27AACCA3515D1Z8")
-  * NEVER copy KTFL's GSTIN (which starts with "27AABCK0618A...").
-  * NEVER hallucinate zeroes (e.g. "27AAHCB00000000000000" is INVALID). If blurry, verify character by character from the PAN / Supplier box.
+  * Format: 2 digits (State Code) + 10 chars (Seller PAN: 5 letters, 4 digits, 1 letter) + 1 entity char + "Z" + 1 check char.
+  * Look ONLY in the "Details of Supplier", "Seller", "Company GSTIN", or Top Letterhead block (NEVER the Buyer / Consignee / Ship-To block!).
+  * NEVER extract KTFL's GSTIN ("27AABCK0618A1Z7") or any corrupted variant ending in "0618A1Z7" (such as "29AABCK0618A1Z7", "27AABCH0618A1ZA", "27AAABK0618A1Z7")!
+  * NEVER hallucinate trailing zeroes (e.g. "27AAHCB00000000000000" is INVALID).
+  * RECONSTRUCTION RULE WHEN COVERED BY WEIGHMENT SLIP:
+    If the top-left Seller GSTIN is partially covered by a weighment slip (e.g. only "...72H1ZZ" is visible), look at the bottom of the invoice for "Company's PAN" (e.g. "AATFB3972H") and Seller State Code ("27"), and combine them: "27" + "AATFB3972H" + "1ZZ" = "27AATFB3972H1ZZ".
+  * Verify Seller State Code prefix matches Seller address state:
+    - Karnataka = "29" (e.g. SLR Metaliks: "29AAJCS4396P1Z9", Kalyani Steels: "29AAACK7315D1ZQ")
+    - Kerala = "32" (e.g. Hindalco Alupuram Works: "32AAACH1201R1ZW" — NEVER "27AABCH...")
+    - Maharashtra = "27" (e.g. Bharat Metals: "27AATFB3972H1ZZ", Euro Steel: "27HBFPS2958A1ZG", BMSS Steel: "27AAACG1519K1ZP", VS Enterprises: "27AAYFV1317R1Z6", K.V. Steel: "27AADCK8810E1ZN", OM Engineering: "27ASVPB4182F2ZI", Snehdeep: "27ABCCS2447R1ZQ", Accumeasure: "27AAXPG9799D1ZS", Rudra Pack: "27AAHCR8563K1ZP", SRN Packagings: "27AAPPM7293L1ZS", Egearz: "27AAFCE6816Q1Z0", Indian Cables: "27AABCI4883P1ZV", Ocean Induction: "27AADFO8995R1Z0", Uni-Tech: "27AADFU4266H1ZZ", Aurangabad Auto: "27AACCA3515D1Z8")
 
 ── 2. INVOICE NUMBER & DATE ─────────────────────────────────────────────────
 - invoice_number: Exact printed alphanumeric string under "Invoice No.", "Tax Invoice No.", "Bill No.", "Inv. No.", "Invoice No:".
-  * Copy character by character including all slashes, dashes, and zeroes (e.g. "BM 26-27/0640", "BM/26-27/1453", "BM/26-27/1603", "BM/26-27/1604", "SE26Y-14765", "SE26Y-14834", "SE26Y-14835", "SE26Y-13425", "SE26Y-13426", "SE26Y-14368", "KLALP2610003915", "KLALP2610003722", "KLALP2610003781", "KLALP2610003782", "KT-82/2026-27", "KT-83/2026-27", "KT-70/2026-27", "OME/26-27/450", "1702/2026-2027", "4679/26-27", "4678/26-27", "2627017961", "879", "880", "899", "979", "9043043595").
+  * Copy character by character including internal slashes and dashes.
+  * Strip any trailing slash or border artifact at the very end (e.g. "2627017961/" -> "2627017961").
+  * For Bharat Metals, if the logo touches "BM", preserve the full prefix ("BM/26-27/1604" or "BM 26-27/0640", not "B26-27/1604").
   * Do NOT confuse 0 with O, 1 with I/L, A with 4, P with R.
   * NEVER extract PO number, GRN, Challan No, or E-way bill as the invoice number.
+
 - invoice_date: The date printed next to the invoice number ("Date", "Dated", "Invoice Date").
-  * Format: DD-MM-YYYY or DD/MM/YYYY. Convert letter months: e.g. "13-OCT-26" -> "13-10-2026", "05 OCT 2026" -> "05-10-2026".
+  * ALWAYS convert to numeric format: DD-MM-YYYY (e.g. "13-OCT-26" -> "13-10-2026", "05 OCT 2026" -> "05-10-2026", "14-Sep-26" -> "14-09-2026", "26.07.2026" -> "26-07-2026").
+  * NEVER output month names with a zero like "13-0CT-26" — always output numeric month "13-10-2026".
 
 ── 3. KTFL PURCHASE ORDER (PO NUMBER) ───────────────────────────────────────
-- po_number: The official purchase order issued by KTFL to the vendor.
-  SCAN THE ENTIRE PAGE (printed header fields, order reference boxes, tables, AND all pen/pencil margin notes).
+- po_number: The official 10-digit purchase order issued by KTFL to the vendor.
+  SCAN THE ENTIRE TAX INVOICE PAGE (printed PO fields AND handwritten pen/pencil notes in margins/above tables).
 
-  KTFL HAS THREE VALID 10-DIGIT PO FORMATS IN SAP:
-    1. Direct Production / Steel PO: 10 digits starting with "51" (e.g. 5100002503, 5100002363, 5100002512, 5100002047, 5100002145, 5100002466, 5100002390, 5100002426, 5100002428, 5100002467, 5100002366, 5100002429, 5100001992, 5100002049, 5100002202, 5100002448, 5100002496, 5100002050).
-    2. Indirect / Consumables / Tooling / Packaging PO: 10 digits starting with "61" (e.g. 6100015411, 6100019846, 6100020918, 6100020592, 6100023920, 6100020050, 6100014717, 6100021995, 6100021626, 6100022556). THESE ARE 100% VALID SAP POs FOR NON-STEEL/SERVICE VENDORS.
-    3. Project / Capital PO: 10 digits starting with "81" (e.g. 8100007531).
+  KTFL HAS THREE VALID 10-DIGIT SAP PO FORMATS:
+    1. Direct / Steel / Raw Material PO: 10 digits starting with "51000" (e.g. 510000xxxx).
+    2. Indirect / Consumables / Tooling / Gauges / Packaging / Electricals PO: 10 digits starting with "61000" (e.g. 61000xxxxx). THESE ARE 100% VALID SAP POs — NEVER REJECT 61000xxxxx!
+    3. Project / Capital PO: 10 digits starting with "81000" (e.g. 810000xxxx).
 
-  PRIORITY 1 — PRINTED PO LABELS:
-  Search: "PO No.", "P.O. No.", "Purchase Order No.", "Buyer's Order No.", "Buyer's Order No./PO NO.-", "Customer PO No.", "Customer PO", "Order Ref.", "Our PO", "FO No.", "Party P.O No:".
-  * If the printed field contains a valid 10-digit number starting with 51, 61, or 81, extract it.
-  * Strip prefixes: e.g. "PO-5100002047" -> "5100002047", "PO-5100002145" -> "5100002145", "PO-5100002351" -> "5100002351".
+  STEP A — CHECK PRINTED PO FIELDS FIRST:
+  Look at: "PO No.", "P.O. No.", "P. O. No. / Date", "Purchase Order No.", "Buyer's Order No.", "Buyer's Order No./PO NO.-", "Customer PO No.", "CUSTOMER PO:", "Party P.O No:", "FO No:".
+  * If a 10-digit number starting with "51000", "61000", or "81000" is printed there, extract it!
+  * Strip any text prefix like "PO-" or leading hyphen "-" (e.g. "PO-5100002047" -> "5100002047", "-5100002366" -> "5100002366").
+  * 11-DIGIT TYPO NORMALIZATION: If a printed PO has 11 digits starting with "610000" (extra zero after 61000, e.g. "61000021137"), remove one zero to normalize to the 10-digit SAP PO -> "6100021137".
 
-  PRIORITY 2 — HANDWRITTEN KTFL PO IN MARGINS / OVERPRINT:
-  If no valid printed PO is present, or if vendor writes KTFL's SAP PO in pen/pencil across margins/headers/above tables:
-    * "51-2496", "51/2496", "PO-51/2496" -> Expand to 10-digit: "5100002496"
-    * "51/2448", "Po-5100002448" -> "5100002448"
-    * "51-2050" -> "5100002050"
-    * "5122996" -> "5100002996"
-    * "Po-5100002202", "51/2150" -> "5100002202"
-    * "81-7531" -> "8100007531"
+  STEP B — CHECK HANDWRITTEN PO IN MARGINS / ABOVE TABLE (WHEN PRINTED PO IS VENDOR'S OWN ORDER NO):
+  On steel invoices (such as SLR Metaliks or Kalyani Steels), the printed "Order No." is the vendor's internal code (e.g. "PS26Y-01549", "RP26Y-01044", "Jul. Schedule", "130019559"). Look for the handwritten KTFL PO written in pen/pencil on the right margin, above the item table, or below the invoice number:
+    * "51-xxxx" or "51/xxxx" or "po-51/xxxx" -> Expand to 10 digits by inserting "0000": "510000xxxx" (e.g. "51-2496" -> "5100002496", "51/2448" -> "5100002448", "51-2050" -> "5100002050").
+    * "Po-510000xxxx" -> "510000xxxx".
+    * If a 7-digit handwritten number like "5122996" appears on SLR Metaliks, check if it represents "5100002496" / "5100002996".
 
-  STRICT REJECTION RULES (DO NOT extract as KTFL PO):
-  * Vendor internal sales order IDs with letters: "PS26Y-01549", "SE26Y-14765", "RP26Y-01044", "WST_EXT_DOM/...", "130019559" -> Vendor order IDs, NOT KTFL PO.
-  * Scroll numbers (starting with 200 or 202).
-  * E-Way Bill numbers (12 digits, e.g. 182586455637, 242255297677, 252277817641).
-  * Vehicle numbers (e.g. DD01N9450, MH14EM0792, MH12WX2564).
-  * CIN (21 chars starting with U or L).
+  STRICT PO REJECTION RULES:
+  * NEVER invent or substitute a "510000..." PO when a valid "61000..." PO is printed on the invoice!
+  * NEVER extract vendor internal order numbers ("PS26Y-...", "RP26Y-...", "WST_EXT_DOM/...", "130019559", "13717").
+  * NEVER extract Scroll numbers (200... / 202...), E-Way Bill numbers (12 digits), or GRN numbers (5000...).
 
-  If multiple valid KTFL POs exist, put the primary in "po_number" and all comma-separated in "po_numbers_all".
-  If no valid PO is found anywhere, return "".
-
-── 4. GRN NUMBER (RECEIVING STAMP / ANNOTATION) ────────────────────────────
-- grn_number: The 10-digit receiving Goods Receipt Note number starting with "50".
-  * CHECK BOTH:
-    1. Inside the KTFL receiving rubber stamp ("GRN NO" row): e.g. 5000412955, 5000377914, 5000392138, 5000407239, 5000407251, 5000410006, 5000410881, 5000410882, 5000298627, 5000393525, 5000395483, 5000344355, 5000365809, 5000370742, 5000373614, 5000373619, 5000376005, 5000377736, 5000377743, 5000387769.
-    2. At top margins where stores/security staff writes the GRN in pen: e.g. "5000346213", "5000345215", "5000346220", "5000346227", "5000346407", "5000357265", "5000360088", "5000360144", "5000340789", "5000340790", "5000340791", "5000340793", "5000341287", "5000352298".
-  * Must be exactly 10 digits starting with "50".
-  * DO NOT confuse with SCROLL NO (which starts with 200... / 202...).
+── 4. GRN NUMBER (RECEIVING STAMP / TOP MARGIN) ────────────────────────────
+- grn_number: The 10-digit KTFL Goods Receipt Note number starting with "50" (format: 5000xxxxxx).
+  * Check BOTH:
+    1. Inside the KTFL receiving rubber stamp ("GRN NO" row).
+    2. At the top-left / top-center / top-right margin where stores staff writes the 10-digit "5000xxxxxx" number (or "5-xxxxxx" -> "5000xxxxxx").
+  * Must be 10 digits starting with "50". Never copy a GRN from a prompt example.
 
 ── 5. VENDOR CODE ──────────────────────────────────────────────────────────
-- vendor_code: Vendor code assigned by KTFL if printed (e.g. "50038", "20166338", "31243", "30941", "310026").
+- vendor_code: Vendor code assigned by KTFL if printed on the Tax Invoice (e.g. "50038", "20166338", "31243", "30941", "310026").
+  * Do NOT put Heat No (e.g. "68557"), PO Number, or Weighment Slip Customer Code (e.g. "R10029.1") into `vendor_code`. If "Na" or not printed, return "".
 
 ── 6. HSN / SAC CODE ───────────────────────────────────────────────────────
-- hsn_sac: Must be a single 4 to 8 digit code (e.g. "72142090", "72284000", "76042930", "73269099", "73181500", "39204900", "44129990", "85446090", "84663020", "87089900", "83052000").
-  * Pick the primary HSN of the main/highest value line item.
-  * NEVER concatenate multiple line item HSNs into a single long string (e.g. NEVER "4819101039239090", NEVER "72284000722830996511").
+- hsn_sac: Must be a SINGLE 4 to 8 digit numeric code representing the primary material item (e.g. "72142090", "72284000", "72283019", "72286099", "76042930", "73269099", "73181500", "39204900", "44129990", "85446090", "84663020", "87089900", "83052000", "90173021", "90173029", "39202010", "84814000").
+  * NEVER concatenate multiple HSN codes together (NEVER output "72284000722830996511" or "4819101039239090").
+  * NEVER pick service SAC "996511" (Loading Charges) as the header `hsn_sac` on a material invoice — always pick the primary material HSN (e.g. "72284000").
+  * NEVER put Heat No or Drawing No into `hsn_sac`.
 
-── 7. AMOUNTS & TAXES (CRITICAL MATHEMATICAL INTEGRITY) ───────────────────
+── 7. LINE ITEMS & DESCRIPTIONS (CRITICAL FOR SAP GR MATCHING) ─────────────
+- Extract line items ONLY from the TAX INVOICE page(s). Ignore Weighment Slips, Counting Charts, Lorry Receipts (LR), Delivery Challans ("DELIVERY CHALLAN"), and Debit Notes!
+- FULL MULTI-LINE & MULTI-COLUMN ITEM DESCRIPTION:
+  * Never truncate item descriptions! Combine all wrapped text lines inside the description cell AND combine adjacent description/code columns so that **KTFL Material Codes** and **exact dimensions** are preserved in `item`:
+    - Indian Cables: Include both `Item Code` and all 3 lines of `ITEM NAME` including the `-S0690700xxxx` code at the end (e.g. `"CF1.5X3C CU.COND.PVC INS FLEXIBLE INDUSTRIAL CABLE 1.5X3C- - S06907001269"`).
+    - BMSS Steel: Include all 4 lines of `Description` including dimensions and the `T150...` material code at the bottom (e.g. `"1.2714/DB6 73269099 B L&T Make 710 X 240 X 220 SR NO-18917 T150580710240220S"`).
+    - Bharat Metals: Combine BOTH `Description of Goods` AND `Description` columns so the exact grade and dimensions are present (e.g. `"1.2714 ALLOY STEEL ROUND & BLOCK(72284000) 1.2714 320X90X60MM -1NOS"`, `"202/5mm H13 Round Bar 72284000 H13 DIA 205X480 2 NOS"`).
+    - VS Enterprises / Uni-Tech / Accumeasure / Rudra Pack: Include the 12-digit Material/Item/Part Code (`014001000814`, `012101012147`, `012301002078`, `P05003000153`, `B05101000918`) along with the item name.
+- HINDALCO ALUMINIUM INVOICES (SPECIAL TABLE RULE):
+  * In Hindalco invoices (`KLALP...`), the table has columns: `PKGS`, `PCS`, `GROSS WT`, `NET WT`, `UOM`, `RATE`, `TAXABLE VALUE`.
+  * For `quantity`, ALWAYS extract `NET WT` (e.g. `1755.4`, `2994.3`, `3076.8`, `2142.9`, `4894.6`, `3560.2`, `1059.4`) with `uom: "KG"`. NEVER extract `PCS` (`130`) or `GROSS WT` (`1768`) or Weighment Slip weight (`11750`) as the line quantity!
+  * For `amount`, ALWAYS extract `TAXABLE VALUE` / `NET MATERIAL VALUE` (e.g. `854897.35`), NEVER the post-tax Total Invoice Value (`1008778.88`)!
+- LINE ITEM ARITHMETIC VERIFICATION:
+  * For every line item, verify: `quantity * rate ≈ amount`!
+  * If a rubber stamp overlaps a digit in `quantity` or `amount` (e.g. `29.80` vs `28.80`, or `2,433,900.00` vs `2,433,500.00`), use `quantity * rate = amount` to determine the exact true digit (`29.80 * 255 = 7599.00`, `34.770 * 70000 = 2433900.00`, `31.570 * 75199 = 2374032.48`).
+- BHARAT METALS LOADING CHARGES:
+  * If a Bharat Metals invoice has a separate row `"LOADING CHARGES SALES GST @ 18%"` (`996511`) below the item subtotal (e.g. `406.00` or `30.00`), do NOT include it as a material row in `lines` (since SAP Goods Receipt only books the steel items), OR if included, ensure `subtotal` is the full `Total Taxable Value` (`225490.00` or `7086.00`) from the bottom HSN Tax Summary table so that `subtotal + total_tax ≈ total`.
+
+── 8. AMOUNTS & TAXES (CRITICAL MATHEMATICAL INTEGRITY) ───────────────────
 - All currency values must be numeric floats without symbols (₹, Rs.) or commas.
-- CRITICAL DISTINCTION — DO NOT CONFUSE WEIGHT (KGS/MT) WITH TAXABLE VALUE (INR):
-  * Example: "Total: 969.000 KGS" is the physical weight! Look at the currency amount column: "1,96,215.00" is the TAXABLE VALUE! Never put weight into subtotal!
-- CRITICAL — INCLUDE ALL TAXABLE SURCHARGES (LOADING / FREIGHT / PACKING):
-  * If the invoice includes "LOADING CHARGES", "FREIGHT", or "PACKING & FORWARDING" on which GST is charged (e.g., Bharat Metals Loading charges ₹30.00 or ₹406.00):
-    Include it as a line item AND include it in the subtotal!
-    Example: Material (7056.00) + Loading (30.00) = Subtotal (7086.00)!
-- subtotal: Base taxable value before GST (Total Taxable Value / Assessable Value).
-  * If an invoice spans multiple pages (e.g. BMSS Steel 5000377914, Euro Steel 5000376005, 5000373619), EXTRACT AND SUM ALL LINE ITEMS ACROSS ALL PAGES! Never return 0.0 if line items exist.
-- cgst: Central GST amount in Rupees (sum across all rate brackets, e.g. 2.5% + 9% -> total CGST).
-- sgst: State GST amount in Rupees (sum across all rate brackets, e.g. 2.5% + 9% -> total SGST).
-- igst: Integrated GST amount in Rupees (Full tax for interstate transactions, e.g. Karnataka to Maharashtra or Kerala to Maharashtra).
-- gst_rate_percent: Applicable GST rate percentage (e.g. 5.0, 12.0, 18.0, 28.0). If multiple rates, put predominant rate (e.g. 18.0).
-- total_tax: Total tax in rupees (cgst + sgst + igst).
-- total: Final net payable invoice total (Grand Total after round off).
+- DO NOT CONFUSE TOTAL WEIGHT (KGS/MT) WITH TAXABLE VALUE (INR):
+  * On multi-page Euro Steel invoices (e.g. Inv `880` `5000373619.pdf`), the Total row shows `20` (Pcs), `969.000 KGS` (Weight), and `1,96,215.00` (Taxable Amount). `969.000 KGS` is WEIGHT! The `subtotal` is `196215.00`!
+- MULTI-PAGE TAX INVOICES:
+  * When a Tax Invoice continues onto Page 2 (e.g. Euro Steel Inv `880`, Inv `899`, BMSS Steel `BMSS1208//26-27`), read Page 2 to extract the remaining line items AND the final `subtotal`, `cgst`, `sgst`, and `total`! Never return `0.0`!
+- MISSING PAGE 2 FALLBACK (e.g. Indian Cables `NE021696/PUN` where only Page 1 of 2 is photographed):
+  * If `Page 1 of 2` is printed at the bottom and Page 2 is not provided, compute `subtotal` by summing all line item `amount` values on Page 1 (`296925 + 22200 + 183675 + 67500 + 71000 = 641300.00`), and compute the 18% GST (`cgst = 57717.00`, `sgst = 57717.00`, `total_tax = 115434.00`, `total = 756734.00`).
+- INTRA-STATE (CGST+SGST) vs INTER-STATE (IGST) RULE:
+  * If Seller GSTIN starts with `27` (Maharashtra) and Buyer is KTFL (`27`, Maharashtra): Tax is ALWAYS **CGST + SGST** (`igst = 0.0`). Never put the tax into `igst` for a `27` Seller!
+  * If Seller GSTIN starts with `29` (Karnataka) or `32` (Kerala): Tax is ALWAYS **IGST** (`cgst = 0.0, sgst = 0.0`).
+- MULTI-BRACKET TAX TABLE SUMMATION (e.g. Rudra Pack `RPS/26-27/07542`):
+  * If the tax summary box has multiple rate columns in the CGST and SGST rows (e.g. `CGST 2.5%: 1530.31 | 9%: 18642.42`), you MUST sum all columns in that row (`cgst = 1530.31 + 18642.42 = 20172.73`, `sgst = 20172.73`, `total_tax = 40345.46`).
+- gst_rate_percent: Standard GST rate (`18.0`, `12.0`, `5.0`, `28.0`). Must be a standard slab (usually `18.0`). Never output a calculated ratio like `1.5`, `3.62`, `10.0`, or `18.79`!
 - MATHEMATICAL SANITY CHECK:
-  subtotal + total_tax must equal total (+/- round-off of up to 2.0 Rs).
-  If subtotal + total_tax != total, re-verify subtotal, taxes, and total immediately!
+  * Verify `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.00 Rs rounding).
+  * Verify `cgst + sgst + igst == total_tax`.
 
-── 8. EUROPEAN DECIMAL QUANTITY NOTATION (STEEL / METALS) ──────────────────
-In steel/metal invoices:
-  "31.390 MT" means 31.39 MT (not 31,390).
-  "322.400 KGS" means 322.4 KGS.
-  "35.900 MT" means 35.9 MT.
-  "969.000 KGS" means 969 KGS.
-Never multiply by 1000 when ".000" or ".xxx" represents metric decimal tonnes or kilograms.
-
-── 9. PLANT HINT ───────────────────────────────────────────────────────────
-- plant_hint: Specify KTFL plant location if indicated: "RANJANGAON", "KHED", "MUNDHWA", or "CHAKAN".
-
-── 10. MULTI-PAGE & ATTACHED DOCUMENTS ─────────────────────────────────────
-- If an invoice package contains Tax Invoice + Weighment Slip + Counting Chart + Lorry Receipt (LR) + Debit Note:
-  * Extract financial amounts and official invoice metadata ONLY from the TAX INVOICE pages.
-  * Do NOT extract amounts or quantities from Debit Notes, Tare Weight slips, or Transporter LR copies.
-
-── 11. LINE ITEMS COMPLETENESS ─────────────────────────────────────────────
-- lines: Extract EVERY SINGLE line item printed on the tax invoice (across all pages if multi-page).
-  * If an invoice has 9, 12, or 19 line items, extract every single line item accurately.
-  * Sum of all line item amounts MUST EQUAL the invoice subtotal exactly.
-
-── 12. HANDWRITTEN REFERENCES ─────────────────────────────────────────────
-- handwritten_references: Comma-separated list of all handwritten notations found on the page with their visual locations (e.g. "top-left: 5000346213 08/08/2026, stamp: 2021022856 8/8/26, margin: 51-2496").
+── 9. EUROPEAN DECIMAL QUANTITY NOTATION (STEEL / METALS) ──────────────────
+- In steel/metal invoices, quantities printed with 3 decimal places like `"31.390 MT"`, `"322.400 KGS"`, `"35.900 MT"`, `"969.000 KGS"`, `"1.000 nos"` mean `31.39`, `322.4`, `35.9`, `969.0`, `1.0`. Never multiply by 1000.
 
 ============================= REQUIRED JSON FORMAT =============================
 Return strictly valid JSON without any markdown formatting, preamble, or code fences:
@@ -225,12 +225,12 @@ Return strictly valid JSON without any markdown formatting, preamble, or code fe
   "cgst": 0.0,
   "sgst": 0.0,
   "igst": 0.0,
-  "gst_rate_percent": 0.0,
+  "gst_rate_percent": 18.0,
   "total_tax": 0.0,
   "total": 0.0,
   "grn_number": "",
   "handwritten_references": "",
-  "confidence": 0.0,
+  "confidence": 0.95,
   "lines": [
     {
       "item": "",
