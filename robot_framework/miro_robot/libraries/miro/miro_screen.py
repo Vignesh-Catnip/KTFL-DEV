@@ -13,6 +13,7 @@ subscreen number changes (6005 expanded / 6006 collapsed header).
 """
 from __future__ import annotations
 
+import logging
 import re
 import time
 
@@ -20,6 +21,8 @@ from .config import Config
 from .matching import (MiroDataError, MiroRow, extract_document_number, format_sap_amount,
                        format_sap_date, is_duplicate_message, parse_sap_number)
 from .sapgui import SapError, SapSession, get_scripting_application
+
+log = logging.getLogger("miro.screen")
 
 TABLE = "SAPLMR1MTC_MR1M"
 
@@ -36,30 +39,87 @@ def _logged_on(sess) -> bool:
 def connect_sap(cfg: Config) -> SapSession:
     app = get_scripting_application(cfg)
 
-    # 1) reuse an already logged-on session of the right client
+    # 1) reuse an already logged-on session of the right client (never open another window if one exists)
+    seen: list[str] = []
     try:
         for ci in range(app.Children.Count):
             conn = app.Children.ElementAt(ci)
             for si in range(conn.Children.Count):
                 sess = conn.Children.ElementAt(si)
-                if _logged_on(sess) and (not cfg.sap_client or str(sess.Info.Client) == cfg.sap_client):
-                    if not cfg.sap_user or str(sess.Info.User).upper() == cfg.sap_user.upper():
-                        s = SapSession(sess, cfg)
-                        s.find("wnd[0]").Maximize()
-                        return s
-    except Exception:
-        pass
+                try:
+                    info = (f"{getattr(conn, 'Description', '?')}/session{si}: user={sess.Info.User or '-'} "
+                            f"client={sess.Info.Client or '-'} program={sess.Info.Program}")
+                except Exception as exc:
+                    seen.append(f"connection {ci} session {si}: unreadable ({exc})")
+                    continue
+                if not _logged_on(sess):
+                    seen.append(info + " -> skipped (not logged on)")
+                    continue
+                if cfg.sap_client and str(sess.Info.Client) != str(cfg.sap_client):
+                    seen.append(info + f" -> skipped (client != {cfg.sap_client})")
+                    continue
+                if cfg.sap_user and str(sess.Info.User).upper() != cfg.sap_user.upper():
+                    seen.append(info + f" -> skipped (user != {cfg.sap_user})")
+                    continue
+                log.info("reusing open SAP session %s", info)
+                s = SapSession(sess, cfg)
+                s.opened_by_robot = False
+                try:
+                    s.find("wnd[0]").Maximize()          # cosmetic - must NEVER decide whether we reuse
+                except Exception as exc:
+                    log.warning("could not maximize the reused SAP window (%s) - continuing", exc)
+                return s
+    except Exception as exc:
+        log.warning("SAP session scan failed (%s)", exc)
+    if seen:
+        log.warning("no reusable SAP session; found: %s", " | ".join(seen))
 
-    # 2) open the connection from SAP Logon pad and log on
+    # 2) an already open connection of this system that is still on the logon screen -> log on there
+    if cfg.sap_connection:
+        try:
+            for ci in range(app.Children.Count):
+                conn = app.Children.ElementAt(ci)
+                if str(getattr(conn, "Description", "")).strip().lower() != cfg.sap_connection.strip().lower():
+                    continue
+                for si in range(conn.Children.Count):
+                    sess = conn.Children.ElementAt(si)
+                    if not _logged_on(sess):
+                        s = SapSession(sess, cfg)
+                        s.opened_by_robot = False
+                        s.find("wnd[0]").Maximize()
+                        logon(s, cfg)
+                        return s
+        except SapError:
+            raise
+        except Exception as exc:
+            log.warning("could not reuse the open logon screen (%s) - opening a new connection", exc)
+
+    # 3) last resort: open the connection from SAP Logon pad and log on (closed again by close_sap)
     if not cfg.sap_connection:
         raise SapError("No logged-on SAP session found and SAP_CONNECTION is not set "
                        "(name of the system in SAP Logon, e.g. 'KTFL PRD')")
     conn = app.OpenConnection(cfg.sap_connection, True)
     sess = conn.Children.ElementAt(0)
     s = SapSession(sess, cfg)
+    s.opened_by_robot = True
+    s.connection = conn
     s.find("wnd[0]").Maximize()
-    logon(s, cfg)
+    try:
+        logon(s, cfg)
+    except Exception:
+        close_sap(s)                                     # do not leave a dead logon window behind
+        raise
     return s
+
+
+def close_sap(s) -> None:
+    """Close the SAP window ONLY if the robot opened it (the user's own sessions are never touched)."""
+    if s is None or not getattr(s, "opened_by_robot", False):
+        return
+    try:
+        s.connection.CloseConnection()
+    except Exception as exc:
+        log.warning("could not close the SAP connection the robot opened: %s", exc)
 
 
 def logon(s: SapSession, cfg: Config) -> None:
