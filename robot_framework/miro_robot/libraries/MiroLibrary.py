@@ -277,6 +277,11 @@ class MiroLibrary:
 
     @keyword("Close Connections")
     def close(self):
+        try:
+            from miro.miro_screen import close_sap
+            close_sap(self.sap)                   # closes the SAP window only if the robot opened it
+        except Exception as exc:
+            logger.warn(f"SAP close skipped: {exc}")
         if self.db:
             self.db.close()
 
