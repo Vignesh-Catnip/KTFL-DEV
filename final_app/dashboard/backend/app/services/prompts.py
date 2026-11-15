@@ -11,7 +11,7 @@ touching the extraction logic.
 # ---------------------------------------------------------------------------
 GRN_PROMPT = r"""
 You are an expert OCR specialist. Extract ONLY the 10-digit KTFL GRN (Goods Receipt Note) number from this document.
-Read the digits directly from the image — NEVER copy placeholder digits.
+Read the digits directly from the image — NEVER copy placeholder digits or PO digits.
 
 MANDATORY KTFL GRN FORMAT:
 - Always EXACTLY 10 numeric digits starting with "5000" (a "5" followed by THREE zeroes: 5000XXXXXX).
@@ -20,7 +20,7 @@ MANDATORY KTFL GRN FORMAT:
 WHERE TO LOOK (IN PRIORITY ORDER):
 1. TOP MARGIN (TOP-LEFT / TOP-CENTER / TOP-RIGHT):
    - Stores/security staff frequently handwrite a 10-digit "5000XXXXXX" number in pen above the top border of the invoice (often underlined, with a date below or after a slash).
-   - If a 10-digit number starting with "5000" is handwritten at the top margin, extract THAT exact 10-digit number! Do NOT replace it with any number from the bottom stamp.
+   - If a 10-digit number starting with "5000" is handwritten at the top margin, extract THAT exact 10-digit number! Do NOT replace it with any number from the bottom stamp or Scroll No.
    - Short-prefix shorthand at top/right margin: "5-XXXXXX" or "S-XXXXXX" (6 digits after dash) -> expand to "5000XXXXXX".
 2. KTFL RECEIVING RUBBER STAMP ("KALYANI TECHNOFORGE LTD" / "RECEIVED SUBJECT TO VERIFICATION"):
    - Find the row labeled "GRN NO" / "GRN No." / "ORN NO" / "JRN NO" (directly BELOW the "SCROLL NO" row).
@@ -28,12 +28,13 @@ WHERE TO LOOK (IN PRIORITY ORDER):
 
 DIGIT DISAMBIGUATION:
 - Leading "9" or "S" before "000..." is always "5" -> "5000...".
-- Read every handwritten digit stroke by stroke: 4 vs 8, 6 vs 5, 7 vs 1, 0 vs 8.
+- Read every handwritten digit stroke by stroke: 1 vs 7 (a vertical stroke without a long horizontal top bar is "1", e.g., 5000410881), 4 vs 8, 6 vs 5, 0 vs 8.
 
 DO NOT EXTRACT:
 - SCROLL NO (starts with "200" or "202" — e.g. 202102xxxx, 200205xxxx).
 - Top-right slash gate numbers (4 digits / 3-4 digits).
-- PO No (starts with 51, 61, 81), E-Way Bill (12 digits), LR No, Vehicle No, or Invoice No.
+- PO No (starts with 51, 61, 81 — NEVER turn PO "510000XXXX" into GRN "5000510XXX"!).
+- E-Way Bill (12 digits), LR No, Vehicle No, or Invoice No.
 
 If no 10-digit number starting with "5000" is visible, return "".
 Return strictly valid JSON without markdown fences:
@@ -99,54 +100,68 @@ Return ONLY valid JSON matching the exact schema. Keep `handwritten_references` 
 - invoice_number: Exact printed string under "Invoice No." / "Tax Invoice No." / "Bill No." Strip any trailing slash at the very end. Preserve "BM" prefix on Bharat Metals. Read digits carefully (e.g. 0640 vs 0840).
 - invoice_date: Convert to strict numeric "DD-MM-YYYY" (convert month abbreviations JAN..DEC to 01..12; never output "0CT" with a zero).
 
-3. KTFL PURCHASE ORDER (po_number):
-- Valid KTFL SAP POs are 10 digits starting with "510000XXXX", "61000XXXXX", or "810000XXXX".
-- PRIORITY 1 — PRINTED PO FIELDS ("CUSTOMER PO:", "PO No:", "P.O. No.", "PO No & Date :", "Buyer's Order No.", "Party P.O No:"):
-  * Extract the exact 10-digit PO printed on THIS document! Never substitute a PO from another invoice.
-  * Strip text prefix "PO-" or leading "-".
-  * 11-DIGIT TYPO FIX: If printed as 11 digits starting with "610000" (four zeroes in the middle, e.g. "610000XXXXX"), remove ONE zero from the middle so ALL 5 trailing digits are preserved as a 10-digit PO ("61000XXXXX") — NEVER chop off the last digit, and NEVER change "61" to "51"!
-- PRIORITY 2 — HANDWRITTEN PO IN MARGIN / ABOVE TABLE (ONLY when printed Order No is vendor's internal code like "PS26Y-...", "RP26Y-...", or "Jul. Schedule"):
-  * Read the pen/pencil annotation on the right side just above the line-item table carefully digit by digit:
-    - "51-XXXX" or "51/XXXX" or "po-51/XXXX" -> expand to "510000XXXX" (read the 4 digits after 51/ carefully — e.g. 2448 vs 2496!).
-    - "Po-510000XXXX" -> "510000XXXX".
-    - 7-digit "512XXXX" on SLR Metaliks -> expand to 10-digit "5100002496".
+3. KTFL PURCHASE ORDER (po_number) — CRITICAL ZERO-COUNT & FIELD-LABEL RULES:
+- Valid KTFL SAP POs are ALWAYS 10 digits in one of three exact patterns:
+  1) `"510000XXXX"` (starts with `51` + FOUR zeroes + 4 digits)
+  2) `"61000XXXXX"` (starts with `61` + THREE zeroes + 5 digits — NEVER add a 4th zero! Keep all 5 trailing digits intact!)
+  3) `"810000XXXX"` (starts with `81` + FOUR zeroes + 4 digits)
+- PRIORITY 1 — PRINTED PO FIELDS:
+  * Look ONLY at the box explicitly labeled `"CUSTOMER PO:"`, `"CUST. PO NO"`, `"PO No:"`, `"P.O. No."`, `"PO No & Date :"`, `"Buyer's Order No."`, or `"Party P.O No:"`.
+  * HINDALCO RULE: On Hindalco invoices, look strictly at `"CUSTOMER PO:"` (left/middle header block). Do NOT pick `"SO NO"`, `"DELIVERY NO"`, `"SHIPMENT NO"`, or `"CUSTOMER REF"` from adjacent boxes!
+  * Strip text prefix `"PO-"` or leading `"-"`.
+  * 11-DIGIT TYPO FIX (`"610000XXXXX"`): If the printed PO starts with `"610000"` (4 zeroes) followed by 5 digits (11 digits total), remove ONE `"0"` after `"61"` so it becomes the 10-digit `"61000XXXXX"` with ALL 5 trailing digits preserved — NEVER chop off the last digit!
+  * 10-DIGIT `61000XXXXX` PRESERVATION: If the printed PO is already 10 digits starting with `"61000"` (3 zeroes, e.g., `"6100020050"`), output it verbatim — NEVER insert an extra zero!
+- PRIORITY 2 — HANDWRITTEN PO IN MARGIN / ABOVE TABLE (ONLY when printed Order No is vendor's internal code like `"PS26Y-..."`, `"RP26Y-..."`, or `"Jul. Schedule"`):
+  * Read the pen/pencil annotation on the right side just above the line-item table stroke by stroke:
+    - `"51-XXXX"` or `"51/XXXX"` or `"po-51/XXXX"` -> `"510000XXXX"` (verify each handwritten digit carefully: 2 vs 0, 4 vs 9, 8 vs 6).
+    - `"Po-510000XXXX"` -> `"510000XXXX"` (strip any trailing `/01` or `01` item suffix after the 10th digit!).
+    - 7-digit `"512XXXX"` on SLR Metaliks -> expand to 10-digit `"5100002496"`.
 
 4. GRN NUMBER (grn_number) & VENDOR CODE:
-- grn_number: Exact 10-digit number starting with "5000" (from top-left/top-right margin pen note OR inside KTFL receiving stamp "GRN NO" row below SCROLL NO).
-  * NEVER extract Scroll No (starts with 2021... or 2002...) or PO No (starts with 5100...) as GRN!
-  * Read every digit of the GRN carefully (e.g. 5000410881 vs 5000470881; 5000396086 vs 5000510262; 5000346213 vs 5000228568).
+- grn_number: Exact 10-digit number starting with `"5000"` (from top-left/top-right margin pen note OR inside KTFL receiving stamp `"GRN NO"` row below SCROLL NO).
+  * NEVER extract Scroll No (starts with `2021...` or `2002...`) or PO No (starts with `5100...` or `6100...`) as GRN!
+  * Read every digit of the GRN carefully (stroke without top crossbar = `1`, e.g. `5000410881` vs `5000470881`; `5000396086` vs `5000510269`; `5000402702` vs `5000402102`; `5000346213` vs `5000228568`).
 - vendor_code: KTFL vendor code if printed on Tax Invoice (e.g. "Vendor Code" / "CUSTOMER CODE" / "SUPPLIER CODE"), else "".
 
 5. LINE ITEMS (lines[]) — PRINTED TABLE ROWS ONLY:
-- Extract ONLY numbered printed rows from the main item table on the Tax Invoice page(s).
+- Extract EVERY numbered printed row from the main item table on the Tax Invoice page(s) — do NOT skip rows!
 - NEVER put the Serial Number ("1", "2", etc.) into `"item"`! `"item"` MUST be the actual product description text.
 - NEVER extract handwritten margin/bundle tally notes (such as bundle weights written at top/bottom margins of Hindalco invoices) into `lines[]`!
 - Exclude service/loading charge rows (`996511`) from `lines[]` (include loading charges only in `subtotal` if included in the tax summary table).
-- Each line item in `lines[]` MUST have its own row's `hsn_sac` from that row's HSN column. Header `hsn_sac` = primary material item's single 4-8 digit HSN (NEVER concatenate multiple HSNs!).
+- Each line item in `lines[]` MUST have its own row's `hsn_sac` from that row's HSN column.
+- Header `hsn_sac` = primary (highest-value) material item's single 4-8 digit HSN (NEVER concatenate multiple HSNs into a 16-digit or 32-digit string!).
 - Preserve full multi-line descriptions, dimensions, and KTFL material codes (even where a rubber stamp overlaps text). Combine both description columns on Bharat Metals.
 - HINDALCO TABLE RULE:
-  * Extract ONLY the numbered printed rows from the main item table (e.g. Row 1, Row 2, etc. — NEVER the summary header or handwritten notes!).
-  * `quantity` = `NET WT` column, `uom` = `"KG"`. NEVER use `PCS`, `GROSS WT`, or Page 2 Weighment Slip weight!
-  * `rate` = `NET PRICE` column.
-  * `amount` = `TAXABLE VALUE` column.
+  * IGNORE the summary banner row (`ALUMINUM EXTRUSION PRODUCT` / total `PCS`) at the top of the table AND IGNORE all handwritten pen notes in the top/bottom margins!
+  * Extract ONLY the printed numbered rows (`1`, `2`, ...) in the middle table:
+    - `item`: Material/Alloy & Dia description (e.g. `HM6082 F 34 DIA`, `HM6082 F 52 DIA`).
+    - `quantity` = `NET WT` column, `uom` = `"KG"`. NEVER use `PCS`, `GROSS WT`, or Page 2 Weighment Slip weight!
+    - `rate` = `NET PRICE` column.
+    - `amount` = `TAXABLE VALUE` column.
 - EUROPEAN 3-DECIMAL NOTATION: Quantities printed with 3 decimal places like `"1.000 nos"`, `"31.390 MT"`, `"322.400 KGS"` mean `1.0`, `31.39`, `322.4` — NEVER `1000`!
 - MANDATORY ARITHMETIC CHECK (`quantity * rate == amount`):
   * For EVERY row, multiply `quantity * rate` and compare to `amount`! If `quantity * rate` differs from your read `amount` (e.g. due to a stamp overlapping a digit), use `quantity * rate` to verify the exact printed digits!
 
-6. AMOUNTS & TAXES (CRITICAL — DO NOT PUT TAX INTO SUBTOTAL & STRICT IGST RULE):
-- NEVER PUT THE 18% GST/IGST AMOUNT INTO `subtotal`!
-  * `subtotal` is ALWAYS the pre-tax Taxable Value (`≈ total / 1.18`), whereas `total_tax` is the 18% GST (`≈ subtotal * 0.18`).
-  * Count ALL digits before the decimal point (whether formatted with Indian commas like `23,34,631.32` or without commas like `2819783.11`). Never drop a digit!
+6. AMOUNTS & TAXES (CRITICAL — NO SINGLE-HALF TAX & NO IGST IN SUBTOTAL):
+- SLR METALIKS INVOICE RULE:
+  * `lines[0].amount` (`quantity * rate`, typically 7 to 27 lakhs) IS the `subtotal` (Taxable Value)!
+  * NEVER put the smaller 18% IGST figure (~1.4 to 4.7 lakhs) into `subtotal`!
+  * `igst` & `total_tax` = the 18% IGST amount (`≈ subtotal * 0.18`).
+  * `total` = `Total Invoice Value (INR)` at bottom (`= subtotal + igst`).
+- COUNT ALL DIGITS BEFORE DECIMAL: Whether formatted with Indian commas (`23,34,631.32`) or without commas (`2819783.11`), count every single digit before the decimal point! Never drop a digit!
 - Multi-page invoices: Read Page 2 for remaining lines and final totals. If Page 2 of a 2-page invoice is missing from the scan (`Page 1 of 2` at bottom), set `subtotal = SUM(lines.amount)` and compute 18% GST according to the Seller's state below.
 - MANDATORY INTER-STATE IGST vs INTRA-STATE CGST+SGST RULE:
   * Seller in **Karnataka (`29...`)** or **Kerala (`32...`)** (SLR Metaliks, Kalyani Steels, Hindalco):
     `cgst = 0.0`, `sgst = 0.0`, `igst = total_tax` (full 18% GST). NEVER split into `cgst`/`sgst`!
   * Seller in **Maharashtra (`27...`)**:
-    `igst = 0.0`, `cgst = total_tax / 2`, `sgst = total_tax / 2`. (If multiple tax columns exist in CGST/SGST rows, sum ALL columns in that row — e.g. `1530.31 + 18642.42 = 20172.73`).
+    `igst = 0.0`. Both `CGST 9%` and `SGST 9%` apply!
+    - Read `cgst` = `CGST 9%` row/amount (sum all columns if multi-column).
+    - Read `sgst` = `SGST 9%` row/amount (sum all columns if multi-column).
+    - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal` — NEVER put only 9% into `total_tax`!).
 - `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios.
 - FINAL SANITY CHECK: Verify BOTH equations before returning JSON:
   1) `SUM(lines.amount) ≈ subtotal`
-  2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding). If `subtotal` does not equal `total - total_tax`, fix `subtotal` to `total - total_tax`!
+  2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding).
 
 ============================= REQUIRED JSON FORMAT =============================
 Return strictly valid JSON without markdown formatting or code fences:
