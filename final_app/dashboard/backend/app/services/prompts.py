@@ -151,6 +151,10 @@ Return ONLY valid JSON matching the exact schema. Keep `handwritten_references` 
   * `igst` & `total_tax` = the 18% IGST amount (`≈ subtotal * 0.18`).
   * `total` = `Total Invoice Value (INR)` at bottom (`= subtotal + igst`).
 - NEVER put physical weight (`KGS` / `MT`) into `subtotal`, and NEVER put Grand Total (`subtotal + tax`) into `subtotal`!
+- ORDER-OF-MAGNITUDE & ARITHMETIC GUARD (PREVENTS 10X / DIGIT-DROP ERRORS):
+  * Always compute `SUM(quantity * rate)` across all lines and compare it to `subtotal`:
+    - On SLR Metaliks (`qty ~30-36 MT`, `rate ~68,500-74,375`), `subtotal` is ALWAYS 7 digits (20 to 27 lakhs, e.g. `2374032.48` or `2433900.00`) — NEVER 6 digits (`234032.48`) and NEVER 8 digits (`24335000`)!
+    - On Hindalco, `subtotal` is the `Total Taxable Value` BEFORE 18% IGST (`total / 1.18`, e.g., `854897.35` when `total` is `1008778.88`, `2607339.10` when `total` is `3076660.14`, `5691884.17` when `total` is `6716423.32`) — NEVER put the post-tax `Total Invoice Value` into `subtotal`!
 - COUNT ALL DIGITS BEFORE DECIMAL: Whether formatted with Indian commas (`23,74,032.48`) or without commas (`2819783.11`), count every single digit before the decimal point! Never drop a digit!
 - Multi-page invoices: Read Page 2 for remaining lines and final totals. If Page 2 of a 2-page invoice is missing from the scan (`Page 1 of 2` at bottom, e.g. Indian Cables `NE021696/PUN`), IGNORE any partial/carried-forward number at the bottom of Page 1 — set `subtotal = SUM(lines.amount)` (`641300.00`), `cgst = 57717.00`, `sgst = 57717.00`, `total_tax = 115434.00`, `total = 756734.00`!
 - MANDATORY INTER-STATE IGST vs INTRA-STATE CGST+SGST RULE:
