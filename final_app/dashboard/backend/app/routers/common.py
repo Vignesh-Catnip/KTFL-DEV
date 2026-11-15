@@ -24,6 +24,7 @@ def invoice_row(i: Invoice) -> dict:
         "grn_number": i.grn_number, "plant_code": i.plant_code, "doc_type": i.doc_type, "doc_type_desc": i.doc_type_desc, "subtotal": i.subtotal, "total": i.total,
         "gst_tax_code": i.gst_tax_code, "gst_percent": i.gst_percent, "hsn_sac": i.hsn_sac, "sap_hsn": i.sap_hsn,
         "queue": i.queue, "status": i.status, "exception_type": exception_type(i.issues or []),
+        "error_flow_status": i.error_flow_status,
         "issue_count": len(open_), "top_issue": open_[0]["message"] if open_ else "",
         "variance_amount": i.variance_amount, "completeness": i.completeness, "multi_po_flag": bool(i.multi_po_flag),
         "resolution": i.resolution, "approved_variance": bool(i.approved_variance),
