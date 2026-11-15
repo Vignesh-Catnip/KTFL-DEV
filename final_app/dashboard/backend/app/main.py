@@ -14,7 +14,7 @@ from .config import get_settings
 from .database import ensure_schema, get_engine, session_factory
 from .routers import auth, doctypes, flows, invoices, robot as robot_router
 from .security import seed_admin
-from .services import robot, worker
+from .services import error_flow, robot, worker  # noqa: F401  (error_flow registers its listeners)
 from .services.gst import load_gst_master
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -50,6 +50,9 @@ async def lifespan(app: FastAPI):
             log.info("GST master loaded: %s codes", n)
         else:
             log.warning("GST master file not found: %s", cfg.gst_rate_xlsx)
+    with session_factory()() as db:
+        from .services import error_flow
+        error_flow.backfill(db)
     with session_factory()() as db:
         from .services.doctype import load_master
         log.info("Document type master: %s rows added", load_master(db))
