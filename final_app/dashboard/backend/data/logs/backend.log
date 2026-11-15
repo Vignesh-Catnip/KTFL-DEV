@@ -1,0 +1,5 @@
+2026-11-15 18:10:57,355 INFO clearmatch: GST master loaded: 61 codes
+2026-11-15 18:10:57,365 INFO clearmatch: Document type master: 0 rows added
+2026-11-15 18:10:57,374 INFO clearmatch.worker: PDF folders: {'input': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\Input-pdf', 'processing': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\processing', 'output': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\output', 'finish': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\finish', 'error': 'C:\\Users\\ckts00126\\Desktop\\KTFL-EXTRACTION\\final_app\\error'}
+2026-11-15 18:10:57,405 INFO clearmatch.robot: Robot ready (mode POST, folder C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot)
+2026-11-15 18:10:57,431 INFO clearmatch.worker: extraction started: job 1232  20261102143242690.pdf  (WATCH)
