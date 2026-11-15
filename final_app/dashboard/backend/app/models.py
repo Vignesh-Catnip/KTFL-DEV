@@ -85,6 +85,10 @@ class Invoice(Base):
 
     # ---- ClearMatch additions ------------------------------------------------------------------
     queue: Mapped[str | None] = mapped_column(String(20), index=True)           # MATCHED/RECONCILE/BLOCKED
+    # Error-flow bucket, same labels as the Error flow page: Quantity mismatch / Price variance / Tax / HSN /
+    # Data missing / Other mismatch / Blocked.  '' = no open exception, NULL = not computed yet.
+    # Kept up to date by services/error_flow.py (set on every insert/update of an invoice).
+    error_flow_status: Mapped[str | None] = mapped_column(String(30), index=True)
     issues: Mapped[list] = mapped_column(JSON, default=list)                    # structured issues
     company_code: Mapped[str | None] = mapped_column(String(10))
     sap_hsn: Mapped[str | None] = mapped_column(String(200))                    # HSN in SAP - compare only
