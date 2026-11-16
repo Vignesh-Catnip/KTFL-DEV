@@ -60,7 +60,7 @@ A valid KTFL GRN has EXACTLY 10 digits and ALWAYS starts with "5000" (three zero
 Re-check:
 1. Top-left / top-right margin handwritten "5000XXXXXX" (or "5-XXXXXX" -> "5000XXXXXX").
 2. Inside the KTFL receiving stamp on the "GRN NO" line (below SCROLL NO). Stop before the date!
-3. Never take digits from SCROLL NO (starts with 200 or 202) or from PO No (starts with 51 or 61).
+3. Never take digits from SCROLLNO (starts with 200 or 202) or from PO No (starts with 51 or 61).
 """
 
 # ---------------------------------------------------------------------------
@@ -141,33 +141,30 @@ CRITICAL: Read ALL numbers strictly from the uploaded document image — NEVER i
     - `uom`: `"KG"`.
     - `rate`: `NET PRICE` column.
     - `amount`: `TAXABLE VALUE` column (`quantity * rate == amount`).
-  * Check `SUM(lines.amount) == subtotal` — NEVER include rows that would make `SUM(lines.amount)` exceed `subtotal`!
+  * Check `SUM(lines.amount) == subtotal` (or if there is a round-off or discount row at the bottom of the item table like on BMSS Steel where line sum includes items before tax adjustment, ensure `subtotal` matches the official Taxable Value box at the bottom of the invoice!).
 - DECIMAL POINT RULE: In `"67.000 KGS"`, `"1.000 NOS"`, `"31.390 MT"`, the dot `"."` is a decimal point (`67.0`, `1.0`, `31.39`) — NEVER multiply by 1000!
 - MANDATORY ARITHMETIC CHECK (`quantity * rate == amount`):
   * For EVERY row, multiply `quantity * rate` and compare to `amount`! If `quantity * rate` differs from your read `amount` (e.g. due to a stamp overlapping a digit), use `quantity * rate` to verify the exact printed digits!
 
 6. AMOUNTS & TAXES (CRITICAL — NO SINGLE-HALF TAX & NO IGST/WEIGHT IN SUBTOTAL):
-- SLR METALIKS INVOICE RULE:
-  * `lines[0].amount` (`quantity * rate`, typically 7 to 27 lakhs) IS the `subtotal` (Taxable Value)!
-  * NEVER put the smaller 18% IGST figure (~1.4 to 4.7 lakhs) into `subtotal`!
-  * `igst` & `total_tax` = the 18% IGST amount (`≈ subtotal * 0.18`).
-  * `total` = `Total Invoice Value (INR)` at bottom (`= subtotal + igst`).
-- NEVER put physical weight (`KGS` / `MT`) into `subtotal`, and NEVER put post-tax Grand Total (`subtotal + tax`) into `subtotal`!
+- SLR METALIKS & BMSS STEEL INVOICE RULE:
+  * `subtotal`: Read the exact printed `Taxable Amount` / `Total Taxable Value` box at the bottom summary table (e.g., on BMSS Steel it is `1,225,688.00`, even if individual item rows sum up differently due to rounding or discounts).
+  * `igst`, `cgst`, `sgst`: Read the exact tax amounts from the tax summary box.
+  * `total`: Read the exact printed `Total Invoice Value` at the bottom.
+- NEVER put physical weight (`KGS` / `MT`) into `subtotal`, and NEVER put post-tax Grand Total into `subtotal`!
 - ORDER-OF-MAGNITUDE & DIGIT-COUNT GUARD:
-  * Always compute `SUM(quantity * rate)` across all lines and verify it matches `subtotal`!
-  * Count EVERY SINGLE DIGIT before the decimal point (whether formatted with Indian commas `XX,XX,XXX.XX` or without commas `XXXXXXX.XX`). NEVER drop a leading or middle digit (e.g. a 7-digit number `23,34,631.32` has 7 digits before the decimal, NOT 6 digits `234631.32`; a 7-digit IGST `10,24,539.15` has 7 digits before the decimal, NOT 6 digits `924539.15`)!
-- Multi-page invoices: Read Page 2 for remaining lines and final totals. If Page 2 of a 2-page invoice is missing from the scan (`Page 1 of 2` at bottom), IGNORE any partial/carried-forward number at the bottom of Page 1 — set `subtotal = SUM(lines.amount)` and compute 18% GST according to the Seller's state below!
+  * Count EVERY SINGLE DIGIT before the decimal point (whether formatted with Indian commas `XX,XX,XXX.XX` or without commas `XXXXXXX.XX`). NEVER drop a leading or middle digit!
 - MANDATORY INTER-STATE IGST vs INTRA-STATE CGST+SGST RULE:
   * Seller in **Karnataka (`29...`)** or **Kerala (`32...`)** (SLR Metaliks, Kalyani Steels, Hindalco):
     `cgst = 0.0`, `sgst = 0.0`, `igst = total_tax` (full 18% GST). NEVER split into `cgst`/`sgst`!
-  * Seller in **Maharashtra (`27...`)**:
+  * Seller in **Maharashtra (`27...`)** (Bharat Metals, BMSS Steel, Rudra Pack, etc.):
     `igst = 0.0`. Both `CGST 9%` and `SGST 9%` apply!
-    - Read `cgst` = `CGST 9%` row/amount (if multiple tax columns exist in the CGST row, e.g. 2.5% + 9% on Rudra Pack, sum ALL columns in that row!).
+    - Read `cgst` = `CGST 9%` row/amount (sum ALL columns in that row!).
     - Read `sgst` = `SGST 9%` row/amount (sum ALL columns in that row!).
-    - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal` — NEVER put only 9% into `total_tax`!).
-- `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios.
+    - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal`).
+- `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios (like `19.47%` or `182.59%`). If the tax summary shows 9% CGST + 9% SGST, output `18.0`!
 - FINAL SANITY CHECK: Verify BOTH equations before returning JSON:
-  1) `SUM(lines.amount) ≈ subtotal`
+  1) `SUM(lines.amount) ≈ subtotal` (or match the printed Taxable Value)
   2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding).
 
 ============================= REQUIRED JSON FORMAT =============================
