@@ -18,9 +18,13 @@ import re
 from ..config import get_settings
 from ..models import (QUEUE_BLOCKED, QUEUE_MATCHED, QUEUE_RECONCILE, STATUS_MANUAL, STATUS_MATCHED,
                       STATUS_REVIEW)
-from .textutil import (GSTIN_RE, GST_STANDARD_RATES, grn_is_valid, is_service_po, is_valid_po, norm_hsn)
+from .textutil import (GSTIN_RE, GST_STANDARD_RATES, grn_is_valid, gstin_ok, is_service_po, is_valid_po, norm_hsn)
 
 BLOCK, RECON, INFO, WAIVED = "BLOCK", "RECON", "INFO", "WAIVED"
+
+# ---- NEW: settings for the extra invoice-internal checks -------------------------------------------------------
+BUYER_STATE_CODE = "27"       # KTFL is in Maharashtra: seller state 27 -> CGST+SGST, any other state -> IGST
+QTY_RATE_SEVERITY = RECON     # set to INFO if discounted lines cause too many false alarms
 
 MANDATORY_FIELDS = ("invoice_number", "invoice_date", "vendor", "po_number", "grn_number", "subtotal", "total",
                     "gst_tax_code", "gstin", "hsn_sac")      # 10 fields that must come from the invoice itself
@@ -220,12 +224,16 @@ def validate(h: dict, lines: list[dict]) -> dict:
     # ---------------------------------------------------------------- arithmetic on the invoice
     c, s, g = h.get("cgst", 0.0), h.get("sgst", 0.0), h.get("igst", 0.0)
     rt = cfg.round_tolerance
+    if not tax and (c + s + g) > 0:                 # NEW: the model no longer returns total_tax - derive it from the 3 taxes
+        tax = h["total_tax"] = round(c + s + g, 2)
+    ro, oc = to_num(h.get("round_off")), to_num(h.get("other_charges"))      # NEW: printed round-off / extra charges
     if (c + s + g) > 0 and abs((c + s + g) - tax) > rt:
         iss.append(issue("TAX_SPLIT_MISMATCH", RECON, "DATA",
                          f"CGST+SGST+IGST {round(c + s + g, 2)} differs from total tax {tax}", "total_tax"))
-    if sub > 0 and total > 0 and abs((sub + tax) - total) > rt:
+    if sub > 0 and total > 0 and abs((sub + tax + ro + oc) - total) > rt:       # NEW: round-off and charges included
+        extra_txt = (f" + round-off {ro}" if ro else "") + (f" + other charges {oc}" if oc else "")
         iss.append(issue("TOTAL_MISMATCH", RECON, "DATA",
-                         f"Taxable {sub} + tax {tax} differs from invoice total {total}", "total"))
+                         f"Taxable {sub} + tax {tax}{extra_txt} differs from invoice total {total}", "total"))
     if c > 0 and abs(c - s) > 0.5:
         iss.append(issue("CGST_SGST_DIFFER", RECON, "DATA", f"CGST {c} differs from SGST {s}", "cgst"))
     if c > 0 and g > 0:
@@ -239,6 +247,37 @@ def validate(h: dict, lines: list[dict]) -> dict:
     if h.get("gstin") and not GSTIN_RE.match(h["gstin"]):
         iss.append(issue("GSTIN_FORMAT", RECON, "DATA", f"Vendor GSTIN '{h['gstin']}' looks wrong", "gstin",
                          h["gstin"]))
+    # ---- NEW: checks that catch typical misreads of the invoice (all on the invoice's own numbers) ----
+    _gst = (h.get("gstin") or "").strip().upper()
+    if _gst and GSTIN_RE.match(_gst) and not gstin_ok(_gst):          # textutil.repair_gstin already tried to fix it
+        iss.append(issue("GSTIN_CHECKSUM", RECON, "DATA",
+                         f"Vendor GSTIN '{_gst}' fails the GST check digit - a character was probably misread",
+                         "gstin", _gst))
+    _seller_state = _gst[:2]
+    if _seller_state.isdigit() and not (c > 0 and g > 0):          # c>0 and g>0 is already MIXED_GST
+        if _seller_state == BUYER_STATE_CODE and g > 0:
+            iss.append(issue("TAX_TYPE_MISMATCH", RECON, "TAX",
+                             f"Seller GSTIN is in the buyer's state ({_seller_state}) so CGST+SGST is expected, "
+                             f"but IGST {g:,.2f} was read", "igst", g, ""))
+        elif _seller_state != BUYER_STATE_CODE and (c > 0 or s > 0):
+            iss.append(issue("TAX_TYPE_MISMATCH", RECON, "TAX",
+                             f"Seller GSTIN is in another state ({_seller_state}) so IGST is expected, "
+                             f"but CGST {c:,.2f} / SGST {s:,.2f} was read", "cgst", c, ""))
+    if g > 0 and sub > 0 and abs(g - sub) <= max(1.0, sub * 0.005):
+        iss.append(issue("IGST_EQUALS_SUBTOTAL", RECON, "DATA",
+                         "IGST equals the taxable value - the wrong box was probably read", "igst", g, sub))
+    if sub > 0 and tax > 0 and not (4 <= tax / sub * 100 <= 29):
+        iss.append(issue("TAX_RATIO_OUT_OF_BAND", RECON, "DATA",
+                         f"Total tax is {tax / sub * 100:.1f}% of the taxable value (expected about 5-28%) - "
+                         f"an amount was probably misread", "total_tax", tax, sub))
+    _cand = h.get("grn_candidates") or {}                          # set by the extraction step when both places had a GRN
+    _g_top, _g_stamp = _cand.get("grn_top_margin") or "", _cand.get("grn_stamp") or ""
+    if _g_top and _g_stamp and _g_top != _g_stamp:
+        # category MISSING so an approved amount deviation can never waive it (same as GRN_NOT_IN_SAP)
+        iss.append(issue("GRN_CONFLICT", RECON, "MISSING",
+                         f"Two different GRNs were read: {_g_top} (top margin) and {_g_stamp} (receiving stamp) - "
+                         f"{h.get('grn_number') or _g_top} was used, please confirm",
+                         "grn_number", f"{_g_top} / {_g_stamp}"))
     if not lines:
         iss.append(issue("NO_LINES", RECON, "DATA", "No line items could be read from the invoice", "lines"))
     else:
@@ -246,6 +285,15 @@ def validate(h: dict, lines: list[dict]) -> dict:
         if sub > 0 and abs(line_sum - sub) > max(rt, sub * cfg.amount_tolerance):
             iss.append(issue("LINES_TOTAL_MISMATCH", RECON, "DATA",
                              f"Line items add up to {line_sum:,.2f} but taxable value is {sub:,.2f}", "lines"))
+        # NEW: each row must satisfy quantity x rate = amount (a misread digit shows up here before SAP is checked)
+        _bad = [i + 1 for i, l in enumerate(lines)
+                if to_num(l.get("quantity")) and to_num(l.get("rate"))
+                and abs(to_num(l["quantity"]) * to_num(l["rate"]) - to_num(l.get("amount")))
+                > max(1.0, 0.002 * abs(to_num(l.get("amount"))))]
+        if _bad:
+            iss.append(issue("LINE_QTY_RATE_MISMATCH", QTY_RATE_SEVERITY, "DATA",
+                             f"Quantity x rate does not equal the amount on line(s) {', '.join(map(str, _bad[:8]))}",
+                             "lines", ", ".join(map(str, _bad))))
     if h.get("confidence") and h["confidence"] < 60:
         iss.append(issue("LOW_CONFIDENCE", RECON, "DATA", f"Low AI confidence ({h['confidence']}%)"))
 
