@@ -163,7 +163,7 @@ CRITICAL: Read ALL numbers strictly from the uploaded document image — NEVER i
   * Seller in **Maharashtra (`27...`)**:
     `igst = 0.0`. Both `CGST 9%` and `SGST 9%` apply!
     - Read `cgst` = `CGST 9%` row/amount (if multiple tax columns exist in the CGST row, e.g. 2.5% + 9% on Rudra Pack, sum ALL columns in that row!).
-    - Read `sgst` = `CGST 9%` row/amount (sum ALL columns in that row!).
+    - Read `sgst` = `SGST 9%` row/amount (sum ALL columns in that row!).
     - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal` — NEVER put only 9% into `total_tax`!).
 - `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios.
 - FINAL SANITY CHECK: Verify BOTH equations before returning JSON:
