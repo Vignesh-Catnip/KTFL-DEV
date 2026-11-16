@@ -32,6 +32,9 @@ def clean_po(v) -> str:
     s = clean(v)
     s = re.sub(r"^(?:PO[-/.\s]*|P\.O\.[-/.\s]*|P/O[-/.\s]*)", "", s, flags=re.IGNORECASE).strip()
     s = "".join(_OCR_DIGITS.get(c, c) for c in s)
+    m = re.search(r"(?<!\d)610000(\d{5})(?!\d)", s)      # NEW: 11-digit typo '610000XXXXX' -> '61000XXXXX' (drop ONE zero,
+    if m:                                                #      keep all 5 trailing digits; was done by the old prompt)
+        return "61000" + m.group(1)
     m = re.search(r"\d{10}", s)
     if m:
         return m.group(0)
@@ -83,8 +86,12 @@ def clean_grn(v) -> str:
     m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", s)
     if m:
         a, b = m.group(1), m.group(2)
-        return a + "0" * max(0, 10 - len(a) - len(b)) + b
-    return re.sub(r"[^\d]", "", s)
+        out = a + "0" * max(0, 10 - len(a) - len(b)) + b
+    else:
+        out = re.sub(r"[^\d]", "", s)
+    if re.fullmatch(r"9000\d{6}", out):                  # NEW: a leading 9 before 000 is a 5 (old prompt did this)
+        out = "5" + out[1:]
+    return out
 
 
 def grn_is_valid(g: str) -> bool:
