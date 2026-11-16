@@ -1,52 +1,46 @@
 """
-VLM Prompt Management — all prompts are defined here, independent of Python code.
+VLM Prompt Management - all prompts live here, independent of Python code.
 
-To tune extraction behaviour, edit ONLY this file. The VLM client (vlm.py) imports from here.
-Keeping prompts separate makes it easy to version-control, review, and update them without
-touching the extraction logic.
+Design rules for this version
+-----------------------------
+1. The model READS; Python NORMALIZES and VALIDATES (see validators.py).
+   Prompts ask for values exactly as printed/written. They do not ask the model to
+   expand shorthand, fix typos, do arithmetic, derive totals or estimate confidence.
+2. No literal example numbers inside rules (small models copy them). Use XXXX placeholders.
+3. One field, one source of truth: GRN is extracted ONLY by GRN_PROMPT.
+4. Vendor-specific quirks live in VENDOR_HINTS and are appended only when the vendor is known,
+   so the main prompt stays short.
+
+Contract changes vs the old file (update vlm.py accordingly):
+  - PROMPT no longer returns grn_number, po_numbers_all, gst_rate_percent, total_tax, confidence.
+    validators.validate_invoice() derives them.
+  - PROMPT returns po_number_raw / handwritten_po_raw instead of a normalized po_number.
+  - GRN_PROMPT returns {"grn_top_margin", "grn_stamp"} (raw) instead of {"grn_number"}.
+  - New PAGE_CLASS_PROMPT (run once per page before extraction).
 """
 
 # ---------------------------------------------------------------------------
-# GRN stamp extraction prompt
+# Page classification prompt (run per page BEFORE extraction)
 # ---------------------------------------------------------------------------
-GRN_PROMPT = r"""
-You are an expert OCR specialist. Extract ONLY the 10-digit KTFL GRN (Goods Receipt Note) number from this document.
-Read the digits directly from the image — NEVER copy placeholder digits or PO digits.
+PAGE_CLASS_PROMPT = r"""
+Classify this single scanned page from a purchase-invoice bundle.
 
-MANDATORY KTFL GRN FORMAT:
-- Always EXACTLY 10 numeric digits starting with "5000" (a "5" followed by THREE zeroes: 5000XXXXXX).
-- NEVER 9 digits (if you read 9 digits starting with "500", you missed one zero in "5000"). Never append date digits next to the GRN.
+page_type must be exactly one of:
+- "invoice_first"        : first page of a TAX INVOICE (letterhead, invoice number, buyer/seller blocks, item table).
+- "invoice_continuation" : a later page of the SAME tax invoice (more numbered item rows, taxable value, CGST/SGST/IGST
+                           summary, totals, "Page 2 of N", or the receiving stamp), even without a "TAX INVOICE" heading.
+- "weighment_slip"
+- "debit_note"           : a GST debit note / credit note.
+- "lorry_receipt"
+- "delivery_challan"
+- "other"
 
-WHERE TO LOOK (IN PRIORITY ORDER):
-1. TOP MARGIN (TOP-LEFT / TOP-CENTER / TOP-RIGHT):
-   - Stores/security staff frequently handwrite a 10-digit "5000XXXXXX" number in pen above the top border of the invoice (often underlined, with a date below or after a slash).
-   - If a 10-digit number starting with "5000" is handwritten at the top margin, extract THAT exact 10-digit number! Do NOT replace it with any number from the bottom stamp or Scroll No.
-   - Short-prefix shorthand at top/right margin: "5-XXXXXX" or "S-XXXXXX" (6 digits after dash) -> expand to "5000XXXXXX".
-2. KTFL RECEIVING RUBBER STAMP ("KALYANI TECHNOFORGE LTD" / "RECEIVED SUBJECT TO VERIFICATION"):
-   - Find the row labeled "GRN NO" / "GRN No." / "ORN NO" / "JRN NO" (directly BELOW the "SCROLL NO" row).
-   - Extract ONLY the 10-digit "5000XXXXXX" number before the date.
+Also read, exactly as printed (empty string if absent):
+- invoice_number: the invoice / bill number printed on this page.
+- page_marker: text such as "Page 1 of 2" if printed.
 
-DIGIT DISAMBIGUATION:
-- Leading "9" or "S" before "000..." is always "5" -> "5000...".
-- Read every handwritten digit stroke by stroke: 1 vs 7 (a vertical stroke without a long horizontal top bar is "1"), 4 vs 8, 6 vs 5, 0 vs 8.
-
-DO NOT EXTRACT:
-- SCROLL NO (starts with "200" or "202").
-- Top-right slash gate numbers (4 digits / 3-4 digits).
-- PO No (starts with 51, 61, 81 — NEVER turn PO "510000XXXX" into GRN "5000510XXX"!).
-- E-Way Bill (12 digits), LR No, Vehicle No, or Invoice No.
-
-MANDATORY RE-CHECK (adjacent-digit transposition is the single most common GRN error):
-- After you form your 10-digit answer, go back to the image and re-read EACH of the 10 digits one more
-  time, left to right, comparing your answer digit-by-digit against the strokes on the page. A common
-  mistake is swapping two ADJACENT digits (e.g. reading "...710..." as "...170...", or "...392913" as
-  "...392413") or shifting a digit from the date onto the end of the GRN. If any digit does not match what
-  you see on this specific re-read, correct it. Do NOT rely on a GRN you remember from a similar-looking
-  invoice — every invoice has its OWN GRN; read only the digits printed/written on THIS document.
-
-If no 10-digit number starting with "5000" is visible, return "".
-Return strictly valid JSON without markdown fences:
-{"grn_number": "<10-digit number starting with 5000 or empty string>"}
+Return ONLY valid JSON:
+{"page_type": "", "invoice_number": "", "page_marker": ""}
 """
 
 # ---------------------------------------------------------------------------
@@ -60,171 +54,171 @@ Return ONLY: {"upright": true} or {"upright": false}
 """
 
 # ---------------------------------------------------------------------------
-# GRN retry hint (injected when the first GRN read returns a bad value)
+# GRN extraction prompt - returns BOTH candidate locations, raw. Python decides.
+# Best results: send a high-resolution crop of the top ~20% of the page for the
+# top-margin read and a crop of the receiving stamp for the stamp read.
+# ---------------------------------------------------------------------------
+GRN_PROMPT = r"""
+You are an OCR specialist. Find the KTFL GRN (Goods Receipt Note) number on this document.
+A valid KTFL GRN has 10 digits and starts with "5000". Read the digits from THIS image only.
+
+There are two places it can appear. Report each separately, exactly as you see it:
+
+1. grn_top_margin: a number handwritten in pen in the TOP MARGIN (top-left, top-centre or top-right), usually above
+   the printed header, often underlined with a date below it or after a slash. Report only the number, not the date.
+   It may be written in a short form such as "5-XXXXXX" or "S-XXXXXX": copy it as written, do not expand it.
+2. grn_stamp: the number on the "GRN NO" row (may be misprinted as "ORN NO" / "JRN NO") of the rubber receiving stamp
+   ("KALYANI TECHNOFORGE" / "RECEIVED SUBJECT TO VERIFICATION"). That row sits directly BELOW the "SCROLL NO" row.
+   Report only the number before the date.
+
+If a location has no GRN, return "" for it. Never copy a number from one location into the other.
+
+Never report these as a GRN:
+- SCROLL NO (starts with "20", e.g. 200..., 202...).
+- Gate numbers written as two numbers with a slash (e.g. 4 digits / 3-4 digits), usually in red at the top right.
+- PO numbers (start with 51, 61 or 81).
+- E-way bill (12 digits), LR number, vehicle number, invoice number, dates.
+
+Reading handwriting: go stroke by stroke. 1 has no long top bar (7 does). 4 has an open top; 8 is closed.
+6 has a closed lower loop and a tail; 5 has a flat top bar; 0 is an unbroken oval.
+After reading, re-read each digit left to right once more against the image. The most common error is swapping two
+adjacent digits, or running a digit of the date onto the end of the number.
+Every document has its own GRN: do not reuse a number you remember from another invoice.
+
+Return strictly valid JSON, no markdown:
+{"grn_top_margin": "", "grn_stamp": ""}
+"""
+
+# ---------------------------------------------------------------------------
+# GRN retry hint (appended when Python validation rejects the first read)
+# Placeholders: {location}, {bad}, {n}
 # ---------------------------------------------------------------------------
 GRN_RETRY_HINT = r"""
-Your previous answer was "{bad}" which cleans to "{bad_clean}" ({n} digits).
-A valid KTFL GRN has EXACTLY 10 digits and ALWAYS starts with "5000" (three zeroes after 5).
-Re-check:
-1. Top-left / top-right margin handwritten "5000XXXXXX" (or "5-XXXXXX" -> "5000XXXXXX").
-2. Inside the KTFL receiving stamp on the "GRN NO" line (below SCROLL NO). Stop before the date!
-3. Never take digits from SCROLLNO (starts with 200 or 202) or from PO No (starts with 51 or 61).
-5. Do NOT re-use a GRN from memory or from another similar invoice - read only THIS image's digits.
-   Watch for an adjacent-digit swap (e.g. "...710..." misread as "...170...").
+Your previous read of {location} was "{bad}" ({n} digits), which is not a valid GRN.
+A valid KTFL GRN has EXACTLY 10 digits and starts with "5000" (a 5 followed by THREE zeroes).
+Re-check, in this order:
+1. Top margin: handwritten number above the printed header. Stop before the date.
+2. Receiving stamp: the "GRN NO" row, below "SCROLL NO". Stop before the date.
+3. Do not use SCROLL NO (starts with 20), gate numbers (with a slash) or PO numbers (start with 51/61/81).
+4. If a digit is unclear, do not guess a digit to make the number fit: return "" for that location.
+5. Do not reuse a number from memory or from another invoice. Watch for adjacent-digit swaps.
+Return the same JSON shape as before.
 """
 
 # ---------------------------------------------------------------------------
 # Main invoice extraction prompt
 # ---------------------------------------------------------------------------
 PROMPT = r"""
-You are an expert Indian GST purchase-invoice extraction engine for Kalyani Technoforge Ltd (KTFL, the BUYER).
-Analyze ONLY the TAX INVOICE page(s). Completely IGNORE attached Weighment Slips, Counting Charts, Lorry Receipts (LR), Delivery Challans ("DELIVERY CHALLAN"), and Debit Notes!
-Return ONLY valid JSON matching the exact schema. Keep `handwritten_references` under 40 characters (ONLY handwritten PO/GRN notes — NEVER list bundle/heat numbers!).
-CRITICAL: Read ALL numbers strictly from the uploaded document image — NEVER invent or copy numbers from instructions!
+You are an extraction engine for Indian GST purchase invoices. The BUYER is Kalyani Technoforge Ltd (KTFL).
+You are given the pages of ONE tax invoice (first page plus any continuation pages). Combine them into one result.
+Ignore weighment slips, counting charts, lorry receipts, delivery challans, debit notes and any other attachment.
 
-================================ FIELD RULES ================================
+GENERAL RULES
+- Copy values exactly as printed. Do NOT calculate, correct, round, expand shorthand or reformat. A separate program checks them.
+- If a value is not visible or not printed, return "" (text) or 0.0 (number). Never guess and never invent digits.
+- Indian number formats: "1,42,115.00" and "142115.00" are the same number. Count every digit before the decimal point.
+  A dot is always a decimal point ("31.390" is thirty-one point three nine).
+- Numbers inside these instructions are placeholders. Read every number from the document.
 
-1. VENDOR & SELLER GSTIN (EXACT REFERENCE):
-- vendor: Legal name of the SELLER at top letterhead (NEVER "Kalyani Technoforge", "KTFL", "Kalyani Transmission", or Ship-To party). Remove financial year brackets like "(2026-27)" or "26-27".
-- gstin: 15-character GSTIN of the SELLER (NEVER Buyer/Consignee block, NEVER KTFL's "27AABCK0618A1Z7").
-  * Known Seller GSTINs (verify against document):
-    - SLR METALIKS LIMITED (Karnataka): "29AAJCS4396P1Z9"
-    - KALYANI STEELS LIMITED (Karnataka): "29AAACK7315D1ZQ"
-    - HINDALCO INDUSTRIES LIMITED (Kerala Alupuram Works): "32AAACH1201R1ZW"
-    - BHARAT METALS (Maharashtra): "27AATFB3972H1ZZ" (even if top-left is covered by a weighment slip, PAN at bottom is AATFB3972H)
-    - EURO STEEL AND TRACER PRODUCTS (Maharashtra): "27HBFPS2958A1ZG"
-    - BMSS STEEL INDUSTRIES PRIVATE LIMITED (Maharashtra): "27AAACG1519K1ZP"
-    - VS ENTERPRISES (Maharashtra): "27AAYFV1317R1Z6"
-    - K.V. STEEL AND PIPES PRIVATE LIMITED (Maharashtra): "27AADCK8810E1ZN"
-    - OM ENGINEERING (Maharashtra): "27ASVPB4182F2ZI"
-    - SNEHDEEP PACKAGING PVT LTD (Maharashtra): "27ABCCS2447R1ZQ"
-    - ACCUMEASURE TOOLS (Maharashtra): "27AAXPG9799D1ZS"
-    - RUDRA PACK SOLUTIONS PVT LTD (Maharashtra): "27AAHCR8563K1ZP"
-    - SRN Packagings (Maharashtra): "27AAPPM7293L1ZS"
-    - EGEARZ PRIVATE LIMITED (Maharashtra): "27AAFCE6816Q1Z0"
-    - Indian Cables & Electricals Pvt. Ltd. (Maharashtra): "27AABCI4883P1ZV"
-    - Ocean Induction Solutions (Maharashtra): "27AADFO8995R1Z0"
-    - UNI-TECH ENGINEERS (Maharashtra): "27AADFU4266H1ZZ"
-    - AURANGABAD AUTO ANCILLARY PVT. LTD. (Maharashtra): "27AACCA3515D1Z8"
+FIELDS
+- vendor: legal name of the SELLER, from the letterhead. Never KTFL / Kalyani Technoforge / Kalyani Transmission.
+- gstin: the SELLER's 15-character GSTIN (letterhead or "GST No" beside the seller block). Never the buyer's
+  (the buyer is KTFL, GSTIN starts "27AABCK0618").
+- invoice_number: the text under "Invoice No." / "Tax Invoice No." / "Bill No." Copy it fully, including prefixes and suffixes.
+- invoice_date: the invoice date exactly as printed.
+- po_number_raw: the KTFL purchase order number(s) as printed in a box labelled "PO No", "PO NO & Date", "Customer PO",
+  "Cust. PO No", "P.O. No." or "Buyer's Order No.". If several, separate with commas. Not the vendor's own order code
+  (such as "PS26Y-..." or "VERBAL ORDER"), not SO / delivery / shipment numbers.
+- handwritten_po_raw: ONLY if no printed PO is present, a PO written by hand in pen or pencil near the item table or in a
+  margin (for example "51-XXXX" or "po-51/XXXX"). Copy as written.
+- vendor_code: the KTFL vendor code ONLY if a value is printed after "Vendor Code" / "Customer Code" / "Supplier Code".
+  If the value is blank, "Na", "NA" or "-", return "".
+- plant_hint: the KTFL plant named in the Ship To / Dispatch To block, copied as printed (for example the plant name
+  or place line).
+- hsn_sac: the HSN of the highest-value material row (one code only).
+- handwritten_references: short note (under 40 characters) of handwritten PO/GRN notes only. Never bundle or heat numbers.
 
-2. INVOICE NUMBER & DATE:
-- invoice_number: Exact printed string under "Invoice No." / "Tax Invoice No." / "Bill No." Strip any trailing slash at the very end. Preserve "BM" prefix on Bharat Metals. Read digits carefully.
-- invoice_date: Convert to strict numeric "DD-MM-YYYY" (convert month abbreviations JAN..DEC to 01..12; never output "0CT" with a zero).
+LINE ITEMS (lines[])
+- One entry per numbered row of the main item table, across all invoice pages, in original serial order.
+- item: the product description text, never the serial number. Keep the full multi-line description and material codes.
+  If two description columns exist, join them.
+- quantity: the quantity in the QTY / NET WT column (the number next to the UOM). Not the box / package / pieces-count
+  column and not a total-weight field.
+- uom: copy ONLY from the row's UOM column or the unit printed next to the quantity. If the table has no unit for the
+  quantity, return "". Never infer it from a total weight, box count or any other part of the page.
+- rate, amount: the row's rate and its line amount (taxable value of the row).
+- hsn_sac: that row's own HSN.
+- Skip service / loading-charge rows (HSN 9965...) and handwritten tallies.
 
-3. KTFL PURCHASE ORDER (po_number) — CRITICAL ZERO-COUNT & FIELD-LABEL RULES:
-- Valid KTFL SAP POs are ALWAYS 10 digits in one of three exact patterns:
-  1) `"510000XXXX"` (starts with `51` + FOUR zeroes + 4 digits)
-  2) `"61000XXXXX"` (starts with `61` + THREE zeroes + 5 digits — NEVER add a 4th zero! Keep all 5 trailing digits intact!)
-  3) `"810000XXXX"` (starts with `81` + FOUR zeroes + 4 digits)
-- PRIORITY 1 — PRINTED PO FIELDS:
-  * HINDALCO INVOICES: On Hindalco invoices, the PO is a 10-digit `"510000XXXX"` number printed on the **RIGHT side of the header next to `"PO No:"`** (directly below `TIME OF ISSUE` / `DELIVERY NO`, where there is NO rubber stamp!), AND also next to `"CUSTOMER PO:"` on the left. Read the clean **`PO No:`** field on the right! NEVER pick `SO NO`, `DELIVERY NO`, `SHIPMENT NO`, or any `6100...` number on a Hindalco invoice!
-  * Look ONLY at boxes explicitly labeled `"PO No:"`, `"CUSTOMER PO:"`, `"CUST. PO NO"`, `"P.O. No."`, `"PO No & Date :"`, `"Buyer's Order No."`, or `"Party P.O No:"`.
-  * Strip text prefix `"PO-"` or leading `"-"`.
-  * 11-DIGIT TYPO FIX (`"610000XXXXX"`): If the printed PO starts with `"610000"` (4 zeroes) followed by 5 digits (11 digits total, e.g. on Rudra Pack), remove ONE `"0"` after `"61"` so it becomes the 10-digit `"61000XXXXX"` with ALL 5 trailing digits preserved — NEVER chop off the 11th digit!
-  * 10-DIGIT `61000XXXXX` PRESERVATION: If the printed PO is already 10 digits starting with `"61000"` (3 zeroes), output it verbatim — NEVER insert an extra zero!
-- PRIORITY 2 — HANDWRITTEN PO IN MARGIN / ABOVE TABLE (ONLY when printed Order No is vendor's internal code like `"PS26Y-..."`, `"RP26Y-..."`, or `"Jul. Schedule"`):
-  * Read the pen/pencil annotation on the right side just above the line-item table stroke by stroke:
-    - `"51-XXXX"` or `"51/XXXX"` or `"po-51/XXXX"` -> `"510000XXXX"` (read every handwritten digit carefully: 4 vs 9, 8 vs 6, 2 vs 0).
-    - `"Po-510000XXXX"` -> `"510000XXXX"` (strip any trailing `/01` or `01` item suffix after the 10th digit!).
-    - 7-digit `"512XXXX"` -> expand to 10-digit `"5100002XXX"`.
+TOTALS (from the printed summary at the bottom, not from your own sums)
+- subtotal: the printed "Taxable Value" / "Taxable Amount" / "Total Taxable Value". Not a weight, not the grand total.
+- cgst, sgst, igst: the printed rupee amount of each tax. Read each one independently. A tax that is not charged is 0.0.
+  Do not copy the taxable value into a tax field, and do not split one tax into two.
+- round_off: printed "Round Off" amount, with its sign if shown, else 0.0.
+- other_charges: freight / packing / loading charges that are outside the taxable value and added to the total, else 0.0.
+- total: the printed final "Grand Total" / "Total Invoice Value" (the rounded payable amount).
+- currency: "INR" unless another currency is printed.
 
-4. GRN NUMBER (grn_number) & VENDOR CODE:
-- grn_number: Exact 10-digit number starting with `"5000"` (from top-left/top-right margin pen note OR inside KTFL receiving stamp `"GRN NO"` row below SCROLL NO).
-  * NEVER extract Scroll No (starts with `2021...` or `2002...`) or PO No (starts with `5100...` or `6100...`) as GRN!
-  * Read every digit of the GRN carefully: vertical stroke without long top crossbar = `1` (not `7`), open left vertical + horizontal bar = `4` (not `1`), smooth bottom loop = `6` (not `0`).
-- vendor_code: KTFL vendor code if printed on Tax Invoice (e.g. "Vendor Code" / "CUSTOMER CODE" / "SUPPLIER CODE"), else "".
+HINDALCO-STYLE TABLES: columns run "Sr & Description | HSN | Alloy/Section | PKGS | PCS | GROSS WT | NET WT | UOM | RATE | ...
+| TAXABLE VALUE". quantity is the NET WT value immediately left of "KG" (a decimal weight, not PCS).
 
-5. LINE ITEMS (lines[]) — PRINTED TABLE ROWS ONLY:
-- Extract EVERY numbered printed row from the main item table on the Tax Invoice page(s) — do NOT skip rows and do NOT add extra rows from other pages!
-- NEVER put the Serial Number ("1", "2", etc.) into `"item"`! `"item"` MUST be the actual product description text.
-- NEVER extract handwritten margin/bundle tally notes into `lines[]`!
-- Exclude service/loading charge rows (`996511`) from `lines[]` (include loading charges only in `subtotal` if included in the tax summary table).
-- Each line item in `lines[]` MUST have its own row's `hsn_sac` from that row's HSN column.
-- Header `hsn_sac` = primary (highest-value) material item's single 4-8 digit HSN (NEVER concatenate multiple HSNs!).
-- Preserve full multi-line descriptions, dimensions, and KTFL material codes (even where a rubber stamp overlaps text). Combine both description columns on Bharat Metals.
-- HINDALCO TABLE RULE (CRITICAL):
-  * IGNORE the summary banner row (`ALUMINUM EXTRUSION PRODUCT` / total `PCS`) at the top of the table AND IGNORE all handwritten pen notes in the top/bottom margins!
-  * Extract ONLY the printed numbered rows (`1`, `2`, ...) in the middle table on the Tax Invoice page(s). Look at the exact column order left-to-right:
-    `Sr & Description | HSN | Alloy/Section | PKGS | PCS | GROSS WT | NET WT | UOM (KG) | RATE | DISC | NET PRICE | ... | TAXABLE VALUE`
-    - `item`: Alloy & Section description from that row.
-    - `quantity`: Value IMMEDIATELY TO THE LEFT OF `"KG"` (`NET WT` column — always a decimal weight, NEVER the integer `PCS` column!).
-    - `uom`: `"KG"`.
-    - `rate`: `NET PRICE` column.
-    - `amount`: `TAXABLE VALUE` column (`quantity * rate == amount`).
-  * Check `SUM(lines.amount) == subtotal` (or if there is a round-off or discount row at the bottom of the item table like on BMSS Steel where line sum includes items before tax adjustment, ensure `subtotal` matches the official Taxable Value box at the bottom of the invoice!).
-- DECIMAL POINT RULE: In `"67.000 KGS"`, `"1.000 NOS"`, `"31.390 MT"`, the dot `"."` is a decimal point (`67.0`, `1.0`, `31.39`) — NEVER multiply by 1000!
-- MANDATORY ARITHMETIC CHECK (`quantity * rate == amount`):
-  * For EVERY row, multiply `quantity * rate` and compare to `amount`! If `quantity * rate` differs from your read `amount` (e.g. due to a stamp overlapping a digit), use `quantity * rate` to verify the exact printed digits!
-
-6. AMOUNTS & TAXES (CRITICAL — NO SINGLE-HALF TAX & NO IGST/WEIGHT IN SUBTOTAL):
-- SLR METALIKS & BMSS STEEL INVOICE RULE:
-  * `subtotal`: Read the exact printed `Taxable Amount` / `Total Taxable Value` box at the bottom summary table (e.g., on BMSS Steel it is `1,225,688.00`, even if individual item rows sum up differently due to rounding or discounts).
-  * `igst`, `cgst`, `sgst`: Read the exact tax amounts from the tax summary box.
-  * `total`: Read the exact printed `Total Invoice Value` at the bottom.
-- NEVER put physical weight (`KGS` / `MT`) into `subtotal`, and NEVER put post-tax Grand Total into `subtotal`!
-- ORDER-OF-MAGNITUDE & DIGIT-COUNT GUARD:
-  * Count EVERY SINGLE DIGIT before the decimal point (whether formatted with Indian commas `XX,XX,XXX.XX` or without commas `XXXXXXX.XX`). NEVER drop a leading or middle digit!
-- MANDATORY INTER-STATE IGST vs INTRA-STATE CGST+SGST RULE:
-  * Seller in **Karnataka (`29...`)** or **Kerala (`32...`)** (SLR Metaliks, Kalyani Steels, Hindalco):
-    `cgst = 0.0`, `sgst = 0.0`, `igst = total_tax` (full 18% GST). NEVER split into `cgst`/`sgst`!
-  * Seller in **Maharashtra (`27...`)** (Bharat Metals, BMSS Steel, Rudra Pack, etc.):
-    `igst = 0.0`. Both `CGST 9%` and `SGST 9%` apply!
-    - Read `cgst` = `CGST 9%` row/amount (sum ALL columns in that row!).
-    - Read `sgst` = `SGST 9%` row/amount (sum ALL columns in that row!).
-    - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal`).
-- `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios (like `19.47%` or `182.59%`). If the tax summary shows 9% CGST + 9% SGST, output `18.0`!
-
-- CRITICAL TAX-AMOUNT GUARDS (these exact bugs have happened before - check for them every time):
-  1) `igst` MUST NEVER equal `subtotal`. If your `igst` value is identical (or near-identical) to your
-     `subtotal` value, you copied the wrong box - go back to the printed tax-summary table and find the
-     SEPARATE, smaller "IGST" amount; it is NEVER the same figure as the taxable value.
-  2) `cgst` and `sgst` must each be roughly `subtotal * (half of gst_rate_percent) / 100` (e.g. for an 18%
-     invoice, each of cgst/sgst is about 9% of subtotal, so cgst ≈ sgst ≈ subtotal*0.09). If a `cgst`/`sgst`
-     you read is far from that - for example close to `subtotal` itself, or more than 30% of `subtotal` -
-     you misread the amount column (often by reading a line-item amount or an extra digit). Re-read the
-     exact tax-summary row for that figure.
-  3) `total_tax` (= cgst+sgst+igst) must be between about 4% and 29% of `subtotal`. If it falls outside that
-     band, one of the tax amounts above is wrong - find and fix it before computing `gst_rate_percent`.
-  4) Derive `gst_rate_percent` LAST, from the corrected amounts: `round(total_tax / subtotal * 100)`,
-     snapped to the nearest valid slab (5, 12, 18, 28). Never force a slab value while leaving cgst/sgst/igst
-     amounts that do not actually add up to it - fix the amounts, not just the label.
-- FINAL SANITY CHECK: Verify ALL of these before returning JSON:
-  1) `SUM(lines.amount) ≈ subtotal` (or match the printed Taxable Value)
-  2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding)
-  3) the four TAX-AMOUNT GUARDS above.
-
-============================= REQUIRED JSON FORMAT =============================
-Return strictly valid JSON without markdown formatting or code fences:
+Return strictly valid JSON with exactly these keys, no markdown:
 {
   "vendor": "",
+  "gstin": "",
   "invoice_number": "",
   "invoice_date": "",
-  "po_number": "",
-  "po_numbers_all": "",
-  "gstin": "",
-  "hsn_sac": "",
+  "po_number_raw": "",
+  "handwritten_po_raw": "",
   "vendor_code": "",
   "plant_hint": "",
+  "hsn_sac": "",
   "currency": "INR",
   "subtotal": 0.0,
   "cgst": 0.0,
   "sgst": 0.0,
   "igst": 0.0,
-  "gst_rate_percent": 18.0,
-  "total_tax": 0.0,
+  "round_off": 0.0,
+  "other_charges": 0.0,
   "total": 0.0,
-  "grn_number": "",
-  "confidence": 0.95,
   "lines": [
-    {
-      "item": "",
-      "quantity": 0.0,
-      "uom": "",
-      "rate": 0.0,
-      "hsn_sac": "",
-      "amount": 0.0
-    }
+    {"item": "", "quantity": 0.0, "uom": "", "rate": 0.0, "hsn_sac": "", "amount": 0.0}
   ],
   "handwritten_references": ""
 }
 """
+
+# ---------------------------------------------------------------------------
+# Optional per-vendor hints. After the vendor is identified (GSTIN -> vendor master),
+# append the matching text to PROMPT for the extraction call. Keep each hint short.
+# Keys are seller GSTINs.
+# ---------------------------------------------------------------------------
+VENDOR_HINTS = {
+    # HINDALCO INDUSTRIES (Alupuram)
+    "32AAACH1201R1ZW": r"""
+VENDOR NOTE (Hindalco): the KTFL PO is the 10-digit number beside "PO No:" on the RIGHT of the header (below
+TIME OF ISSUE / DELIVERY NO), also repeated beside "CUSTOMER PO:". Never take SO NO, DELIVERY NO or SHIPMENT NO.
+Ignore the summary banner row at the top of the item table; extract only the numbered rows.
+""",
+    # BHARAT METALS
+    "27AATFB3972H1ZZ": r"""
+VENDOR NOTE (Bharat Metals): keep the "BM" prefix of the invoice number. Join the two description columns.
+If the top-left of the letterhead is covered by a slip, the seller PAN at the bottom is AATFB3972H.
+""",
+    # BMSS STEEL
+    "27AAACG1519K1ZP": r"""
+VENDOR NOTE (BMSS Steel): the item table can continue on page 2. The taxable value, tax summary and receiving stamp
+are on the last page. subtotal is the printed Taxable Value box, even if item rows are adjusted by discounts.
+""",
+    # EGEARZ
+    "27AAFCE6816Q1Z0": r"""
+VENDOR NOTE (EGEARZ): the item table has a Box column and a Qty column and NO unit column: uom is "".
+"Total Weight (In Kg)" is not a quantity. Vendor Code prints "Na": return "".
+""",
+}
+
+
+def build_invoice_prompt(seller_gstin: str = "") -> str:
+    """Main prompt plus the vendor note, if the vendor is already known."""
+    hint = VENDOR_HINTS.get((seller_gstin or "").strip().upper(), "")
+    return PROMPT + hint if hint else PROMPT
