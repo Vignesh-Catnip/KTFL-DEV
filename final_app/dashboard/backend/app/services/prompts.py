@@ -36,6 +36,14 @@ DO NOT EXTRACT:
 - PO No (starts with 51, 61, 81 — NEVER turn PO "510000XXXX" into GRN "5000510XXX"!).
 - E-Way Bill (12 digits), LR No, Vehicle No, or Invoice No.
 
+MANDATORY RE-CHECK (adjacent-digit transposition is the single most common GRN error):
+- After you form your 10-digit answer, go back to the image and re-read EACH of the 10 digits one more
+  time, left to right, comparing your answer digit-by-digit against the strokes on the page. A common
+  mistake is swapping two ADJACENT digits (e.g. reading "...710..." as "...170...", or "...392913" as
+  "...392413") or shifting a digit from the date onto the end of the GRN. If any digit does not match what
+  you see on this specific re-read, correct it. Do NOT rely on a GRN you remember from a similar-looking
+  invoice — every invoice has its OWN GRN; read only the digits printed/written on THIS document.
+
 If no 10-digit number starting with "5000" is visible, return "".
 Return strictly valid JSON without markdown fences:
 {"grn_number": "<10-digit number starting with 5000 or empty string>"}
@@ -61,6 +69,8 @@ Re-check:
 1. Top-left / top-right margin handwritten "5000XXXXXX" (or "5-XXXXXX" -> "5000XXXXXX").
 2. Inside the KTFL receiving stamp on the "GRN NO" line (below SCROLL NO). Stop before the date!
 3. Never take digits from SCROLLNO (starts with 200 or 202) or from PO No (starts with 51 or 61).
+5. Do NOT re-use a GRN from memory or from another similar invoice - read only THIS image's digits.
+   Watch for an adjacent-digit swap (e.g. "...710..." misread as "...170...").
 """
 
 # ---------------------------------------------------------------------------
@@ -163,9 +173,25 @@ CRITICAL: Read ALL numbers strictly from the uploaded document image — NEVER i
     - Read `sgst` = `SGST 9%` row/amount (sum ALL columns in that row!).
     - `total_tax` MUST EQUAL `cgst + sgst` (full 18% of `subtotal`).
 - `gst_rate_percent`: Always a standard GST slab (`18.0`, `12.0`, `5.0`, `28.0`). Never output calculated ratios (like `19.47%` or `182.59%`). If the tax summary shows 9% CGST + 9% SGST, output `18.0`!
-- FINAL SANITY CHECK: Verify BOTH equations before returning JSON:
+
+- CRITICAL TAX-AMOUNT GUARDS (these exact bugs have happened before - check for them every time):
+  1) `igst` MUST NEVER equal `subtotal`. If your `igst` value is identical (or near-identical) to your
+     `subtotal` value, you copied the wrong box - go back to the printed tax-summary table and find the
+     SEPARATE, smaller "IGST" amount; it is NEVER the same figure as the taxable value.
+  2) `cgst` and `sgst` must each be roughly `subtotal * (half of gst_rate_percent) / 100` (e.g. for an 18%
+     invoice, each of cgst/sgst is about 9% of subtotal, so cgst ≈ sgst ≈ subtotal*0.09). If a `cgst`/`sgst`
+     you read is far from that - for example close to `subtotal` itself, or more than 30% of `subtotal` -
+     you misread the amount column (often by reading a line-item amount or an extra digit). Re-read the
+     exact tax-summary row for that figure.
+  3) `total_tax` (= cgst+sgst+igst) must be between about 4% and 29% of `subtotal`. If it falls outside that
+     band, one of the tax amounts above is wrong - find and fix it before computing `gst_rate_percent`.
+  4) Derive `gst_rate_percent` LAST, from the corrected amounts: `round(total_tax / subtotal * 100)`,
+     snapped to the nearest valid slab (5, 12, 18, 28). Never force a slab value while leaving cgst/sgst/igst
+     amounts that do not actually add up to it - fix the amounts, not just the label.
+- FINAL SANITY CHECK: Verify ALL of these before returning JSON:
   1) `SUM(lines.amount) ≈ subtotal` (or match the printed Taxable Value)
-  2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding).
+  2) `subtotal + cgst + sgst + igst ≈ total` (within +/- 2.0 Rs rounding)
+  3) the four TAX-AMOUNT GUARDS above.
 
 ============================= REQUIRED JSON FORMAT =============================
 Return strictly valid JSON without markdown formatting or code fences:
