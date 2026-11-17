@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from ..config import get_settings
-from .textutil import (clean, clean_po, fix_amounts, fix_gstin, repair_gstin, split_double_gstin,
+from .textutil import (clean, clean_po, fix_amounts, is_ktfl_po, fix_gstin, repair_gstin, split_double_gstin,
                        format_date, is_valid_po, to_float)
 
 
@@ -72,13 +72,15 @@ def normalize(data: dict, filename: str):
         "invoice_number": clean(data.get("invoice_number")),
         "invoice_date": format_date(clean(data.get("invoice_date"))),
         "po_number": clean_po(data.get("po_number")),
-        "po_numbers_printed": sorted({p for p in po_all if is_valid_po(p)}),
+        "po_numbers_printed": sorted({p for p in po_all if is_ktfl_po(p)}),
         "gstin": gstin, "hsn_sac": hsn_inv,
         "vendor_code": clean(data.get("vendor_code")),
         "plant_code": re.sub(r"[^\w]", "", clean(data.get("plant_hint")))[:20],
         "currency": clean(data.get("currency")) or "INR",
         "subtotal": round(sub, 2), "cgst": round(cgst, 2), "sgst": round(sgst, 2),
         "igst": round(igst, 2), "total_tax": round(tax, 2), "total": round(total, 2),
+        "round_off": round(to_float(data.get("round_off")), 2),
+        "other_charges": round(to_float(data.get("other_charges")), 2),
         "gst_rate_printed": to_float(data.get("gst_rate_percent")),
         "handwritten_references": clean(hw),
         "confidence": round(max(0, min(1, to_float(data.get("confidence")))) * 100, 1),
