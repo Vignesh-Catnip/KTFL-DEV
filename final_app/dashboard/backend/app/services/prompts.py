@@ -126,11 +126,16 @@ FIELDS
   (the buyer is KTFL, GSTIN starts "27AABCK0618").
 - invoice_number: the text under "Invoice No." / "Tax Invoice No." / "Bill No." Copy it fully, including prefixes and suffixes.
 - invoice_date: the invoice date exactly as printed.
-- po_number_raw: the KTFL purchase order number(s) as printed in a box labelled "PO No", "PO NO & Date", "Customer PO",
-  "Cust. PO No", "P.O. No." or "Buyer's Order No.". If several, separate with commas. Not the vendor's own order code
-  (such as "PS26Y-..." or "VERBAL ORDER"), not SO / delivery / shipment numbers.
-- handwritten_po_raw: ONLY if no printed PO is present, a PO written by hand in pen or pencil near the item table or in a
-  margin (for example "51-XXXX" or "po-51/XXXX"). Copy as written.
+- po_number_raw: the KTFL purchase order number(s) PRINTED in a box labelled "PO No", "PO NO & Date", "Customer PO",
+  "Cust. PO No", "P.O. No." or "Buyer's Order No.". A KTFL PO is exactly 10 digits and starts 51, 61, 81, 82 or 83
+  (for example 5100001234). If several, separate with commas. NEVER take: phone / mobile numbers ("Mo. No.", "Ph. No.",
+  "Tel", "Contact Detail"), the vendor's own order code ("Order No.: PS26Y-01408", "VERBAL ORDER"), "Customer Ref No.",
+  E-way bill (12 digits), IRN / Ack no., LR no., vehicle no., SO / delivery / shipment numbers, CIN, PAN, GSTIN.
+  If no printed PO exists return "" - many vendors print none.
+- handwritten_po_raw: a PO WRITTEN BY HAND in pen (blue / black) or pencil anywhere on the page - often in the white
+  space beside "Transporter Details", near the stamps, in a margin or above the item table - e.g. "PO - 5100002448",
+  "po-51/2448", "PO 5100002448". Copy the digits as written. Look for it on EVERY invoice even when a printed PO box exists
+  but is empty. Do not mix it up with the handwritten GRN (starts 50..., written in the stamp / top margin).
 - vendor_code: the KTFL vendor code ONLY if a value is printed after "Vendor Code" / "Customer Code" / "Supplier Code".
   If the value is blank, "Na", "NA" or "-", return "".
 - plant_hint: the KTFL plant named in the Ship To / Dispatch To block, copied as printed (for example the plant name
@@ -194,6 +199,16 @@ Return strictly valid JSON with exactly these keys, no markdown:
 # Keys are seller GSTINs.
 # ---------------------------------------------------------------------------
 VENDOR_HINTS = {
+    # SLR METALIKS (Karnataka) - prints NO KTFL PO; the PO is handwritten; letterhead carries phone numbers
+    "29AAJCS4396P1Z9": r"""
+VENDOR NOTE (SLR Metaliks): this vendor does NOT print the KTFL purchase order. Leave po_number_raw "" - "Order No.: PS26Y-..."
+is SLR's own sales order, "Customer Ref No." is not a PO, and the numbers after "Mo. No." / "Ph. No." (839429...) are
+SLR's phone numbers, never a PO. The KTFL PO is written BY HAND in blue / black pen as "PO - 51XXXXXXXX", usually to the right
+of the "Transporter Details" block or near the stamps: copy it into handwritten_po_raw. The goods go to Maharashtra from
+Karnataka, so the tax is IGST (cgst = sgst = 0). The "Total :" row under the item table shows net quantity, taxable value
+and IGST amount; "Total Invoice Value (INR)" at the bottom right is the total; "ROUND OFF" is a small signed amount.
+Read the buyer / consignee GSTIN only as the buyer. The seller GSTIN is the one under "Details of Supplier".
+""",
     # HINDALCO INDUSTRIES (Alupuram)
     "32AAACH1201R1ZW": r"""
 VENDOR NOTE (Hindalco): the KTFL PO is the 10-digit number beside "PO No:" on the RIGHT of the header (below
@@ -222,3 +237,29 @@ def build_invoice_prompt(seller_gstin: str = "") -> str:
     """Main prompt plus the vendor note, if the vendor is already known."""
     hint = VENDOR_HINTS.get((seller_gstin or "").strip().upper(), "")
     return PROMPT + hint if hint else PROMPT
+
+
+# Focused second read of the tax / totals box (used only when the first read does not add up).
+TOTALS_PROMPT = """This image is the LOWER HALF of an Indian GST tax invoice. Read ONLY the amounts block (taxable value,
+tax lines and grand total). Return JSON only:
+{"subtotal": number, "cgst": number, "sgst": number, "igst": number, "round_off": number, "other_charges": number, "total": number}
+
+Rules:
+- subtotal = total TAXABLE value before tax (sum of the line amounts / "Taxable Amount" / "Assessable Value"). It is NOT the grand total.
+- cgst, sgst, igst = the tax AMOUNTS in rupees (not the % rates). Only one of (cgst+sgst) or igst is normally non-zero; use 0 for the other.
+- other_charges = freight / packing / insurance / TCS added outside the taxable value (0 if none). round_off = signed rounding (0 if none).
+- total = final payable amount ("Grand Total" / "Invoice Total" / "Net Amount"), the number in the box that is also written in words.
+- Copy digits exactly, remove thousand separators, keep decimals. Indian grouping 13,25,688.00 -> 1325688.00.
+- If a value is not printed use 0. Do not calculate or guess: read."""
+
+
+# Focused look for a handwritten PO (used only when no valid material PO was found by the main read).
+HANDWRITTEN_PO_PROMPT = """This is a page of an Indian tax invoice addressed to Kalyani Technoforge Ltd. The invoice does NOT
+print the buyer's purchase order number, so someone wrote it BY HAND with a pen (blue or black ink) or pencil, usually as
+"PO - 51XXXXXXXX" / "PO 61XXXXXXXX" / "P.O. 5100002448", in white space beside "Transporter Details", near the stamps,
+in a margin or above the item table.
+Find that handwritten PO number. A KTFL PO has exactly 10 digits and starts with 51 or 61 (for example 5100002448).
+Return JSON only: {"handwritten_po": "<10 digits or empty>", "where": "<short place description>"}
+Do NOT return: printed numbers, phone / mobile numbers, E-way bill numbers, invoice numbers, dates, vehicle numbers,
+or the handwritten GRN (the GRN starts with 50 and is written inside the receiving stamp or the top margin).
+If you cannot see a handwritten PO, return {"handwritten_po": "", "where": ""}. Never guess digits."""
