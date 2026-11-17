@@ -5,6 +5,7 @@
     3. output\\matched | reconcile | blocked   extracted - waiting for the robot / for a person (follows the dashboard queue)
     4. finish\\posted | parked | duplicate     the robot posted / parked it in SAP (duplicates go here too)
        error                            the PDF could not be read at all
+       exception\\service_po | sac_99   not a material invoice (PO 81/82/83, SAC 99xx) - not extracted
 
 The dashboard keeps its own copy of every PDF in UPLOAD_DIR (that is what the viewer shows); the files in these
 folders are moved, never deleted. Folder names can be changed in .env (PROCESSING_FOLDER, OUTPUT_FOLDER, ...).
@@ -28,13 +29,13 @@ log = logging.getLogger("clearmatch.workflow")
 def folders() -> dict[str, Path | None]:
     cfg = get_settings()
     if not cfg.watch_folder:
-        return {k: None for k in ("input", "processing", "output", "finish", "error")}
+        return {k: None for k in ("input", "processing", "output", "finish", "error", "exception")}
     inp = Path(cfg.watch_folder)
     base = inp.parent
     pick = lambda v, d: Path(v) if v.strip() else base / d            # noqa: E731
     return {"input": inp, "processing": pick(cfg.processing_folder, "processing"),
             "output": pick(cfg.output_folder, "output"), "finish": pick(cfg.finish_folder, "finish"),
-            "error": pick(cfg.error_folder, "error")}
+            "error": pick(cfg.error_folder, "error"), "exception": pick(cfg.exception_folder, "exception")}
 
 
 def ensure_folders() -> None:
@@ -93,6 +94,16 @@ def place_failed(job: Job) -> None:
     if f["input"] is None or not job.folder_path:
         return
     new = move(job.folder_path, f["error"])
+    if new:
+        job.folder_path = str(new)
+
+
+def place_exception(job: Job, reason: str) -> None:
+    """Not a material invoice (service PO 81/82/83 or SAC 99xx): processing -> exception\\<reason>. Nothing is extracted or saved."""
+    f = folders()
+    if f["input"] is None or not job.folder_path:
+        return
+    new = move(job.folder_path, f["exception"] / reason)
     if new:
         job.folder_path = str(new)
 
