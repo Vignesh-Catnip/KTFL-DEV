@@ -187,7 +187,7 @@ def retry(job_id: int, db: Session = Depends(get_db), user: User = Depends(requi
     j = db.get(Job, job_id)
     if j is None:
         raise HTTPException(404, "Job not found")
-    if j.status != "FAILED":
+    if j.status not in ("FAILED", "EXCEPTION"):
         raise HTTPException(409, "Only failed jobs can be retried")
     j.status, j.error, j.stage = "QUEUED", None, None
     db.commit()
