@@ -50,6 +50,19 @@ def is_valid_po(po: str) -> bool:
     return bool(re.fullmatch(r"\d{10}", po or ""))
 
 
+KTFL_PO_PREFIXES = ("51", "61", "81", "82", "83")
+
+
+def is_ktfl_po(po: str) -> bool:
+    """10 digits AND a KTFL PO prefix. A bare 10-digit number is not enough: vendor phone numbers
+    (SLR prints 'Mo. No. 8394294215') are 10 digits too, and 83... would even look like a service PO."""
+    return is_valid_po(po) and po[:2] in KTFL_PO_PREFIXES
+
+
+def is_material_po(po: str) -> bool:
+    return is_valid_po(po) and po[:2] in ("51", "61")
+
+
 # KTFL PO prefix classification:
 #   Material POs : 51xxxxxxxx, 61xxxxxxxx  -> allowed for extraction and SAP posting
 #   Service POs  : 81xxxxxxxx, 82xxxxxxxx, 83xxxxxxxx -> NOT allowed; block at extraction
