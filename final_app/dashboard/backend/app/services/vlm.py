@@ -11,7 +11,8 @@ from typing import Protocol
 import httpx
 
 from ..config import get_settings
-from .textutil import (clean, clean_grn, clean_po, extract_json, format_date, grn_is_valid, gstin_ok, is_valid_po,
+from .textutil import (clean, clean_grn, clean_po, extract_json, format_date, grn_is_valid, gstin_ok, is_ktfl_po,
+                       is_material_po, is_valid_po,
                        repair_gstin, snap_gst_rate, split_double_gstin, to_float)
 
 log = logging.getLogger("clearmatch.vlm")
@@ -46,15 +47,23 @@ def _row_bad(l: dict) -> bool:
 
 def adapt_invoice(d: dict) -> dict:
     d = dict(d or {})
-    # PO: the printed PO wins; the handwritten one is used only when nothing valid is printed
-    pos: list[str] = []
-    for field in ("po_number_raw", "handwritten_po_raw"):
+    # PO candidates, best first: printed material PO (51/61) > handwritten material PO > printed service PO (81/82/83)
+    # > handwritten service PO. Anything that is not a KTFL PO prefix (phone numbers, e-way bill, CIN pieces) is dropped.
+    # Vendors such as SLR print NO PO at all - the PO is written by hand ("PO - 5100002448") - while the model
+    # can pick the vendor's phone number from the letterhead as the "printed PO".
+    printed: list[str] = []
+    hand: list[str] = []
+    for field, bucket in (("po_number_raw", printed), ("handwritten_po_raw", hand)):
         for tok in re.split(r"[,;]|\band\b", clean(d.get(field)), flags=re.I):
             po = clean_po(tok)
-            if is_valid_po(po) and po not in pos:
-                pos.append(po)
-        if pos:
-            break
+            if is_ktfl_po(po) and po not in bucket:
+                bucket.append(po)
+    for m in re.finditer(r"(?<!\d)((?:51|61|81|82|83)\d{8})(?!\d)", clean(d.get("handwritten_references"))):
+        if m.group(1) not in hand:
+            hand.append(m.group(1))
+    pos = ([p for p in printed if is_material_po(p)] + [p for p in hand if is_material_po(p)]
+           + [p for p in printed if not is_material_po(p)] + [p for p in hand if not is_material_po(p)])
+    pos = list(dict.fromkeys(pos))
     d["po_number"], d["po_numbers_all"] = (pos[0] if pos else ""), ",".join(pos)
 
     d["invoice_number"] = clean(d.get("invoice_number")).rstrip("/").strip()
@@ -97,6 +106,8 @@ class VlmClient(Protocol):
     def read_grn(self, images: list[str]) -> str: ...
     def read_grn_candidates(self, images: list[str]) -> dict: ...      # NEW: {"grn", "grn_top_margin", "grn_stamp"}
     def page_is_upright(self, image_b64: str) -> bool | None: ...
+    def read_totals(self, images: list[str]) -> dict: ...
+    def read_handwritten_po(self, images: list[str]) -> str: ...
     def health(self) -> tuple[bool, str]: ...
 
 
@@ -227,6 +238,38 @@ class OllamaVlm:
 
     def read_grn(self, images: list[str], max_retry: int = 2) -> str:
         return self.read_grn_candidates(images, max_retry)["grn"]
+
+    def read_handwritten_po(self, images: list[str]) -> str:
+        """Second look for a PO that is written BY HAND (many vendors print none). Returns a material PO (51/61 + 8
+        digits) or ''. Only the model reads handwriting; the result is validated, never trusted blindly."""
+        from .prompts import HANDWRITTEN_PO_PROMPT
+        for img in images:
+            try:
+                ans = self._ask(HANDWRITTEN_PO_PROMPT, [img], 256)
+            except Exception as exc:
+                log.warning("handwritten PO read failed: %s", exc)
+                continue
+            for k in ("handwritten_po", "po"):
+                po = clean_po(ans.get(k))
+                if is_material_po(po):
+                    return po
+        return ""
+
+    def read_totals(self, images: list[str]) -> dict:
+        """Focused re-read of the totals box (bottom half of each page, high resolution). {} on any error."""
+        from .prompts import TOTALS_PROMPT
+        out: dict = {}
+        for img in reversed(images):                       # the totals sit on the LAST invoice page
+            try:
+                ans = self._ask(TOTALS_PROMPT, [img], 512)
+            except Exception as exc:
+                log.warning("totals re-read failed: %s", exc)
+                continue
+            vals = {k: to_float(ans.get(k)) for k in ("subtotal", "cgst", "sgst", "igst", "round_off", "other_charges", "total")}
+            if vals.get("total") and vals.get("subtotal"):
+                return vals
+            out = out or vals
+        return out
 
     def health(self) -> tuple[bool, str]:
         try:
