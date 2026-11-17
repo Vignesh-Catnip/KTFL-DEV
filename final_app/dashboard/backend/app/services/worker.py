@@ -49,8 +49,8 @@ def re_enqueue_failed(db, job_id: int, user: str | None = None) -> "Job":
     job = db.get(Job, job_id)
     if job is None:
         raise ValueError(f"Job {job_id} not found")
-    if job.status != "FAILED":
-        raise ValueError(f"Job {job_id} is not in FAILED state (current: {job.status})")
+    if job.status not in ("FAILED", "EXCEPTION"):
+        raise ValueError(f"Job {job_id} is not in FAILED / EXCEPTION state (current: {job.status})")
     # Move the file back from error folder to upload dir so it can be re-processed
     cfg = get_settings()
     stored = Path(job.stored_path) if job.stored_path else None
@@ -113,11 +113,16 @@ def run_job(job_id: int) -> None:
         try:
             res = process_pdf(db, job.stored_path, job.filename, actor=job.created_by, source=job.source,
                               progress=progress)
-            job.status = "DUPLICATE" if res.outcome == "DUPLICATE" else "DONE"
+            job.status = {"DUPLICATE": "DUPLICATE", "EXCEPTION": "EXCEPTION"}.get(res.outcome, "DONE")
             job.invoice_id, job.queue, job.stage = res.invoice_id, res.queue, "Finished"
+            if res.outcome == "EXCEPTION":
+                job.error = res.message[:1000]
             log.info("extraction finished: job %s  %s  -> %s / %s  invoice_id=%s", job_id, job.filename,
                      res.outcome, res.queue, res.invoice_id)
-            workflow.place_after_extraction(job, res.outcome, res.queue)      # processing -> output\\<queue>
+            if res.outcome == "EXCEPTION":
+                workflow.place_exception(job, res.reason)                    # processing -> exception\\<reason>
+            else:
+                workflow.place_after_extraction(job, res.outcome, res.queue)  # processing -> output\\<queue>
             if res.outcome == "CREATED" and res.queue == "MATCHED":
                 robot.schedule_auto()                   # matched invoices go to the MIRO robot by themselves
         except Exception as exc:
