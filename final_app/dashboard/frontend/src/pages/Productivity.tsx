@@ -1,24 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, type Stats } from '../api'
-import { Icon, ICONS, inr, inrShort } from '../ui'
+import { Icon, ICONS } from '../ui'
 
 // ── constants ──────────────────────────────────────────────────────────────
-const SYSTEM_MIN_PER_INV = 2   // 1 min extraction + 1 min SAP posting
-const MANUAL_MIN_PER_INV = 4   // manual client process (review + post)
+const SYSTEM_MIN_PER_INV = 1.5  // 1 min extraction + 0.5 min SAP posting
+const MANUAL_MIN_PER_INV = 4    // manual client process (review + post)
 const SAVED_MIN_PER_INV  = MANUAL_MIN_PER_INV - SYSTEM_MIN_PER_INV
 
 function fmtMins(mins: number) {
-  if (mins === 0) return '0 min'
-  if (mins < 60) return `${mins} min`
-  const h = Math.floor(mins / 60), m = mins % 60
-  return m > 0 ? `${h}h ${m}m` : `${h}h`
+  if (mins === 0) return '0s'
+  const totalSecs = Math.round(mins * 60)
+  const h = Math.floor(totalSecs / 3600)
+  const m = Math.floor((totalSecs % 3600) / 60)
+  const s = totalSecs % 60
+  if (h > 0) return s > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${h}h ${m}m` : `${h}h`
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`
+  return `${s}s`
 }
 
 function fmtMinsLong(mins: number) {
-  if (mins === 0) return '0 minutes'
-  if (mins < 60) return `${mins} minutes`
-  const h = Math.floor(mins / 60), m = mins % 60
-  return m > 0 ? `${h} hour${h > 1 ? 's' : ''} ${m} min` : `${h} hour${h > 1 ? 's' : ''}`
+  if (mins === 0) return '0 seconds'
+  const totalSecs = Math.round(mins * 60)
+  const h = Math.floor(totalSecs / 3600)
+  const m = Math.floor((totalSecs % 3600) / 60)
+  const s = totalSecs % 60
+  const parts = []
+  if (h > 0) parts.push(`${h} hour${h > 1 ? 's' : ''}`)
+  if (m > 0) parts.push(`${m} min`)
+  if (s > 0) parts.push(`${s} sec`)
+  return parts.join(' ')
 }
 
 // ── small reusable card ─────────────────────────────────────────────────────
@@ -66,9 +76,6 @@ export default function Productivity() {
   const manualMinsTotal = total * MANUAL_MIN_PER_INV
   const savedMinsTotal  = total * SAVED_MIN_PER_INV
 
-  const totalValue = s ? Object.values(s.value).reduce((a, b) => a + b, 0) : 0
-
-  // straight-through = MATCHED invoices posted without any manual touch
   const straightThrough = matched
 
   return (
@@ -89,7 +96,6 @@ export default function Productivity() {
         <KPI label="System processing time" value={s ? fmtMins(systemMinsTotal) : '–'} sub={`${SYSTEM_MIN_PER_INV} min per invoice`} />
         <KPI label="Equivalent manual time" value={s ? fmtMins(manualMinsTotal) : '–'} sub={`${MANUAL_MIN_PER_INV} min per invoice`} />
         <KPI label="Time saved" value={s ? fmtMins(savedMinsTotal) : '–'} sub={`${SAVED_MIN_PER_INV} min saved per invoice`} accent="#3a7d44" />
-        <KPI label="Total invoice value" value={s ? inrShort(totalValue) : '–'} sub="across all queues" />
       </div>
 
       {/* ── breakdown panel ── */}
@@ -135,7 +141,7 @@ export default function Productivity() {
             <tbody>
               <tr><td>Invoice field extraction (AI / OCR)</td><td className="num" style={{ textAlign: 'right' }}>1 min</td><td className="num" style={{ textAlign: 'right' }}>—</td></tr>
               <tr><td>SAP PO / GRN validation</td><td className="num" style={{ textAlign: 'right' }}>included</td><td className="num" style={{ textAlign: 'right' }}>—</td></tr>
-              <tr><td>MIRO SAP posting (robot)</td><td className="num" style={{ textAlign: 'right' }}>1 min</td><td className="num" style={{ textAlign: 'right' }}>—</td></tr>
+              <tr><td>MIRO SAP posting (robot)</td><td className="num" style={{ textAlign: 'right' }}>0.5 min</td><td className="num" style={{ textAlign: 'right' }}>—</td></tr>
               <tr><td>Manual review &amp; SAP entry (client)</td><td className="num" style={{ textAlign: 'right' }}>—</td><td className="num" style={{ textAlign: 'right' }}>4 min</td></tr>
               <tr style={{ fontWeight: 700 }}><td>Total per invoice</td><td className="num" style={{ textAlign: 'right' }}>{SYSTEM_MIN_PER_INV} min</td><td className="num" style={{ textAlign: 'right' }}>{MANUAL_MIN_PER_INV} min</td></tr>
             </tbody>
