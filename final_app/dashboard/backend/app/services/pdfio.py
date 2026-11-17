@@ -58,9 +58,27 @@ def main_page_images(path: str | Path) -> list[str]:
     cfg = get_settings()
     out = []
     with _open(path) as doc:
-        zoom = pymupdf.Matrix(cfg.image_zoom, cfg.image_zoom)
         for i in range(min(doc.page_count, cfg.main_pages)):
-            out.append(base64.b64encode(_encode(doc[i].get_pixmap(matrix=zoom, alpha=False), path)).decode())
+            pg = doc[i]
+            # render so the LONGEST side is image_long_side pixels (small print on a 300 dpi scan needs ~2400 px;
+            # the old fixed zoom 1.4 gave ~1150 px = unreadable GSTIN / amounts). Never below image_zoom.
+            z = max(cfg.image_zoom, cfg.image_long_side / max(pg.rect.width, pg.rect.height))
+            out.append(base64.b64encode(_encode(pg.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False), path)).decode())
+    return out
+
+
+def totals_images(path: str | Path) -> list[str]:
+    """Bottom half of the invoice pages at high resolution - the tax / totals box. Used for a focused second
+    read when the first read of the amounts does not add up."""
+    cfg = get_settings()
+    out = []
+    with _open(path) as doc:
+        for i in range(min(doc.page_count, cfg.main_pages)):
+            pg = doc[i]
+            r = pg.rect
+            clip = pymupdf.Rect(0, r.height * 0.45, r.width, r.height)
+            z = max(cfg.image_zoom, cfg.totals_width_px / r.width)
+            out.append(base64.b64encode(_encode(pg.get_pixmap(matrix=pymupdf.Matrix(z, z), clip=clip, alpha=False), path)).decode())
     return out
 
 
@@ -144,7 +162,8 @@ def fix_orientation(path: str | Path, probe) -> list[tuple[int, int]]:
     upright (unclear -> left as it is). Done with the PDF's own page rotation, so reading, GRN stamp and the
     dashboard viewer all see the page upright; only the stored working copy is changed.
     probe(image_b64) -> True / False / None.  Returns [(page_no, degrees)]."""
-    if probe is None or is_image_name(str(path)):
+    from . import orient
+    if is_image_name(str(path)) or (probe is None and not orient.available()):
         return []
     from PIL import Image
     cfg = get_settings()
@@ -165,7 +184,17 @@ def fix_orientation(path: str | Path, probe) -> list[tuple[int, int]]:
             pix = pg.get_pixmap(matrix=pymupdf.Matrix(1000 / side, 1000 / side), alpha=False)
             base = Image.open(io.BytesIO(pix.tobytes("jpeg", jpg_quality=80)))
             try:
-                if probe(b64(base)) is not False:            # upright, or no answer -> do not touch
+                from . import orient
+                if orient.available():
+                    big = Image.open(io.BytesIO(pg.get_pixmap(matrix=pymupdf.Matrix(1500 / side, 1500 / side),
+                                                              alpha=False).tobytes("jpeg", jpg_quality=85)))
+                    deg, sure = orient.best_rotation(big)
+                    if sure:
+                        if deg:
+                            pg.set_rotation(deg)
+                            done.append((i + 1, deg))
+                        continue                      # OCR was sure (upright or turned) - no need to ask the model
+                if probe is None or probe(b64(base)) is not False:            # upright, or no answer -> do not touch
                     continue
                 ok = [deg for deg in (90, 270, 180) if probe(b64(base.rotate(-deg, expand=True))) is True]
             except Exception as exc:
