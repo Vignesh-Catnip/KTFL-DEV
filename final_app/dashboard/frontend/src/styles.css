@@ -395,3 +395,13 @@ tbody tr.click{cursor:pointer}
 .viewer-bar{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px;color:#fff;font-size:13px;flex-wrap:wrap}
 .viewer-stage{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none}
 .viewer-stage img{max-width:96vw;max-height:calc(100vh - 70px);background:#fff;transform-origin:center center}
+
+/* Invoice image: pan / zoom / rotate */
+.pz{display:flex;flex-direction:column;flex:1;min-height:0;width:100%}
+.pz-bar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;padding:6px 0;flex-shrink:0}
+.pz-pct{min-width:46px;text-align:center;font-size:12px}
+.pz-stage{position:relative;flex:1;min-height:320px;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#e9edf2;user-select:none;touch-action:none}
+.pz-stage img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center center;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+.pz-full{color:#fff}
+.pz-full .pz-stage{border:0;border-radius:0;background:transparent}
+.viewer-stage2{flex:1;min-height:0;display:flex}
