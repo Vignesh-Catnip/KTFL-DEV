@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # ---- Ollama ----
     ollama_url: str = "http://localhost:11434"
     model_vlm: str = "qwen3-vl:32b"
-    num_ctx: int = 16384
+    num_ctx: int = 24576                     # 2 pages x ~4-5k image tokens (image_long_side 2400) + prompt + answer; lower image_long_side if the GPU is small
     num_predict: int = 6144
     vlm_timeout: int = 900
     main_pages: int = 2
@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     image_autorotate: bool = True            # landscape photo of a portrait invoice -> turn it upright
     image_max_side: int = 1800               # photos are shrunk to this many pixels (longest side) before reading
     grn_zoom: float = 2.0
+    image_long_side: int = 2400              # PDF pages are rendered with this many pixels on the longest side
+    totals_width_px: int = 2600              # width of the totals-box crop used for the second read of the amounts
+    tesseract_cmd: str = ""                  # full path to tesseract.exe if it is not on PATH (Windows: C:\\Program Files\\Tesseract-OCR\\tesseract.exe)
+    ocr_evidence: bool = True                # tesseract text used to check GSTIN / PO read by the model (needs the tesseract binary)
+    totals_pass: bool = True                 # second focused read of subtotal/tax/total when the first read does not add up
 
     # ---- matching thresholds ----
     amount_tolerance: float = 0.02           # 2 % invoice taxable value vs GRN value
@@ -58,6 +63,7 @@ class Settings(BaseSettings):
     output_folder: str = ""                  # 3. output\\matched | reconcile | blocked
     finish_folder: str = ""                  # 4. finish\\posted | parked | duplicate
     error_folder: str = ""                   # PDFs that could not be read
+    exception_folder: str = ""               # PDFs that are NOT material invoices (service PO 81/82/83, SAC 99xx) - moved here, not extracted
     gst_rate_xlsx: str = "./data/GST_RATE.xlsx"
     max_upload_mb: int = 25
     allow_upload: bool = False               # intake is the watched folder; upload from the browser is off
