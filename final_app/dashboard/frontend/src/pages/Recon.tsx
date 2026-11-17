@@ -24,57 +24,104 @@ function Stat({ s }: { s: CompareRow['status'] }) {
   return <span className="mstat bad" title={s === 'MISSING' ? 'Missing' : 'Does not match'}><Icon d={ICONS.x} size={14} /></span>
 }
 
-/** full-screen viewer: sharper image (render zoom 3), +/- zoom, ⟲⟳ rotate, mouse wheel, drag, double-click to toggle, Esc to close */
+/** Pan / zoom / rotate image. Toolbar: − + (wheel), Fit page, Fit width, ⟲ ⟳ (also R / Shift+R), 180°. Drag to move,
+ *  double-click = 2.5x. Rotation re-fits the page, so a sideways scan is readable after one click. */
+function PanZoom({ src, alt, full, onFull }: { src: string; alt: string; full?: boolean; onFull?: () => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [nat, setNat] = useState({ w: 0, h: 0 })
+  const [bw, setBw] = useState({ w: 1, h: 1 })
+  const [rot, setRot] = useState(0)
+  const [z, setZ] = useState(1)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [drag, setDrag] = useState<{ x: number; y: number; px: number; py: number } | null>(null)
+  const clamp = (v: number) => Math.min(8, Math.max(0.2, v))
+  useEffect(() => { setZ(1); setPos({ x: 0, y: 0 }) }, [src])
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setBw({ w: el.clientWidth || 1, h: el.clientHeight || 1 }))
+    ro.observe(el)
+    const wheel = (e: WheelEvent) => { e.preventDefault(); setZ(v => clamp(v * (e.deltaY < 0 ? 1.12 : 1 / 1.12))) }
+    el.addEventListener('wheel', wheel, { passive: false })     // non-passive: stop the page from scrolling
+    return () => { ro.disconnect(); el.removeEventListener('wheel', wheel) }
+  }, [])
+  useEffect(() => {
+    if (!full) return
+    const k = (e: KeyboardEvent) => {
+      if (e.key === '+' || e.key === '=') setZ(v => clamp(v * 1.25))
+      if (e.key === '-') setZ(v => clamp(v / 1.25))
+      if (e.key === 'r') setRot(v => (v + 90) % 360)
+      if (e.key === 'R') setRot(v => (v + 270) % 360)
+      if (e.key === '0') { setZ(1); setPos({ x: 0, y: 0 }) }
+    }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [full])
+  const sideways = rot % 180 !== 0
+  const rw = sideways ? nat.h : nat.w, rh = sideways ? nat.w : nat.h        // size of the page after rotation
+  const fit = rw && rh ? Math.min(bw.w / rw, bw.h / rh) : 1                  // scale that shows the whole page
+  const fitW = rw ? bw.w / rw : 1
+  const scale = fit * z
+  const turn = (d: number) => { setRot(v => (v + d + 360) % 360); setZ(1); setPos({ x: 0, y: 0 }) }
+  const reset = () => { setZ(1); setPos({ x: 0, y: 0 }) }
+  const widthFit = () => { setZ(fit ? fitW / fit : 1); setPos({ x: 0, y: 0 }) }
+  const stop = (e: React.MouseEvent) => e.stopPropagation()
+  return (
+    <div className={`pz${full ? ' pz-full' : ''}`}>
+      <div className="pz-bar" onClick={stop} onMouseDown={stop}>
+        <button className="btn sm" onClick={() => setZ(v => clamp(v / 1.25))} aria-label="Zoom out" title="Zoom out (-)">−</button>
+        <span className="pz-pct">{Math.round(scale * 100)}%</span>
+        <button className="btn sm" onClick={() => setZ(v => clamp(v * 1.25))} aria-label="Zoom in" title="Zoom in (+)">+</button>
+        <button className="btn sm" onClick={reset} title="Fit whole page (0)">Fit</button>
+        <button className="btn sm" onClick={widthFit} title="Fit page width">Width</button>
+        <button className="btn sm" onClick={() => turn(-90)} aria-label="Rotate left" title="Rotate left (Shift+R)">⟲ 90°</button>
+        <button className="btn sm" onClick={() => turn(90)} aria-label="Rotate right" title="Rotate right (R)">⟳ 90°</button>
+        <button className="btn sm" onClick={() => turn(180)} title="Turn upside down">180°</button>
+        {onFull && <button className="btn sm" onClick={onFull} title="Full screen">⤢</button>}
+      </div>
+      <div className="pz-stage" ref={box}
+        onMouseDown={e => setDrag({ x: e.clientX, y: e.clientY, px: pos.x, py: pos.y })}
+        onMouseMove={e => { if (drag) setPos({ x: drag.px + e.clientX - drag.x, y: drag.py + e.clientY - drag.y }) }}
+        onMouseUp={() => setDrag(null)} onMouseLeave={() => setDrag(null)}
+        onDoubleClick={() => (z === 1 ? setZ(2.5) : reset())}
+        style={{ cursor: drag ? 'grabbing' : 'grab' }}>
+        <img src={src} alt={alt} draggable={false}
+          onLoad={e => setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+          style={{ width: nat.w || undefined, height: nat.h || undefined,
+                   transform: `translate(-50%, -50%) translate(${pos.x}px, ${pos.y}px) rotate(${rot}deg) scale(${scale})`,
+                   transition: drag ? 'none' : 'transform 0.15s ease' }} />
+      </div>
+    </div>
+  )
+}
+
+/** full-screen viewer: PanZoom + page arrows, ← → pages, Esc closes */
 function Viewer({ id, page, pages, onClose, onPage }: { id: number; page: number; pages: number; onClose: () => void; onPage: (p: number) => void }) {
   const [src, setSrc] = useState('')
-  const [z, setZ] = useState(1)
-  const [rot, setRot] = useState(0)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null)
   useEffect(() => {
     let url = ''
-    setSrc(''); setZ(1); setRot(0); setPos({ x: 0, y: 0 })
+    setSrc('')
     api.blobUrl(`/api/invoices/${id}/page/${page}.png?zoom=3`).then(u => { url = u; setSrc(u) }).catch(() => setSrc(''))
     return () => { if (url) URL.revokeObjectURL(url) }
   }, [id, page])
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
-      if (e.key === '+' || e.key === '=') setZ(v => Math.min(6, v * 1.25))
-      if (e.key === '-') setZ(v => Math.max(0.3, v / 1.25))
       if (e.key === 'ArrowRight' && page < pages) onPage(page + 1)
       if (e.key === 'ArrowLeft' && page > 1) onPage(page - 1)
-      if (e.key === 'r') setRot(v => (v + 90) % 360)
-      if (e.key === 'R') setRot(v => (v - 90 + 360) % 360)
     }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
   }, [page, pages, onClose, onPage])
-  const reset = () => { setZ(1); setRot(0); setPos({ x: 0, y: 0 }) }
   const openPdf = async () => { const u = await api.blobUrl(`/api/invoices/${id}/file`); window.open(u, '_blank') }
   return (
-    <div className="viewer" role="dialog" aria-label="Invoice viewer" onClick={onClose}>
-      <div className="viewer-bar" onClick={e => e.stopPropagation()}>
+    <div className="viewer" role="dialog" aria-label="Invoice viewer">
+      <div className="viewer-bar">
         {pages > 1 && <><button className="btn sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>‹</button><span>Page {page} / {pages}</span><button className="btn sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>›</button></>}
-        <button className="btn sm" onClick={() => setZ(v => Math.max(0.3, v / 1.25))} aria-label="Zoom out">−</button>
-        <span style={{ minWidth: 48, textAlign: 'center' }}>{Math.round(z * 100)}%</span>
-        <button className="btn sm" onClick={() => setZ(v => Math.min(6, v * 1.25))} aria-label="Zoom in">+</button>
-        <button className="btn sm" onClick={() => setRot(v => (v - 90 + 360) % 360)} aria-label="Rotate left" title="Rotate left (Shift+R)">⟲</button>
-        <button className="btn sm" onClick={() => setRot(v => (v + 90) % 360)} aria-label="Rotate right" title="Rotate right (R)">⟳</button>
-        <button className="btn sm" onClick={reset}>Fit</button>
         <button className="btn sm" onClick={openPdf}>Open PDF</button>
         <button className="btn sm" onClick={onClose}>Close ✕</button>
       </div>
-      <div className="viewer-stage" onClick={e => e.stopPropagation()}
-        onWheel={e => setZ(v => Math.min(6, Math.max(0.3, v * (e.deltaY < 0 ? 1.1 : 1 / 1.1))))}
-        onMouseDown={e => { drag.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y } }}
-        onMouseMove={e => { const d = drag.current; if (d) setPos({ x: d.px + e.clientX - d.x, y: d.py + e.clientY - d.y }) }}
-        onMouseUp={() => { drag.current = null }} onMouseLeave={() => { drag.current = null }}
-        onDoubleClick={() => (z === 1 ? setZ(2.5) : reset())}>
-        {src ? <img src={src} alt={`Invoice page ${page}`} draggable={false}
-          style={{ transform: `translate(${pos.x}px, ${pos.y}px) rotate(${rot}deg) scale(${z})`, cursor: drag.current ? 'grabbing' : 'grab', transition: drag.current ? 'none' : 'transform 0.2s ease' }} />
-          : <span className="spin" />}
-      </div>
+      <div className="viewer-stage2">{src ? <PanZoom src={src} alt={`Invoice page ${page}`} full /> : <span className="spin" />}</div>
     </div>
   )
 }
@@ -101,7 +148,7 @@ function InvoicePages({ id, pages }: { id: number; pages: number }) {
   useEffect(() => {
     let url = ''
     setSrc(''); setErr('')
-    api.blobUrl(`/api/invoices/${id}/page/${p}.png`).then(u => { url = u; setSrc(u) }).catch(() => setErr('The original PDF is not available on the server.'))
+    api.blobUrl(`/api/invoices/${id}/page/${p}.png?zoom=2.5`).then(u => { url = u; setSrc(u) }).catch(() => setErr('The original PDF is not available on the server.'))
     return () => { if (url) URL.revokeObjectURL(url) }
   }, [id, p])
   return (
@@ -115,8 +162,7 @@ function InvoicePages({ id, pages }: { id: number; pages: number }) {
       )}
       {err ? <div className="empty">{err}</div> : src ? (
         <>
-          <div className="muted" style={{ textAlign: 'center', fontSize: 12, marginBottom: 6, flexShrink: 0 }}>Click to view full screen · zoom · rotate</div>
-          <img className="imgpane" style={{ cursor: 'zoom-in' }} src={src} alt={`Invoice page ${p}`} onClick={() => setBig(true)} />
+          <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} />
         </>
       ) : <div className="empty"><span className="spin" /></div>}
       {big && <Viewer id={id} page={p} pages={pages} onClose={() => setBig(false)} onPage={setP} />}
