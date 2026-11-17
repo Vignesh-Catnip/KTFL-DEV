@@ -4,7 +4,7 @@ import { api, type Job } from '../api'
 import { useAuth } from '../auth'
 import { Icon, ICONS, QueueTag, dt, useToast } from '../ui'
 
-const JT: Record<string, string> = { QUEUED: 'grey', RUNNING: 'info', DONE: 'match', DUPLICATE: 'review', FAILED: 'fail' }
+const JT: Record<string, string> = { QUEUED: 'grey', RUNNING: 'info', DONE: 'match', DUPLICATE: 'review', EXCEPTION: 'review', FAILED: 'fail' }
 type Cfg = Awaited<ReturnType<typeof api.config>>
 
 export default function Jobs() {
@@ -72,11 +72,11 @@ export default function Jobs() {
                 <td className="poref">{j.filename}{j.error && <span style={{ color: '#8b1a1a' }}>{j.error}</span>}</td>
                 <td className="who">{j.source}</td>
                 <td><span className={`tag ${JT[j.status] ?? 'grey'}`}>{j.status}</span>{j.status === 'RUNNING' && <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>{j.stage}</span>}</td>
-                <td>{j.queue && <QueueTag q={j.queue} />}{j.status === 'DUPLICATE' && <span className="muted"> already in system</span>}</td>
+                <td>{j.queue && <QueueTag q={j.queue} />}{j.status === 'DUPLICATE' && <span className="muted"> already in system</span>}{j.status === 'EXCEPTION' && <span className="muted" title={j.error || ''}> {j.error || 'moved to exception folder'}</span>}</td>
                 <td className="date">{dt(j.created_at)}</td>
                 <td className="row-actions">
                   {j.invoice_id && <button className="btn sm" onClick={() => nav(`/invoice/${j.invoice_id}`)}>Open</button>}
-                  {j.status === 'FAILED' && can('approver') && <button className="btn sm" onClick={() => api.retryJob(j.id).then(load)}>Retry</button>}
+                  {(j.status === 'FAILED' || j.status === 'EXCEPTION') && can('approver') && <button className="btn sm" onClick={() => api.retryJob(j.id).then(load)}>Retry</button>}
                 </td>
               </tr>
             ))}
