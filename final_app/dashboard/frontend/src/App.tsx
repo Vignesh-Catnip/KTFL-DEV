@@ -12,6 +12,7 @@ import Exceptions from './pages/Exceptions'
 import Posting from './pages/Posting'
 import Audit from './pages/Audit'
 import Jobs from './pages/Jobs'
+import Productivity from './pages/Productivity'
 
 function Shell() {
   const { user, logout } = useAuth()
@@ -81,6 +82,9 @@ function Shell() {
             <NavLink className={({ isActive }) => 'nav-i' + (isActive ? ' on' : '')} to="/audit">
               <Icon d={ICONS.doc} />Audit Trail
             </NavLink>
+            <NavLink className={({ isActive }) => 'nav-i' + (isActive ? ' on' : '')} to="/productivity">
+              <Icon d={ICONS.chart} />Time Savings
+            </NavLink>
             {stats && stats.plants.length > 0 && <div className="grp" style={{ marginTop: 20 }}>Plants</div>}
             {stats?.plants.slice(0, 6).map(p => (
               <NavLink key={p.plant} className="nav-i" to={`/?plant=${encodeURIComponent(p.plant === '-' ? '' : p.plant)}`}>
@@ -102,6 +106,7 @@ function Shell() {
             <Route path="/posting" element={<Posting />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/audit" element={<Audit />} />
+            <Route path="/productivity" element={<Productivity />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
