@@ -291,11 +291,11 @@ function InvoicePages({ id, pages, writable, onApply }: { id: number; pages: num
           <button className="btn sm" disabled={p >= pages} onClick={() => setP(p + 1)}>›</button>
         </div>
       )}
+      {lensOn && <LensPanel res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => setLensOn(false)}
+        canDetect={!ocrAvail} detecting={detecting} onDetect={() => void detectAi()} detectMsg={detectMsg} />}
       {err ? <div className="empty">{err}</div> : src ? (
         <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} lens={lens} />
       ) : <div className="empty"><span className="spin" /></div>}
-      {lensOn && <LensPanel res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => setLensOn(false)}
-        canDetect={!ocrAvail} detecting={detecting} onDetect={() => void detectAi()} detectMsg={detectMsg} />}
       {big && <Viewer id={id} page={p} pages={pages} onClose={() => setBig(false)} onPage={setP} />}
     </div>
   )
