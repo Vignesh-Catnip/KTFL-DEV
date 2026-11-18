@@ -410,7 +410,7 @@ tbody tr.click{cursor:pointer}
 .pz-nbox.oth{border-color:#9ca3af;background:rgba(156,163,175,.22)}
 .pz-nbox:hover{filter:brightness(.9)}
 .pz-sel{position:absolute;border:2px dashed #2563eb;background:rgba(37,99,235,.14);pointer-events:none}
-.lens-panel{flex-shrink:0;border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px 10px;margin-top:6px;font-size:12.5px;max-height:38%;overflow:auto}
+.lens-panel{flex-shrink:0;border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px 10px;margin:0 0 6px;font-size:12.5px;max-height:42%;overflow:auto}
 .lens-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .lens-list{display:flex;flex-direction:column;gap:6px}
 .lens-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:6px}
