@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import re
 from typing import Protocol
 
@@ -137,7 +138,8 @@ class OllamaVlm:
         r.raise_for_status()
         return r.json()
 
-    def _ask(self, prompt: str, images: list[str], num_predict: int | None = None) -> dict:
+    def _ask_raw(self, prompt: str, images: list[str], num_predict: int | None = None) -> tuple[str, dict]:
+        """The model's answer as TEXT (no JSON parsing) + the Ollama response."""
         num_predict = num_predict or self.cfg.num_predict
         data = self._post_chat(prompt, images, num_predict, use_format=True)
         msg = data.get("message") or {}
@@ -148,6 +150,10 @@ class OllamaVlm:
             raw = (msg.get("content") or msg.get("thinking") or "").strip()
         if not raw:
             raise ValueError(f"Ollama returned an empty response (done_reason={data.get('done_reason')})")
+        return raw, data
+
+    def _ask(self, prompt: str, images: list[str], num_predict: int | None = None) -> dict:
+        raw, data = self._ask_raw(prompt, images, num_predict)
         try:
             return extract_json(raw)
         except ValueError:
@@ -260,17 +266,28 @@ class OllamaVlm:
         return ""
 
     def read_region(self, image_b64: str) -> dict:
-        """Lens: the numbers inside a box the person drew on the invoice. {} on any error."""
+        """Lens: the numbers inside a box the person drew on the invoice.
+        Works on the model's TEXT, not on its JSON: JSON, fenced JSON, a plain "5000396179" or a sentence all work - every run
+        of 6+ digits counts. 'raw' = what the model said (shown in the panel); 'error' = the call itself failed."""
         from .prompts import LENS_PROMPT
         try:
-            ans = self._ask(LENS_PROMPT, [image_b64], 256)
+            raw, _ = self._ask_raw(LENS_PROMPT, [image_b64], 256)
         except Exception as exc:
             log.warning("lens read failed: %s", exc)
-            return {}
-        nums = ans.get("numbers") or []
-        if isinstance(nums, (str, int)):
-            nums = [nums]
-        return {"numbers": [str(n) for n in nums], "label": str(ans.get("label") or "")}
+            return {"numbers": [], "label": "", "raw": f"error: {exc}"[:300], "error": True}
+        text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)
+        nums: list[str] = []
+        for m in re.finditer(r"\d[\d \-/.]{4,}\d|\d{6,}", text):
+            d = re.sub(r"\D", "", m.group(0))
+            if len(d) >= 6 and d not in nums:
+                nums.append(d)
+        label = ""
+        try:
+            label = str(extract_json(text).get("label") or "")
+        except Exception:
+            pass
+        log.info("lens read: model answered %r -> numbers %s", raw[:200], nums)
+        return {"numbers": nums, "label": label, "raw": raw[:300]}
 
     def number_label(self, images: list[str], number: str) -> str:
         """The label printed beside `number` ('PO No', 'Mo. No.', 'DC No' ...). '' when unknown / not found."""
@@ -302,23 +319,48 @@ class OllamaVlm:
         return out
 
     def find_numbers(self, image_b64: str) -> list[dict]:
-        """Lens: PO / GRN numbers on one page with their position (fractions 0..1 of the image), found by the model
-        (Qwen3-VL answers boxes in 0..1000 relative coordinates). [] on any error."""
+        """Lens: PO / GRN numbers on one page with their position (fractions 0..1 of the image), found by the model.
+        Qwen3-VL normally answers boxes in 0..1000 relative coordinates; 0..1 fractions are accepted too. Tolerant about
+        the JSON shape (list or {"boxes": [...]}, "bbox" / "bbox_2d" / "box", "value" / "number"). [] on any error."""
         from .prompts import LENS_FIND_PROMPT
         try:
-            ans = self._ask(LENS_FIND_PROMPT, [image_b64], 768)
+            raw, _ = self._ask_raw(LENS_FIND_PROMPT, [image_b64], 768)
         except Exception as exc:
             log.warning("lens find failed: %s", exc)
             return []
-        out = []
-        for b in ans.get("boxes") or []:
+        text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)
+        items: list = []
+        try:
+            data = json.loads(re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.I).strip())
+        except Exception:
             try:
-                v = re.sub(r"\D", "", str(b.get("value")))
-                x1, y1, x2, y2 = (max(0.0, min(1000.0, float(c))) / 1000.0 for c in b.get("bbox"))
+                data = extract_json(text)
+            except Exception:
+                data = None
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            for k in ("boxes", "numbers", "items", "results", "detections"):
+                if isinstance(data.get(k), list):
+                    items = data[k]
+                    break
+            else:
+                items = [data] if (data.get("bbox") or data.get("bbox_2d")) else []
+        out = []
+        for b in items:
+            if not isinstance(b, dict):
+                continue
+            try:
+                v = re.sub(r"\D", "", str(b.get("value") or b.get("number") or b.get("text") or b.get("label") or ""))
+                box = b.get("bbox") or b.get("bbox_2d") or b.get("box") or b.get("bounding_box")
+                x1, y1, x2, y2 = (float(c) for c in box)
             except (TypeError, ValueError):
                 continue
+            scale = 1.0 if max(x1, y1, x2, y2) <= 1.0 else 1000.0           # fractions or Qwen's 0..1000 grid
+            x1, y1, x2, y2 = (max(0.0, min(1.0, c / scale)) for c in (x1, y1, x2, y2))
             if len(v) == 10 and x2 > x1 and y2 > y1:
                 out.append({"value": v, "x": x1, "y": y1, "w": x2 - x1, "h": y2 - y1})
+        log.info("lens find: model answered %r -> %d box(es)", raw[:200], len(out))
         return out
 
     def read_totals(self, images: list[str]) -> dict:
