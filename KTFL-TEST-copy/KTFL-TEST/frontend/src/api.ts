@@ -72,7 +72,7 @@ export interface LensCandidate {
   value: string; kind: 'PO' | 'GRN' | 'SERVICE_PO' | 'OTHER'; sources: string[]; corrected_from?: string
   sap: { checked: boolean; in_sap?: boolean; po_number?: string; grn_number?: string; plant_code?: string; vendor_code?: string }
 }
-export interface LensResult { candidates: LensCandidate[]; ocr: boolean; ai: boolean | null; crop?: string }
+export interface LensResult { candidates: LensCandidate[]; ocr: boolean; ai: boolean | null; ai_raw?: string; crop?: string }
 export interface Job { id: number; filename: string; status: string; stage: string | null; source: string; invoice_id: number | null; queue: string | null; error: string | null; by: string | null; created_at: string; finished_at: string | null }
 export interface Stats { trend?: Record<string, number[]>; queues: Record<string, number>; value: Record<string, number>; posting: Record<string, number>; plants: { plant: string; count: number }[]; pending_jobs: number; total: number; straight_through_pct: number }
 
