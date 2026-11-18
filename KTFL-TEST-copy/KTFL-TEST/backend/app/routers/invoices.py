@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 import mimetypes
 from pathlib import Path
@@ -23,6 +24,7 @@ from ..services.pipeline import recheck_invoice
 from ..services.textutil import is_service_po
 from .common import apply_effective, invoice_row, iso
 
+log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
 # edit field -> (Invoice column, header key)
@@ -336,7 +338,7 @@ def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: Use
     inv = _get(db, invoice_id)
     page = int(body.get("page") or 1)
     path = _pdf_or_404(inv, page)
-    ocr_text, ai_numbers, ai_ok, crop_png = "", [], None, b""
+    ocr_text, ai_numbers, ai_ok, ai_raw, crop_png = "", [], None, "", b""
     has_rect = all(k in body for k in ("x", "y", "w", "h"))
     if has_rect:
         try:
@@ -355,15 +357,24 @@ def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: Use
             if hasattr(client, "read_region"):
                 import base64
                 ans = client.read_region(base64.b64encode(crop_png).decode())
-                ai_numbers, ai_ok = ans.get("numbers", []), bool(ans)
-        except Exception:
-            ai_ok = False
+                ai_numbers, ai_ok, ai_raw = ans.get("numbers", []), bool(ans) and not ans.get("error"), ans.get("raw", "")
+        except Exception as exc:
+            log.exception("lens AI read failed")
+            ai_ok, ai_raw = False, f"error: {exc}"[:300]
     cands = lens.build_candidates(ocr_text, ai_numbers)[:6]
-    gw = get_sap()
-    h, lines = header_from_invoice(inv)
+    try:
+        gw = get_sap()
+        h, lines = header_from_invoice(inv)
+    except Exception as exc:                               # SAP / header problems must not turn the scan into a 500
+        log.warning("lens: SAP context unavailable: %s", exc)
+        gw = h = lines = None
     for c in cands:
-        c["sap"] = lens.sap_check(gw, h, lines, c["value"], c["kind"], sap_enrich)
-    return {"candidates": cands, "ocr": evidence.available(), "ai": ai_ok, "crop": _thumb(crop_png)}
+        try:
+            c["sap"] = lens.sap_check(gw, h, lines, c["value"], c["kind"], sap_enrich) if gw is not None else {"checked": False, "note": "SAP not available"}
+        except Exception as exc:
+            log.warning("lens: SAP check failed for %s: %s", c["value"], exc)
+            c["sap"] = {"checked": False, "note": f"SAP check failed: {exc}"[:120]}
+    return {"candidates": cands, "ocr": evidence.available(), "ai": ai_ok, "ai_raw": ai_raw, "crop": _thumb(crop_png)}
 
 
 @router.get("/{invoice_id}/file")
