@@ -199,16 +199,15 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
 }) {
   return (
     <div className="lens-panel">
-      <div className="lens-h"><b>🔍 Scan the digital invoice</b><button className="btn sm ghost" onClick={onClose} aria-label="Close scan">✕</button></div>
-      {canDetect && (
-        <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn sm" onClick={onDetect} disabled={detecting || busy}>{detecting ? <><span className="spin" /> AI is looking…</> : '✨ Detect PO / GRN numbers with AI'}</button>
-          <span className="muted" style={{ fontSize: 11.5 }}>{detectMsg || 'Takes a minute. Outlines are approximate - check them. Or just draw a box yourself.'}</span>
-        </div>
-      )}
+      <div className="lens-h">
+        <b>🔍 Scan</b>
+        {canDetect && <button className="btn sm" onClick={onDetect} disabled={detecting || busy} title="The AI outlines PO / GRN numbers on this page. Outlines are approximate - check them.">{detecting ? <><span className="spin" /> AI is looking…</> : '✨ Detect with AI'}</button>}
+        <span className="muted" style={{ fontSize: 11.5, flex: 1 }}>{detectMsg}</span>
+        <button className="btn sm ghost" onClick={onClose} aria-label="Close scan">✕</button>
+      </div>
       {busy ? <div className="muted"><span className="spin" /> Reading the selected area…</div>
         : err ? <div className="err" style={{ margin: 0 }}>{err}</div>
-        : !res ? <div className="muted">Draw a box around the PO or GRN number (handwriting is fine), or click one of the outlined printed numbers.</div>
+        : !res ? <div className="muted">Draw a box around the PO / GRN number.</div>
         : !res.candidates.length ? (
           <div className="muted">{res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" />}No number found in that box. Draw the box a little bigger around the digits.{res.ai_raw && <div style={{ fontSize: 11.5, marginTop: 4 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}{res.ai === false ? ' (The AI reader did not answer - printed numbers still work.)' : ''}{!res.ocr && res.ai == null ? ' (OCR is not installed on the server.)' : ''}</div>
         ) : (
@@ -283,7 +282,7 @@ function InvoicePages({ id, pages, writable, onApply }: { id: number; pages: num
     onBox: b => { void scan({ value: b.value, x: b.x, y: b.y, w: b.w, h: b.h }) },
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
       {pages > 1 && (
         <div className="pagebar" style={{ flexShrink: 0 }}>
           <button className="btn sm" disabled={p <= 1} onClick={() => setP(p - 1)}>‹</button>
