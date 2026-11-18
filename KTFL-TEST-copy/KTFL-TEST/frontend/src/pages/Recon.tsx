@@ -210,7 +210,7 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
         : err ? <div className="err" style={{ margin: 0 }}>{err}</div>
         : !res ? <div className="muted">Draw a box around the PO or GRN number (handwriting is fine), or click one of the outlined printed numbers.</div>
         : !res.candidates.length ? (
-          <div className="muted">{res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" />}No number found in that box. Draw the box a little bigger around the digits.{res.ai === false ? ' (The AI reader did not answer - printed numbers still work.)' : ''}{!res.ocr && res.ai == null ? ' (OCR is not installed on the server.)' : ''}</div>
+          <div className="muted">{res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" />}No number found in that box. Draw the box a little bigger around the digits.{res.ai_raw && <div style={{ fontSize: 11.5, marginTop: 4 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}{res.ai === false ? ' (The AI reader did not answer - printed numbers still work.)' : ''}{!res.ocr && res.ai == null ? ' (OCR is not installed on the server.)' : ''}</div>
         ) : (
           <div className="lens-list">
             {res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" title="The area you captured - compare the digits" />}
@@ -230,6 +230,7 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
                 )}
               </div>
             ))}
+            {res.ai_raw && <div className="muted" style={{ fontSize: 11.5 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}
             <div className="muted" style={{ fontSize: 11.5 }}>Check the digits against the picture, then press <b>Save</b> on the right. A value you apply is only a suggestion until you save.</div>
           </div>
         )}
