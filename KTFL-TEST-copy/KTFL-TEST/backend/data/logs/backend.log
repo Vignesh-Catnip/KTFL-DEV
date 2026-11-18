@@ -310,3 +310,39 @@
 2026-11-18 11:46:29,521 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
 2026-11-18 11:46:44,472 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
 2026-11-18 11:46:59,509 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:47:16,037 INFO clearmatch: GST master loaded: 61 codes
+2026-11-18 11:47:16,060 INFO clearmatch: Document type master: 0 rows added
+2026-11-18 11:47:16,069 WARNING clearmatch.worker: WATCH_FOLDER is not set - no invoices will be picked up automatically
+2026-11-18 11:47:16,767 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:47:22,489 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:47:37,455 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:47:52,409 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:48:03,354 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-18 11:48:03,356 INFO clearmatch.vlm: lens read: model answered '{"numbers": ["510882"], "label": ""}' -> numbers ['510882']
+2026-11-18 11:48:07,465 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:48:22,718 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:48:37,551 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:48:52,498 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:49:05,888 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:49:10,426 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:49:25,453 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:49:35,449 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-18 11:49:35,450 INFO clearmatch.vlm: lens read: model answered '{"numbers": ["510000882"], "label": ""}' -> numbers ['510000882']
+2026-11-18 11:49:40,537 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:49:55,776 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:50:10,026 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-18 11:50:10,027 INFO clearmatch.vlm: lens read: model answered '{"numbers": [], "label": ""}' -> numbers []
+2026-11-18 11:50:10,428 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:50:25,462 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:50:38,519 INFO httpx: HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-11-18 11:50:38,520 INFO clearmatch.vlm: lens read: model answered '{"numbers": ["510882"], "label": ""}' -> numbers ['510882']
+2026-11-18 11:50:40,546 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:50:55,465 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:51:10,496 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:51:26,618 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:51:40,766 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:51:55,503 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:52:10,489 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:52:25,491 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:52:40,786 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-18 11:52:55,483 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
