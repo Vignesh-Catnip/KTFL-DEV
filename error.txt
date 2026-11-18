@@ -1,3 +1,4 @@
+
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>npm run build
 
 > clearmatch-dashboard@1.0.0 build
@@ -5,7 +6,7 @@ C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>npm
 
 vite v5.4.21 building for production...
 ✓ 0 modules transformed.
-x Build failed in 22ms
+x Build failed in 16ms
 error during build:
 Could not resolve entry module "index.html".
     at getRollupError (file:///C:/Users/ckts00126/Desktop/KTFL-EXTRACTION/KTFL-TEST-copy/KTFL-TEST/frontend/node_modules/rollup/dist/es/shared/parseAst.js:355:41)
@@ -13,5 +14,4 @@ Could not resolve entry module "index.html".
     at ModuleLoader.loadEntryModule (file:///C:/Users/ckts00126/Desktop/KTFL-EXTRACTION/KTFL-TEST-copy/KTFL-TEST/frontend/node_modules/rollup/dist/es/shared/node-entry.js:23634:20)
     at async Promise.all (index 0)
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>
-
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>npm install && npm run build
