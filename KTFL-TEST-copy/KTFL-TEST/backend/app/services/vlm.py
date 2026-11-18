@@ -109,7 +109,7 @@ class VlmClient(Protocol):
     def page_is_upright(self, image_b64: str) -> bool | None: ...
     def read_totals(self, images: list[str]) -> dict: ...
     def read_handwritten_po(self, images: list[str]) -> str: ...
-    def read_region(self, image_b64: str) -> dict: ...
+    def read_region(self, image_b64: str, expected_digits: int | None = None) -> dict: ...
     def number_label(self, images: list[str], number: str) -> str: ...
     def read_seller_gstins(self, images: list[str]) -> list[dict]: ...
     def find_numbers(self, image_b64: str) -> list[dict]: ...
@@ -291,7 +291,7 @@ class OllamaVlm:
                 nums.append(d)
         return nums
 
-    def read_region(self, image_b64: str) -> dict:
+    def read_region(self, image_b64: str, expected_digits: int | None = None) -> dict:
         """Lens: the numbers inside a box the person drew on the invoice.
         Works on the model's TEXT (JSON, fenced JSON, a plain number or a sentence all work - every run of 6+ digits counts).
         Handwriting is read up to 3 times: when the first answer is not a 10-digit PO / GRN (the model often drops repeated
@@ -301,6 +301,8 @@ class OllamaVlm:
         from .textutil import grn_is_valid, is_material_po, is_service_po, is_valid_po
 
         def good(n: str) -> bool:
+            if expected_digits:                                   # the person said which field this is: just count the digits
+                return len(n) == expected_digits
             return grn_is_valid(n) or is_material_po(n) or (is_valid_po(n) and is_service_po(n))
 
         nums: list[str] = []
@@ -329,9 +331,9 @@ class OllamaVlm:
             if any(good(n) for n in nums):
                 break
             seen = ", ".join(found) if found else "nothing"
-            prompt = (LENS_PROMPT + f"\nYour previous answer was: {seen}. That is NOT a complete 10-digit number. "
-                      "Look again at every digit from left to right, count them, and do not skip repeated digits "
-                      "(handwritten zeros such as 5000 are often missed). The number has exactly 10 digits.")
+            prompt = (LENS_PROMPT + f"\nYour previous answer was: {seen}. Look again at every digit from left to right, one by one, "
+                      "and do not skip repeated digits (handwritten zeros are often missed)."
+                      + (f" The number has exactly {expected_digits} digits." if expected_digits else ""))
             if enhanced is None:
                 enhanced = self._enhance(image_b64)
             img = enhanced if attempt == 0 else image_b64
