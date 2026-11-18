@@ -193,21 +193,21 @@ function HsnDisplay({ value }: { value: string | null | undefined }) {
 
 const KIND_LABEL: Record<string, string> = { PO: 'PO number', GRN: 'GRN number', SERVICE_PO: 'Service PO (81/82/83)', OTHER: 'Not a PO / GRN pattern' }
 
-function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, detecting, onDetect, detectMsg }: {
-  res: LensResult | null; busy: boolean; err: string; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; onClose: () => void
+function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, detecting, onDetect, detectMsg, target }: {
+  target: 'PO' | 'GRN' | null; res: LensResult | null; busy: boolean; err: string; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; onClose: () => void
   canDetect: boolean; detecting: boolean; onDetect: () => void; detectMsg: string
 }) {
   return (
     <div className="lens-panel">
       <div className="lens-h">
-        <b>🔍 Scan</b>
+        <b>{target ? `🔍 Scan for ${target} field` : '🔍 Scan'}</b>
         {canDetect && <button className="btn sm" onClick={onDetect} disabled={detecting || busy} title="The AI outlines PO / GRN numbers on this page. Outlines are approximate - check them.">{detecting ? <><span className="spin" /> AI is looking…</> : '✨ Detect with AI'}</button>}
         <span className="muted" style={{ fontSize: 11.5, flex: 1 }}>{detectMsg}</span>
         <button className="btn sm ghost" onClick={onClose} aria-label="Close scan">✕</button>
       </div>
       {busy ? <div className="muted"><span className="spin" /> Reading the selected area…</div>
         : err ? <div className="err" style={{ margin: 0 }}>{err}</div>
-        : !res ? <div className="muted">Draw a box around the PO / GRN number.</div>
+        : !res ? <div className="muted">{target ? `Draw a box around the ${target} number - only the digits inside the box are read and put into the ${target} field.` : 'Draw a box around the PO / GRN number.'}</div>
         : !res.candidates.length ? (
           <div className="muted">{res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" />}No number found in that box. Draw the box a little bigger around the digits.{res.ai_raw && <div style={{ fontSize: 11.5, marginTop: 4 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}{res.ai === false ? ' (The AI reader did not answer - printed numbers still work.)' : ''}{!res.ocr && res.ai == null ? ' (OCR is not installed on the server.)' : ''}</div>
         ) : (
@@ -221,12 +221,14 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
                 {c.sap.checked
                   ? c.sap.in_sap ? <span className="lens-sap ok">✓ in SAP{c.sap.plant_code ? ` · plant ${c.sap.plant_code}` : ''}</span> : <span className="lens-sap bad">✗ not in SAP</span>
                   : <span className="lens-sap">SAP not checked</span>}
-                {writable && (
+                {writable && (target ? (
+                  <span className="lens-act"><button className="btn sm primary" onClick={() => onApply(target, c.value)}>Use for {target} field</button></span>
+                ) : (
                   <span className="lens-act">
                     <button className={'btn sm' + (c.kind === 'PO' || c.kind === 'SERVICE_PO' ? ' primary' : '')} onClick={() => onApply('PO', c.value)}>Use as PO</button>
                     <button className={'btn sm' + (c.kind === 'GRN' ? ' primary' : '')} onClick={() => onApply('GRN', c.value)}>Use as GRN</button>
                   </span>
-                )}
+                ))}
               </div>
             ))}
             {res.ai_raw && <div className="muted" style={{ fontSize: 11.5 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}
@@ -237,12 +239,13 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
   )
 }
 
-function InvoicePages({ id, pages, writable, onApply }: { id: number; pages: number; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void }) {
+function InvoicePages({ id, pages, writable, onApply, target, kick, clearTarget }: { id: number; pages: number; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; target: 'PO' | 'GRN' | null; kick: number; clearTarget: () => void }) {
   const [p, setP] = useState(1)
   const [src, setSrc] = useState('')
   const [err, setErr] = useState('')
   const [big, setBig] = useState(false)
   const [lensOn, setLensOn] = useState(false)
+  useEffect(() => { if (kick > 0) { setLensOn(true); setRes(null); setLerr('') } }, [kick])      // the 🔍 button beside the PO / GRN field
   const [boxes, setBoxes] = useState<LensBox[]>([])
   const [res, setRes] = useState<LensResult | null>(null)
   const [busy, setBusy] = useState(false)
@@ -273,11 +276,15 @@ function InvoicePages({ id, pages, writable, onApply }: { id: number; pages: num
   }
   const scan = async (body: Record<string, unknown>) => {
     setBusy(true); setLerr(''); setRes(null)
-    try { setRes(await api.lensScan(id, { page: p, ...body })) } catch (e) { setLerr((e as Error).message || 'Scan failed') } finally { setBusy(false) }
+    try {
+      const r = await api.lensScan(id, { page: p, ...(target ? { target } : {}), ...body })
+      setRes(r)
+      if (target && r.candidates.length) onApply(target, r.candidates[0].value)          // the number under the box goes straight into the field
+    } catch (e) { setLerr((e as Error).message || 'Scan failed') } finally { setBusy(false) }
   }
   const lens: LensProps = {
     on: lensOn, boxes, busy,
-    onToggle: () => { setLensOn(v => !v); setRes(null); setLerr('') },
+    onToggle: () => { setLensOn(v => !v); setRes(null); setLerr(''); clearTarget() },
     onSelect: r => { void scan({ x: r.x, y: r.y, w: r.w, h: r.h }) },
     onBox: b => { void scan({ value: b.value, x: b.x, y: b.y, w: b.w, h: b.h }) },
   }
@@ -290,7 +297,7 @@ function InvoicePages({ id, pages, writable, onApply }: { id: number; pages: num
           <button className="btn sm" disabled={p >= pages} onClick={() => setP(p + 1)}>›</button>
         </div>
       )}
-      {lensOn && <LensPanel res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => setLensOn(false)}
+      {lensOn && <LensPanel target={target} res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => { setLensOn(false); clearTarget() }}
         canDetect={!ocrAvail} detecting={detecting} onDetect={() => void detectAi()} detectMsg={detectMsg} />}
       {err ? <div className="empty">{err}</div> : src ? (
         <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} lens={lens} />
@@ -472,6 +479,8 @@ export default function Recon() {
   const [d, setD] = useState<InvoiceDetail | null>(null)
   const [err, setErr] = useState('')
   const [tab, setTab] = useState<'inv' | 'grn' | 'po'>('inv')
+  const [lensTarget, setLensTarget] = useState<'PO' | 'GRN' | null>(null)
+  const [lensKick, setLensKick] = useState(0)
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [reso, setReso] = useState('')
   const [note, setNote] = useState('')
@@ -563,7 +572,7 @@ export default function Recon() {
             ))}
           </div>
           <div className="docview">
-            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} writable={writable} onApply={(kind, v) => {
+            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} writable={writable} target={lensTarget} kick={lensKick} clearTarget={() => setLensTarget(null)} onApply={(kind, v) => {
               setEdits(e => ({ ...e, [kind === 'PO' ? 'po_number' : 'grn_number']: v }))
               toast(kind === 'PO' ? 'PO number set' : 'GRN number set', `${v} - check it, then press Save`)
             }} />}
@@ -592,9 +601,15 @@ export default function Recon() {
               <div className="mrow" key={r.field}>
                 <span className="field-k">{r.label}</span>
                 {EDITABLE[r.field] && writable ? (
-                  <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
-                    value={edits[EDITABLE[r.field]] ?? r.invoice}
-                    onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
+                  <div className="cellwrap">
+                    <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
+                      value={edits[EDITABLE[r.field]] ?? r.invoice}
+                      onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
+                    {(r.field === 'po_number' || r.field === 'grn_number') && (
+                      <button type="button" className="btn sm cellscan" title={`Scan the ${r.field === 'po_number' ? 'PO' : 'GRN'} number from the digital invoice`}
+                        onClick={() => { setLensTarget(r.field === 'po_number' ? 'PO' : 'GRN'); setTab('inv'); setLensKick(k => k + 1) }}>🔍</button>
+                    )}
+                  </div>
                 ) : r.field === 'hsn_sac' ? (
                   /* HSN: show single or multiple codes cleanly */
                   <HsnDisplay value={r.invoice} />
