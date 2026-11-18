@@ -266,13 +266,11 @@ If you cannot see a handwritten PO, return {"handwritten_po": "", "where": ""}. 
 
 
 # "Lens": the person drew a box around a number on the digital invoice; read what is inside it.
-LENS_PROMPT = """This image is a small cropped region of an Indian tax invoice (it may contain a printed or HANDWRITTEN number,
-a stamp, or a line like "PO - 5100002448" or "GRN 5000396179").
-Read every number of 6 or more digits in the crop, exactly as written (handwriting: look carefully at each digit; 1 vs 7,
-0 vs 6, 5 vs 6, 4 vs 9 are easily confused). Return JSON only:
-{"numbers": ["<digits only>", ...], "label": "<word written next to it, e.g. PO, GRN, or empty>"}
-A KTFL purchase order has 10 digits starting 51 or 61 (service POs 81/82/83); a KTFL GRN has 10 digits starting 50.
-If there is no number return {"numbers": [], "label": ""}. Never guess missing digits."""
+LENS_PROMPT = """This image is a small crop of a document. Transcribe ONLY the number written or printed inside it, digit by digit,
+exactly as you see it - it may be handwritten. Ignore every other word, label, date and stamp in the crop. Do not use any outside
+knowledge and do not guess or add digits.
+Return JSON only: {"numbers": ["<the digits you can see>"]}
+If there is no number return {"numbers": []}."""
 
 
 # Qwen-only helpers (used when Tesseract is not installed)
