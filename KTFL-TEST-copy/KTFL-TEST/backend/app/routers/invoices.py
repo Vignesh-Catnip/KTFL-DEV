@@ -339,6 +339,8 @@ def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: Use
     page = int(body.get("page") or 1)
     path = _pdf_or_404(inv, page)
     ocr_text, ai_numbers, ai_ok, ai_raw, crop_png = "", [], None, "", b""
+    target = str(body.get("target") or "").upper()
+    target = target if target in ("PO", "GRN") else ""      # the field the person is filling: read ONLY the number in the box
     has_rect = all(k in body for k in ("x", "y", "w", "h"))
     if has_rect:
         try:
@@ -356,7 +358,8 @@ def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: Use
             client = get_vlm()
             if hasattr(client, "read_region"):
                 import base64
-                ans = client.read_region(base64.b64encode(crop_png).decode())
+                b64 = base64.b64encode(crop_png).decode()
+                ans = client.read_region(b64, expected_digits=10) if target else client.read_region(b64)
                 ai_numbers, ai_ok, ai_raw = ans.get("numbers", []), bool(ans) and not ans.get("error"), ans.get("raw", "")
         except Exception as exc:
             log.exception("lens AI read failed")
@@ -370,11 +373,11 @@ def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: Use
         gw = h = lines = None
     for c in cands:
         try:
-            c["sap"] = lens.sap_check(gw, h, lines, c["value"], c["kind"], sap_enrich) if gw is not None else {"checked": False, "note": "SAP not available"}
+            c["sap"] = lens.sap_check(gw, h, lines, c["value"], target or c["kind"], sap_enrich) if gw is not None else {"checked": False, "note": "SAP not available"}
         except Exception as exc:
             log.warning("lens: SAP check failed for %s: %s", c["value"], exc)
             c["sap"] = {"checked": False, "note": f"SAP check failed: {exc}"[:120]}
-    return {"candidates": cands, "ocr": evidence.available(), "ai": ai_ok, "ai_raw": ai_raw, "crop": _thumb(crop_png)}
+    return {"target": target, "candidates": cands, "ocr": evidence.available(), "ai": ai_ok, "ai_raw": ai_raw, "crop": _thumb(crop_png)}
 
 
 @router.get("/{invoice_id}/file")
