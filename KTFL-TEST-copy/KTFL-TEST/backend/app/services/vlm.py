@@ -265,29 +265,78 @@ class OllamaVlm:
                     return po
         return ""
 
-    def read_region(self, image_b64: str) -> dict:
-        """Lens: the numbers inside a box the person drew on the invoice.
-        Works on the model's TEXT, not on its JSON: JSON, fenced JSON, a plain "5000396179" or a sentence all work - every run
-        of 6+ digits counts. 'raw' = what the model said (shown in the panel); 'error' = the call itself failed."""
-        from .prompts import LENS_PROMPT
+    @staticmethod
+    def _enhance(image_b64: str) -> str:
+        """Grey + auto-contrast + sharpen: handwriting in pale blue ink on a stamp becomes much easier to read."""
+        import base64
+        import io
         try:
-            raw, _ = self._ask_raw(LENS_PROMPT, [image_b64], 256)
-        except Exception as exc:
-            log.warning("lens read failed: %s", exc)
-            return {"numbers": [], "label": "", "raw": f"error: {exc}"[:300], "error": True}
+            from PIL import Image, ImageFilter, ImageOps
+            im = Image.open(io.BytesIO(base64.b64decode(image_b64))).convert("L")
+            im = ImageOps.autocontrast(im, cutoff=1).filter(ImageFilter.UnsharpMask(radius=2, percent=160, threshold=2))
+            buf = io.BytesIO()
+            im.save(buf, "PNG")
+            return base64.b64encode(buf.getvalue()).decode()
+        except Exception as exc:                                    # never let the helper break the scan
+            log.warning("lens: image enhancement skipped: %s", exc)
+            return image_b64
+
+    @staticmethod
+    def _digit_runs(raw: str) -> list[str]:
         text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)
         nums: list[str] = []
         for m in re.finditer(r"\d[\d \-/.]{4,}\d|\d{6,}", text):
             d = re.sub(r"\D", "", m.group(0))
             if len(d) >= 6 and d not in nums:
                 nums.append(d)
+        return nums
+
+    def read_region(self, image_b64: str) -> dict:
+        """Lens: the numbers inside a box the person drew on the invoice.
+        Works on the model's TEXT (JSON, fenced JSON, a plain number or a sentence all work - every run of 6+ digits counts).
+        Handwriting is read up to 3 times: when the first answer is not a 10-digit PO / GRN (the model often drops repeated
+        zeros: 5000410882 -> 510882) it is told what it answered and how many digits are expected, and sees a contrast-
+        enhanced copy of the crop. 'raw' = what the model said (shown in the panel); 'error' = the call itself failed."""
+        from .prompts import LENS_PROMPT
+        from .textutil import grn_is_valid, is_material_po, is_service_po, is_valid_po
+
+        def good(n: str) -> bool:
+            return grn_is_valid(n) or is_material_po(n) or (is_valid_po(n) and is_service_po(n))
+
+        nums: list[str] = []
+        raws: list[str] = []
         label = ""
-        try:
-            label = str(extract_json(text).get("label") or "")
-        except Exception:
-            pass
-        log.info("lens read: model answered %r -> numbers %s", raw[:200], nums)
-        return {"numbers": nums, "label": label, "raw": raw[:300]}
+        enhanced = None
+        prompt, img = LENS_PROMPT, image_b64
+        for attempt in range(3):
+            try:
+                raw, _ = self._ask_raw(prompt, [img], 256)
+            except Exception as exc:
+                log.warning("lens read failed: %s", exc)
+                if not raws:
+                    return {"numbers": [], "label": "", "raw": f"error: {exc}"[:300], "error": True}
+                break
+            raws.append(raw)
+            found = self._digit_runs(raw)
+            for n in found:
+                if n not in nums:
+                    nums.append(n)
+            try:
+                label = label or str(extract_json(re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)).get("label") or "")
+            except Exception:
+                pass
+            log.info("lens read (try %d): model answered %r -> numbers %s", attempt + 1, raw[:200], found)
+            if any(good(n) for n in nums):
+                break
+            seen = ", ".join(found) if found else "nothing"
+            prompt = (LENS_PROMPT + f"\nYour previous answer was: {seen}. That is NOT a complete 10-digit number. "
+                      "Look again at every digit from left to right, count them, and do not skip repeated digits "
+                      "(handwritten zeros such as 5000 are often missed). The number has exactly 10 digits.")
+            if enhanced is None:
+                enhanced = self._enhance(image_b64)
+            img = enhanced if attempt == 0 else image_b64
+        nums.sort(key=lambda n: 0 if good(n) else 1)
+        return {"numbers": nums, "label": label, "raw": " | ".join(r.replace("\n", " ") for r in raws)[:300]}
 
     def number_label(self, images: list[str], number: str) -> str:
         """The label printed beside `number` ('PO No', 'Mo. No.', 'DC No' ...). '' when unknown / not found."""
