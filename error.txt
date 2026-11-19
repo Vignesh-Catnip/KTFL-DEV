@@ -1,17 +1,123 @@
+# Copy to ".env" in this folder and fill in. Never commit the real .env.
+APP_ENV=production
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/clearmatch
+JWT_SECRET=CHANGE_ME_TO_24_PLUS_RANDOM_CHARACTERS
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=CHANGE_ME
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>npm run build
+# SQL Server (read only: EKKO, EKPO, MSEG)
+SAP_ENABLED=true
+SAP_SERVER=
+SAP_DATABASE=BRONZE_DB
+SAP_USER=
+SAP_PASSWORD=
+SAP_DRIVER=ODBC Driver 17 for SQL Server
+SAP_CLIENT=150
+SAP_HSN_COLUMNS=EKPO.J_1BNBM
 
-> clearmatch-dashboard@1.0.0 build
-> tsc --noEmit && vite build
+# Ollama
+OLLAMA_URL=http://localhost:11434
+MODEL_VLM=qwen3-vl:32b
+VLM_GROUP_PAGES=2
+MAX_PAGES=40
+AMOUNT_TOLERANCE=0.0001
+IMAGE_PREPROCESS=false
 
-vite v5.4.21 building for production...
-✓ 0 modules transformed.
-x Build failed in 16ms
-error during build:
-Could not resolve entry module "index.html".
-    at getRollupError (file:///C:/Users/ckts00126/Desktop/KTFL-EXTRACTION/KTFL-TEST-copy/KTFL-TEST/frontend/node_modules/rollup/dist/es/shared/parseAst.js:355:41)
-    at error (file:///C:/Users/ckts00126/Desktop/KTFL-EXTRACTION/KTFL-TEST-copy/KTFL-TEST/frontend/node_modules/rollup/dist/es/shared/parseAst.js:351:42)
-    at ModuleLoader.loadEntryModule (file:///C:/Users/ckts00126/Desktop/KTFL-EXTRACTION/KTFL-TEST-copy/KTFL-TEST/frontend/node_modules/rollup/dist/es/shared/node-entry.js:23634:20)
-    at async Promise.all (index 0)
+# Folders
+WATCH_FOLDER=
+OUTPUT_FOLDER=
+FINISH_FOLDER=
+ERROR_FOLDER=
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\KTFL-TEST-copy\KTFL-TEST\frontend>npm install && npm run build
+# Robot (start with CHECK; use POST only after you trust the results)
+ROBOT_ENABLED=false
+ROBOT_DIR=
+ROBOT_MODE=CHECK
+ROBOT_AUTO_RUN=false
+
+
+
+
+old .env file 
+# ClearMatch backend settings. Copy to .env and fill in. Never commit .env.
+
+APP_ENV=production
+
+# ---- Application database (same PostgreSQL the extractor + MIRO robot use) ----
+DATABASE_URL=postgresql+psycopg://appuser:appuser123@10.7.11.22:5432/miro_invoice
+
+# ---- SAP data lake (SQL Server, read-only) ----
+SAP_ENABLED=true
+SAP_SERVER=ktfldlsqldb.kalyanicorp.com
+SAP_DATABASE=BRONZE_DB
+SAP_USER=automation_reader
+SAP_PASSWORD=Qwerty_12345
+# "ODBC Driver 17 for SQL Server" (recommended) or "SQL Server" (legacy Windows driver)
+SAP_DRIVER=SQL Server            # legacy driver is what is installed on the office PC; use "ODBC Driver 17 for SQL Server" if you have it
+SAP_CLIENT=150
+
+# ---- Ollama vision model ----
+OLLAMA_URL=http://localhost:11434
+MODEL_VLM=qwen3-vl:32b
+# Model context window. 2 pages x ~4-5k image tokens + prompt + answer. If the GPU runs out of memory lower
+# IMAGE_LONG_SIDE (2000) and NUM_CTX (20480).
+NUM_CTX=24576
+# Longest side (pixels) of the rendered invoice pages sent to the model (small print on 300 dpi scans needs ~2400)
+IMAGE_LONG_SIDE=2400
+# Second, cropped high-resolution read of subtotal / tax / total when the first read does not add up
+TOTALS_PASS=true
+
+# ---- OCR cross-check (Tesseract) - fixes sideways scans, checks GSTIN / PO read by the model ----
+# Install Tesseract (Windows installer, English data) and keep the path below. No Tesseract -> set OCR_EVIDENCE=false.
+OCR_EVIDENCE=false
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+
+# ---- Files ----
+UPLOAD_DIR=./data/uploads
+# comma separated folders searched for the original PDF of invoices extracted earlier by the script
+PDF_SEARCH_DIRS=
+# REQUIRED for automatic intake: users drop invoice PDFs here (local or shared folder, e.g. D:\invoices or \\server\invoices).
+# The agent extracts them, moves them to <folder>\processed and the invoice appears on the dashboard.
+# PDF folders: 1 input (WATCH_FOLDER) -> 2 processing -> 3 output\matched|reconcile|blocked -> 4 finish\posted|parked|duplicate (+ error, exception)
+# The other folders are created next to the input folder by themselves; set them only to use other places.
+WATCH_FOLDER=C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\Input-pdf
+PROCESSING_FOLDER=
+OUTPUT_FOLDER=
+FINISH_FOLDER=
+ERROR_FOLDER=
+# Not a material invoice (service PO 81/82/83 or SAC 99xx): moved to exception\service_po or exception\sac_99, not extracted
+EXCEPTION_FOLDER=
+WATCHER_POLL_SECONDS=20
+WATCH_SETTLE_SECONDS=5
+# Browser upload is off by default (folder intake only)
+ALLOW_UPLOAD=false
+# Share of the 10 mandatory fields that must be read; >= this -> Reconcile (person completes it), below -> Blocked
+MIN_COMPLETENESS=0.70
+GST_RATE_XLSX=./data/GST_RATE.xlsx
+
+# ---- Login ----
+JWT_SECRET=CHANGE_ME_TO_A_LONG_RANDOM_STRING
+JWT_EXPIRE_MINUTES=720
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=CHANGE_ME
+
+# ---- Behaviour ----
+WORKER_ENABLED=true
+CORS_ORIGINS=http://localhost:5173
+# JSON, e.g. {"2001":"Pune Plant","2002":"Baramati"}
+PLANT_NAMES={}
+
+# ---- HSN / NCM column in the SQL data lake (compare-only; never copied) --------------------------
+# Leave empty = auto-detect in MSEG / EKPO / MARC. Or name it: TABLE.COLUMN, comma separated
+SAP_HSN_COLUMNS=                     # example: MSEG.J_1BNBM  (NCM code = J_1BNBM)
+
+# ---- MIRO robot (Robot Framework + SAP GUI) started by the dashboard -----------------------------
+ROBOT_ENABLED=true
+ROBOT_DIR=C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot
+ROBOT_PYTHON=                       # python of the robot venv (empty = same python as the dashboard)
+ROBOT_TASK=tasks/miro_posting.robot
+ROBOT_MODE=POST                   # CHECK (dry run) / PARK / POST ; empty = MIRO_MODE of the robot's own .env
+ROBOT_AUTO_RUN=true                 # matched invoices go to the robot automatically
+ROBOT_AUTO_DELAY_SECONDS=40         # wait this long after the last new matched invoice, then start
+ROBOT_TIMEOUT_MINUTES=120
+ROBOT_LOG_DIR=./data/robot_runs
