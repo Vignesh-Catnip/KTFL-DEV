@@ -1,9 +1,0 @@
-node_modules
-dist
-.env
-*.db
-demo_uploads
-data/uploads
-__pycache__
-.pytest_cache
-venv
