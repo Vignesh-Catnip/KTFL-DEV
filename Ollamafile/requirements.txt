@@ -1,0 +1,12 @@
+langchain-core>=0.3.0
+langchain-ollama>=0.3.0
+pydantic>=2.0
+pymupdf>=1.24.0
+openpyxl>=3.1.0
+pip install langchain langchain-ollama langchain-core pymupdf openpyxl httpx
+
+python -c "import pyodbc; print(pyodbc.drivers())"
+['SQL Server', 'ODBC Driver 17 for SQL Server']
+pip install pyodbc
+python -m pip install pywin32
+tasklist /v /fi "imagename eq saplogon.exe"

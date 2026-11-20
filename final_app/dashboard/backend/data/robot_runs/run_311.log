@@ -1,0 +1,71 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.0s
+[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
+Enter Matched Invoices In MIRO                                                                                  2 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (MIRO/SAPLMR1M/6000)
+=== Invoice 879 | PO 5100002366 | GRN 5000373614 | total 87285.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 10.09.2026
+  > Type INVFO-XBLNR = 879
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002366
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2002
+  > Type INVFO-SECCO = 2002
+  > Type INVFO-SGTXT = 722840 STEEL BARS DIN-1.2714 FLAT- 280 X 110 X 170
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+[ WARN ] 879: REVIEW - MIRO shows no items for PO 5100002366 (PO fully invoiced, wrong PO, or GR not posted)
+  > Command field: /n
+  > Press Enter
+879 -> REVIEW
+=== Invoice 880 | PO 5100002363 | GRN 5000373619 | total 231534.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 10.09.2026
+  > Type INVFO-XBLNR = 880
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002363
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2002
+  > Type INVFO-SECCO = 2002
+  > Type INVFO-SGTXT = 722840 STEEL BARS DIN-1.2714 FLAT- 370 X 210 X 100
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+[ WARN ] 880: REVIEW - MIRO shows no items for PO 5100002363 (PO fully invoiced, wrong PO, or GR not posted)
+  > Command field: /n
+  > Press Enter
+880 -> REVIEW
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+  > Command field: /n
+  > Press Enter
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 2 | FAILED 0 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261119_153624\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261119_153624\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261119_153624\report.html

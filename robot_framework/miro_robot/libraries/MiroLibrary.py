@@ -185,13 +185,23 @@ class MiroLibrary:
     @keyword("Enter Amount And Settle Balance")
     @_track
     def amount_and_balance(self, invoice):
+<<<<<<< HEAD
         """Amount = invoice total. Balance 0 -> OK. Balance > 0 (up to MIRO_MAX_UNPLANNED_COST) ->
         Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
+=======
+        """Amount = invoice total. Balance 0 -> OK, the Details tab is NOT opened. Balance > 0 (up to
+        MIRO_MAX_UNPLANNED_COST) -> Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
+>>>>>>> origin/main
         bal = self.miro.enter_amount(invoice)
         logger.info(f"Balance after amount: {bal:,.2f}", also_console=True)
         unpl = self.miro.settle_balance(invoice, bal)
         self._unplanned = unpl
         if unpl:
+<<<<<<< HEAD
+=======
+            logger.info(f"Doc. Type set: {invoice.get('doc_type') or '-'} {invoice.get('doc_type_desc') or ''}".strip(),
+                        also_console=True)
+>>>>>>> origin/main
             logger.info(f"Unpl. Del. Csts {unpl:,.2f} entered - balance 0", also_console=True)
         else:
             logger.info("Balance OK (0.00)", also_console=True)
@@ -275,6 +285,14 @@ class MiroLibrary:
 
     @keyword("Close Connections")
     def close(self):
+<<<<<<< HEAD
+=======
+        try:
+            from miro.miro_screen import close_sap
+            close_sap(self.sap)                   # closes the SAP window only if the robot opened it
+        except Exception as exc:
+            logger.warn(f"SAP close skipped: {exc}")
+>>>>>>> origin/main
         if self.db:
             self.db.close()
 
