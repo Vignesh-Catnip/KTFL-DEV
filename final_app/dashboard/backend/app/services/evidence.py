@@ -178,3 +178,51 @@ def corroborates_po(ev: Evidence, po: str) -> bool:
 
 def corroborates_sac(ev: Evidence, code: str) -> bool:
     return (not ev.available) or (code and code in ev.digits())
+
+
+# ----------------------------------------------------------------------------------------------- Lens: where are the numbers?
+_BOX_CACHE: dict[tuple, list[dict]] = {}
+_LENS_PREFIX = ("50", "51", "61", "81", "82", "83")
+
+
+def find_numbers(path: str | Path, page: int) -> list[dict]:
+    """Printed 10-digit GRN / PO candidates on one page with their position (fractions of the page) so the dashboard
+    can draw a box around each. [] without tesseract. Handwriting is not found here - the person draws a box for that."""
+    if not available():
+        return []
+    path = Path(path)
+    key = (str(path), path.stat().st_mtime_ns, page)
+    if key in _BOX_CACHE:
+        return _BOX_CACHE[key]
+    out: list[dict] = []
+    try:
+        with pdfio._open(path) as doc:
+            pg = doc[page - 1]
+            z = 3000 / max(pg.rect.width, pg.rect.height)
+            png = pg.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False).tobytes("png")
+            W, H = int(pg.rect.width * z), int(pg.rect.height * z)
+        with tempfile.TemporaryDirectory() as d:
+            f = os.path.join(d, "p.png")
+            Path(f).write_bytes(png)
+            tsv = subprocess.run([orient.cmd(), f, "-", "--psm", "6", "tsv"], capture_output=True, text=True, timeout=180).stdout
+        seen: set[tuple] = set()
+        for line in tsv.splitlines()[1:]:
+            c = line.split("\t")
+            if len(c) < 12 or not c[11].strip():
+                continue
+            digits = re.sub(r"\D", "", c[11])
+            if len(digits) != 10 or digits[:2] not in _LENS_PREFIX or len(re.sub(r"[\d\W_]", "", c[11])) > 1:
+                continue
+            l, t, w, h = (int(c[i]) for i in (6, 7, 8, 9))
+            k = (digits, round(l / W, 2), round(t / H, 2))
+            if k in seen:
+                continue
+            seen.add(k)
+            out.append({"value": digits, "x": l / W, "y": t / H, "w": w / W, "h": h / H})
+    except Exception:
+        log.exception("number detection failed")
+        return []
+    if len(_BOX_CACHE) > 64:
+        _BOX_CACHE.clear()
+    _BOX_CACHE[key] = out
+    return out

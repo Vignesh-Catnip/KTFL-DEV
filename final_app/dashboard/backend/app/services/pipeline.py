@@ -98,6 +98,49 @@ def _second_read_totals(vlm, path, h: dict, filename: str) -> None:
         h["field_sources"].update({k: "VISION_TOTALS" for k in ("subtotal", "cgst", "sgst", "igst", "total")})
 
 
+def _veto_service_po_by_model(vlm, images, h: dict, ev: "evmod.Evidence", filename: str) -> None:
+    """No Tesseract: before a service PO (81/82/83) sends an invoice away, ask the model what label sits next to that
+    number. 'Mo. No.' / 'Ph. No.' / 'DC No' / 'LR No' ... -> it is not a PO: dropped (and the handwritten-PO look-up follows)."""
+    if ev.available or not hasattr(vlm, "read_handwritten_po") or not hasattr(vlm, "number_label"):
+        return
+    pos = [p for p in ([h.get("po_number") or ""] + list(h.get("po_numbers_printed") or [])) if is_service_po(p)]
+    for po in dict.fromkeys(pos):
+        try:
+            label = vlm.number_label(images, po)
+        except Exception:
+            log.exception("%s: number label look-up failed", filename)
+            continue
+        if label and (evmod._PHONE_CTX.search(label) or evmod._OTHER_CTX.search(label)) \
+                and not re.search(r"\bP\.?\s?O\b|purchase", label, re.I):
+            log.info("%s: %s is labelled '%s' on the page - not a PO", filename, po, label)
+            h.setdefault("evidence_notes", []).append(f"{po} is labelled '{label}' - not a PO")
+            ev.phones.add(po)
+            if h.get("po_number") == po:
+                h["po_number"] = ""
+            h["po_numbers_printed"] = [p for p in h.get("po_numbers_printed", []) if p != po]
+            h["po_numbers_all"] = ",".join(p for p in str(h.get("po_numbers_all") or "").split(",") if p and p != po)
+
+
+def _regstin_by_model(vlm, path, h: dict, buyer_prefixes: tuple[str, ...], filename: str) -> None:
+    """The seller GSTIN failed its checksum (a misread character) and there is no OCR: read the header again, cropped and
+    large. Only a checksum-valid GSTIN is accepted, and never the buyer's."""
+    from .textutil import gstin_ok
+    if gstin_ok(h.get("gstin") or "") or not hasattr(vlm, "read_seller_gstins"):
+        return
+    try:
+        found = vlm.read_seller_gstins(pdfio.band_images(path, 0.0, 0.45))
+    except Exception:
+        log.exception("%s: GSTIN re-read failed", filename)
+        return
+    sellers = [f["gstin"] for f in found if not any(f["gstin"].startswith(p) for p in buyer_prefixes)]
+    pick = next((f["gstin"] for f in found if f["role"] == "seller" and f["gstin"] in sellers), sellers[0] if len(sellers) == 1 else "")
+    if pick:
+        log.info("%s: GSTIN %s -> %s (header re-read)", filename, h.get("gstin"), pick)
+        h.setdefault("evidence_notes", []).append(f"GSTIN {h.get('gstin') or '(empty)'} -> {pick} (header re-read)")
+        h["gstin"] = pick
+        h["field_sources"]["gstin"] = "VISION_HEADER"
+
+
 def _exception_reason(h: dict, lines: list[dict], ev: "evmod.Evidence") -> tuple[str, str] | None:
     """Only MATERIAL invoices are processed. Returns (folder, message) for an invoice that must go to the
     exception folder instead: service PO (81 / 82 / 83) or a service SAC (HSN starting 99).
@@ -179,6 +222,9 @@ def process_pdf(db: Session, path: str | Path, filename: str | None = None, *,
     for note in evmod.apply(h, ev, _gs().gstin_prefixes, tuple(VENDOR_HINTS)):
         log.info("%s: OCR evidence - %s", filename, note)
         h.setdefault("evidence_notes", []).append(note)
+
+    _regstin_by_model(vlm, path, h, _gs().gstin_prefixes, filename)
+    _veto_service_po_by_model(vlm, images, h, ev, filename)
 
     # No material PO yet -> many vendors (SLR ...) print none and the PO is handwritten: look for it once, focused.
     if not is_material_po(h.get("po_number") or "") and hasattr(vlm, "read_handwritten_po"):

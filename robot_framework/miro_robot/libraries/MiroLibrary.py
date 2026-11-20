@@ -185,23 +185,15 @@ class MiroLibrary:
     @keyword("Enter Amount And Settle Balance")
     @_track
     def amount_and_balance(self, invoice):
-<<<<<<< HEAD
-        """Amount = invoice total. Balance 0 -> OK. Balance > 0 (up to MIRO_MAX_UNPLANNED_COST) ->
-        Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
-=======
         """Amount = invoice total. Balance 0 -> OK, the Details tab is NOT opened. Balance > 0 (up to
         MIRO_MAX_UNPLANNED_COST) -> Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
->>>>>>> origin/main
         bal = self.miro.enter_amount(invoice)
         logger.info(f"Balance after amount: {bal:,.2f}", also_console=True)
         unpl = self.miro.settle_balance(invoice, bal)
         self._unplanned = unpl
         if unpl:
-<<<<<<< HEAD
-=======
             logger.info(f"Doc. Type set: {invoice.get('doc_type') or '-'} {invoice.get('doc_type_desc') or ''}".strip(),
                         also_console=True)
->>>>>>> origin/main
             logger.info(f"Unpl. Del. Csts {unpl:,.2f} entered - balance 0", also_console=True)
         else:
             logger.info("Balance OK (0.00)", also_console=True)
@@ -247,8 +239,35 @@ class MiroLibrary:
         logger.info(f"{status}: SAP document {doc}", also_console=True)
         return status
 
+    @keyword("Should Retry Invoice")
+    def should_retry(self, invoice, error):
+        """True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+        Never for a data problem (a second try gives the same answer) and never for an error while saving
+        (the document may already exist in SAP - a second try could post it twice)."""
+        kind = self._error_kind or "TECH"
+        ok = self.cfg.retry_on_failure > 0 and kind in ("SAP", "TECH")
+        logger.info(f"{invoice.get('invoice_number')}: first try failed ({kind}: {error}) -> "
+                    f"{'retrying once' if ok else 'no retry for this kind of error'}", also_console=True)
+        return ok
+
+    @keyword("Prepare Retry")
+    def prepare_retry(self, invoice):
+        """Back to a clean MIRO screen and a clean per-invoice state before the second try."""
+        self._screenshot(invoice, "first_try_error")
+        self._error_kind = ""
+        self._plan = None
+        self._unplanned = 0.0
+        self._sel_txt = ""
+        if self.miro:
+            try:
+                self.miro.leave()
+            except Exception as exc:                    # the screen may be in a bad state; Open MIRO will try again
+                logger.warn(f"Reset before retry failed: {exc}")
+            self.miro.log = []
+        logger.info(f"=== RETRY 1/1: invoice {invoice.get('invoice_number')} ===", also_console=True)
+
     @keyword("Record Failure")
-    def record_failure(self, invoice, error):
+    def record_failure(self, invoice, error, retried=False):
         """Classifies the error and stores it:
              data problem           -> REVIEW  (not retried)
              error while saving     -> UNKNOWN (check in SAP, not retried)
@@ -260,7 +279,8 @@ class MiroLibrary:
                   "sap_log": self.miro.log if self.miro else []}
         try:
             self.db.rollback()
-            self._finish(int(invoice["id"]), status, str(error), "", "", detail)
+            msg = str(error) + (" [failed again after 1 retry]" if str(retried).lower() in ("true", "1", "yes") else "")
+            self._finish(int(invoice["id"]), status, msg, "", "", detail)
         except Exception as e:                          # DB down: never hide the SAP error
             logger.error(f"Could not write failure to DB: {e}")
         logger.warn(f"{invoice.get('invoice_number')}: {status} - {error}")
@@ -285,14 +305,11 @@ class MiroLibrary:
 
     @keyword("Close Connections")
     def close(self):
-<<<<<<< HEAD
-=======
         try:
             from miro.miro_screen import close_sap
             close_sap(self.sap)                   # closes the SAP window only if the robot opened it
         except Exception as exc:
             logger.warn(f"SAP close skipped: {exc}")
->>>>>>> origin/main
         if self.db:
             self.db.close()
 

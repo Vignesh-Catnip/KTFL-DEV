@@ -43,22 +43,39 @@ Stop Robot
     Close Connections
 
 Process One Invoice
-    [Documentation]    One invoice end-to-end. Any failure is recorded and the loop continues.
+    [Documentation]    One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+    ...                if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+    ...                while saving are never retried (a second try could not help / could post twice).
     [Arguments]    ${invoice}
     ${claimed}=    Claim Invoice    ${invoice}
     IF    not ${claimed}    RETURN
     TRY
-        Open MIRO
-        Enter Invoice Header    ${invoice}
-        Enter Purchase Order    ${invoice}
-        Enter Tax And Business Place    ${invoice}
-        Select GRN Lines    ${invoice}
-        Check And Fix HSN    ${invoice}
-        Enter Amount And Settle Balance    ${invoice}
-        Simulate Invoice    ${invoice}
-        ${result}=    Complete Invoice    ${invoice}
-        Log    ${invoice}[invoice_number] -> ${result}    console=True
+        Run Invoice Steps    ${invoice}
     EXCEPT    AS    ${error}
-        ${status}=    Record Failure    ${invoice}    ${error}
-        Log    ${invoice}[invoice_number] -> ${status}    console=True
+        ${retry}=    Should Retry Invoice    ${invoice}    ${error}
+        IF    ${retry}
+            Prepare Retry    ${invoice}
+            TRY
+                Run Invoice Steps    ${invoice}
+            EXCEPT    AS    ${error2}
+                ${status}=    Record Failure    ${invoice}    ${error2}    retried=True
+                Log    ${invoice}[invoice_number] -> ${status} (after retry)    console=True
+            END
+        ELSE
+            ${status}=    Record Failure    ${invoice}    ${error}
+            Log    ${invoice}[invoice_number] -> ${status}    console=True
+        END
     END
+
+Run Invoice Steps
+    [Arguments]    ${invoice}
+    Open MIRO
+    Enter Invoice Header    ${invoice}
+    Enter Purchase Order    ${invoice}
+    Enter Tax And Business Place    ${invoice}
+    Select GRN Lines    ${invoice}
+    Check And Fix HSN    ${invoice}
+    Enter Amount And Settle Balance    ${invoice}
+    Simulate Invoice    ${invoice}
+    ${result}=    Complete Invoice    ${invoice}
+    Log    ${invoice}[invoice_number] -> ${result}    console=True

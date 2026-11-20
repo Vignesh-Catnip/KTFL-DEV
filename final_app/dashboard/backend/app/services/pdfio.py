@@ -67,6 +67,20 @@ def main_page_images(path: str | Path) -> list[str]:
     return out
 
 
+def band_images(path: str | Path, y0: float, y1: float, width_px: int = 2400) -> list[str]:
+    """A horizontal band (fractions of the page height) of the invoice pages at high resolution, base64 images."""
+    cfg = get_settings()
+    out = []
+    with _open(path) as doc:
+        for i in range(min(doc.page_count, cfg.main_pages)):
+            pg = doc[i]
+            r = pg.rect
+            clip = pymupdf.Rect(0, r.height * y0, r.width, r.height * y1)
+            z = max(cfg.image_zoom, width_px / r.width)
+            out.append(base64.b64encode(_encode(pg.get_pixmap(matrix=pymupdf.Matrix(z, z), clip=clip, alpha=False), path)).decode())
+    return out
+
+
 def totals_images(path: str | Path) -> list[str]:
     """Bottom half of the invoice pages at high resolution - the tax / totals box. Used for a focused second
     read when the first read of the amounts does not add up."""
@@ -114,6 +128,35 @@ def render_page_png(path: str | Path, page: int = 1, zoom: float = 1.6) -> bytes
         if page < 1 or page > doc.page_count:
             raise IndexError(f"page {page} out of range (1..{doc.page_count})")
         return doc[page - 1].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False).tobytes("png")
+
+
+def page_size(path: str | Path, page: int) -> tuple[float, float]:
+    """(width, height) in points of a page as displayed (rotation applied)."""
+    with _open(path) as doc:
+        r = doc[page - 1].rect
+        return r.width, r.height
+
+
+def render_crop_png(path: str | Path, page: int, x: float, y: float, w: float, h: float,
+                    min_width: int = 1100, max_side: int = 2400) -> bytes:
+    """A region of one page as PNG, for the 'Lens' scan. x, y, w, h are FRACTIONS (0..1) of the page exactly as the
+    dashboard shows it (rotation applied). Small regions are enlarged so handwriting is readable."""
+    x0, y0 = max(0.0, min(1.0, x)), max(0.0, min(1.0, y))
+    x1, y1 = max(0.0, min(1.0, x + w)), max(0.0, min(1.0, y + h))
+    if x1 - x0 < 0.003 or y1 - y0 < 0.003:
+        raise ValueError("selection is too small")
+    with _open(path) as doc:
+        if page < 1 or page > doc.page_count:
+            raise IndexError(f"page {page} out of range (1..{doc.page_count})")
+        pg = doc[page - 1]
+        r = pg.rect
+        pad_x, pad_y = 0.01 * r.width, 0.006 * r.height
+        clip = pymupdf.Rect(r.x0 + x0 * r.width - pad_x, r.y0 + y0 * r.height - pad_y,
+                            r.x0 + x1 * r.width + pad_x, r.y0 + y1 * r.height + pad_y) & r
+        z = min_width / max(clip.width, 1.0)
+        z = max(z, 2.0)
+        z = min(z, max_side / max(clip.width, clip.height))
+        return pg.get_pixmap(matrix=pymupdf.Matrix(z, z), clip=clip, alpha=False).tobytes("png")
 
 
 def locate_pdf(filename: str | None, source_path: str | None = None) -> Path | None:

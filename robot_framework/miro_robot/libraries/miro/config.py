@@ -79,6 +79,7 @@ class Config:
     source_status: str = "MATCHED"        # invoices.status value that means "ready for MIRO"
     max_attempts: int = 3                 # FAILED invoices are retried up to this many times
     batch_limit: int = 200                # max invoices per run
+    retry_on_failure: int = 1             # an invoice that fails with a SAP / technical error is tried once more at once (0 = off)
 
     # ---- SAP GUI -------------------------------------------------------------------------
     sap_backend: str = "gui"              # "gui" = real SAP GUI scripting, "fake" = simulator (tests)
@@ -180,6 +181,7 @@ def load_config() -> Config:
         source_status=_env("MIRO_SOURCE_STATUS", Config.source_status),
         max_attempts=_env_int("MIRO_MAX_ATTEMPTS", Config.max_attempts),
         batch_limit=_env_int("MIRO_BATCH_LIMIT", Config.batch_limit),
+        retry_on_failure=_env_int("MIRO_RETRY_ON_FAILURE", Config.retry_on_failure),
         sap_backend=_env("MIRO_SAP_BACKEND", Config.sap_backend).lower(),
         sap_logon_exe=_env("SAP_LOGON_EXE", Config.sap_logon_exe),
         sap_connection=_env("SAP_CONNECTION", ""),
