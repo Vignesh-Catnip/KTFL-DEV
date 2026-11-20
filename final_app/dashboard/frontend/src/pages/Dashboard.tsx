@@ -1,17 +1,29 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type InvoiceRow, type Stats } from '../api'
 import { Icon, ICONS, QueueTag, MiroTag, Stat, inr, inrShort } from '../ui'
 
 const TABS = [['', 'All'], ['MATCHED', 'Matched'], ['RECONCILE', 'Reconcile'], ['BLOCKED', 'Blocked']] as const
 
+/** The list (search, page, scroll) is remembered while an invoice is open, so Back returns to the same place. */
+const LIST_KEY = 'ktfl_list_state'
+type ListState = { queue: string; plant: string; q: string; page: number; scroll: number }
+function savedList(queue: string, plant: string): ListState | null {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(LIST_KEY) || 'null') as ListState | null
+    return s && s.queue === queue && s.plant === plant ? s : null
+  } catch { return null }
+}
+
 export default function Dashboard() {
   const nav = useNavigate()
   const [sp, setSp] = useSearchParams()
   const queue = sp.get('queue') ?? ''
   const plant = sp.get('plant') ?? ''
-  const [q, setQ] = useState('')
-  const [page, setPage] = useState(1)
+  const restored = useRef<ListState | null>(savedList(queue, plant))
+  const pendingScroll = useRef<number | null>(restored.current ? restored.current.scroll : null)
+  const [q, setQ] = useState(restored.current?.q ?? '')
+  const [page, setPage] = useState(restored.current?.page ?? 1)
   const [data, setData] = useState<{ total: number; items: InvoiceRow[] } | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [err, setErr] = useState('')
@@ -22,7 +34,22 @@ export default function Dashboard() {
     api.stats().then(setStats).catch(() => {})
   }, [queue, plant, q, page])
   useEffect(() => { const t = setTimeout(load, q ? 250 : 0); return () => clearTimeout(t) }, [load, q])
-  useEffect(() => setPage(1), [queue, plant, q])
+  const firstFilter = useRef(true)
+  useEffect(() => { if (firstFilter.current) { firstFilter.current = false; return } setPage(1) }, [queue, plant, q])      // not on the first run: keep the restored page
+  useEffect(() => {
+    if (data && pendingScroll.current != null) {
+      const y = pendingScroll.current
+      pendingScroll.current = null
+      requestAnimationFrame(() => { const m = document.querySelector('.main'); if (m) m.scrollTop = y })
+    }
+  }, [data])
+  const openInvoice = (id: number) => {
+    try {
+      const m = document.querySelector('.main')
+      sessionStorage.setItem(LIST_KEY, JSON.stringify({ queue, plant, q, page, scroll: m ? m.scrollTop : 0 } satisfies ListState))
+    } catch { /* storage unavailable: Back still works, just from the top */ }
+    nav(`/invoice/${id}`)
+  }
 
   const s = stats
   const totalValue = s ? Object.values(s.value).reduce((a, b) => a + b, 0) : 0
@@ -62,7 +89,7 @@ export default function Dashboard() {
           <thead><tr><th>Vendor</th><th>Invoice</th><th>PO / GRN</th><th>Date</th><th style={{ textAlign: 'right' }}>Amount</th><th>Read</th><th>Status</th><th>Why</th><th>SAP</th></tr></thead>
           <tbody>
             {data?.items.map(i => (
-              <tr key={i.id} className="click" onClick={() => nav(`/invoice/${i.id}`)}>
+              <tr key={i.id} className="click" onClick={() => openInvoice(i.id)}>
                 <td className="vend"><b>{i.vendor || '—'}</b><span>{i.vendor_code ? `V-${i.vendor_code}` : 'no vendor code'}{i.plant_code ? ` · ${i.plant_code}` : ''}</span></td>
                 <td className="mono poref">{i.invoice_number || '—'}</td>
                 <td className="poref">{i.po_number || '—'}<span>{i.grn_number || 'no GRN'}</span></td>

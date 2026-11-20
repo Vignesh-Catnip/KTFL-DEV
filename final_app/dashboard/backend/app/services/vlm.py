@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import re
 from typing import Protocol
 
@@ -108,6 +109,10 @@ class VlmClient(Protocol):
     def page_is_upright(self, image_b64: str) -> bool | None: ...
     def read_totals(self, images: list[str]) -> dict: ...
     def read_handwritten_po(self, images: list[str]) -> str: ...
+    def read_region(self, image_b64: str, expected_digits: int | None = None) -> dict: ...
+    def number_label(self, images: list[str], number: str) -> str: ...
+    def read_seller_gstins(self, images: list[str]) -> list[dict]: ...
+    def find_numbers(self, image_b64: str) -> list[dict]: ...
     def health(self) -> tuple[bool, str]: ...
 
 
@@ -133,7 +138,8 @@ class OllamaVlm:
         r.raise_for_status()
         return r.json()
 
-    def _ask(self, prompt: str, images: list[str], num_predict: int | None = None) -> dict:
+    def _ask_raw(self, prompt: str, images: list[str], num_predict: int | None = None) -> tuple[str, dict]:
+        """The model's answer as TEXT (no JSON parsing) + the Ollama response."""
         num_predict = num_predict or self.cfg.num_predict
         data = self._post_chat(prompt, images, num_predict, use_format=True)
         msg = data.get("message") or {}
@@ -144,6 +150,10 @@ class OllamaVlm:
             raw = (msg.get("content") or msg.get("thinking") or "").strip()
         if not raw:
             raise ValueError(f"Ollama returned an empty response (done_reason={data.get('done_reason')})")
+        return raw, data
+
+    def _ask(self, prompt: str, images: list[str], num_predict: int | None = None) -> dict:
+        raw, data = self._ask_raw(prompt, images, num_predict)
         try:
             return extract_json(raw)
         except ValueError:
@@ -254,6 +264,155 @@ class OllamaVlm:
                 if is_material_po(po):
                     return po
         return ""
+
+    @staticmethod
+    def _enhance(image_b64: str) -> str:
+        """Grey + auto-contrast + sharpen: handwriting in pale blue ink on a stamp becomes much easier to read."""
+        import base64
+        import io
+        try:
+            from PIL import Image, ImageFilter, ImageOps
+            im = Image.open(io.BytesIO(base64.b64decode(image_b64))).convert("L")
+            im = ImageOps.autocontrast(im, cutoff=1).filter(ImageFilter.UnsharpMask(radius=2, percent=160, threshold=2))
+            buf = io.BytesIO()
+            im.save(buf, "PNG")
+            return base64.b64encode(buf.getvalue()).decode()
+        except Exception as exc:                                    # never let the helper break the scan
+            log.warning("lens: image enhancement skipped: %s", exc)
+            return image_b64
+
+    @staticmethod
+    def _digit_runs(raw: str) -> list[str]:
+        text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)
+        nums: list[str] = []
+        for m in re.finditer(r"\d[\d \-/.]{4,}\d|\d{6,}", text):
+            d = re.sub(r"\D", "", m.group(0))
+            if len(d) >= 6 and d not in nums:
+                nums.append(d)
+        return nums
+
+    def read_region(self, image_b64: str, expected_digits: int | None = None) -> dict:
+        """Lens: the numbers inside a box the person drew on the invoice.
+        Works on the model's TEXT (JSON, fenced JSON, a plain number or a sentence all work - every run of 6+ digits counts).
+        Handwriting is read up to 3 times: when the first answer is not a 10-digit PO / GRN (the model often drops repeated
+        zeros: 5000410882 -> 510882) it is told what it answered and how many digits are expected, and sees a contrast-
+        enhanced copy of the crop. 'raw' = what the model said (shown in the panel); 'error' = the call itself failed."""
+        from .prompts import LENS_PROMPT
+        from .textutil import grn_is_valid, is_material_po, is_service_po, is_valid_po
+
+        def good(n: str) -> bool:
+            if expected_digits:                                   # the person said which field this is: just count the digits
+                return len(n) == expected_digits
+            return grn_is_valid(n) or is_material_po(n) or (is_valid_po(n) and is_service_po(n))
+
+        nums: list[str] = []
+        raws: list[str] = []
+        label = ""
+        enhanced = None
+        prompt, img = LENS_PROMPT, image_b64
+        for attempt in range(3):
+            try:
+                raw, _ = self._ask_raw(prompt, [img], 256)
+            except Exception as exc:
+                log.warning("lens read failed: %s", exc)
+                if not raws:
+                    return {"numbers": [], "label": "", "raw": f"error: {exc}"[:300], "error": True}
+                break
+            raws.append(raw)
+            found = self._digit_runs(raw)
+            for n in found:
+                if n not in nums:
+                    nums.append(n)
+            try:
+                label = label or str(extract_json(re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)).get("label") or "")
+            except Exception:
+                pass
+            log.info("lens read (try %d): model answered %r -> numbers %s", attempt + 1, raw[:200], found)
+            if any(good(n) for n in nums):
+                break
+            seen = ", ".join(found) if found else "nothing"
+            prompt = (LENS_PROMPT + f"\nYour previous answer was: {seen}. Look again at every digit from left to right, one by one, "
+                      "and do not skip repeated digits (handwritten zeros are often missed)."
+                      + (f" The number has exactly {expected_digits} digits." if expected_digits else ""))
+            if enhanced is None:
+                enhanced = self._enhance(image_b64)
+            img = enhanced if attempt == 0 else image_b64
+        nums.sort(key=lambda n: 0 if good(n) else 1)
+        return {"numbers": nums, "label": label, "raw": " | ".join(r.replace("\n", " ") for r in raws)[:300]}
+
+    def number_label(self, images: list[str], number: str) -> str:
+        """The label printed beside `number` ('PO No', 'Mo. No.', 'DC No' ...). '' when unknown / not found."""
+        from .prompts import NUMBER_LABEL_PROMPT
+        for img in images:
+            try:
+                ans = self._ask(NUMBER_LABEL_PROMPT.format(number=number), [img], 128)
+            except Exception as exc:
+                log.warning("number label read failed: %s", exc)
+                continue
+            if ans.get("found") in (True, "true", "True") and str(ans.get("label") or "").strip():
+                return str(ans["label"]).strip()
+        return ""
+
+    def read_seller_gstins(self, images: list[str]) -> list[dict]:
+        """[{'gstin': .., 'role': ..}] from the upper part of the invoice; only checksum-valid GSTINs are returned."""
+        from .prompts import GSTIN_PROMPT
+        out: list[dict] = []
+        for img in images:
+            try:
+                ans = self._ask(GSTIN_PROMPT, [img], 384)
+            except Exception as exc:
+                log.warning("GSTIN re-read failed: %s", exc)
+                continue
+            for it in ans.get("gstins") or []:
+                g = re.sub(r"[^0-9A-Z]", "", str((it or {}).get("gstin") or "").upper())
+                if gstin_ok(g) and g not in [o["gstin"] for o in out]:
+                    out.append({"gstin": g, "role": str(it.get("role") or "").lower()})
+        return out
+
+    def find_numbers(self, image_b64: str) -> list[dict]:
+        """Lens: PO / GRN numbers on one page with their position (fractions 0..1 of the image), found by the model.
+        Qwen3-VL normally answers boxes in 0..1000 relative coordinates; 0..1 fractions are accepted too. Tolerant about
+        the JSON shape (list or {"boxes": [...]}, "bbox" / "bbox_2d" / "box", "value" / "number"). [] on any error."""
+        from .prompts import LENS_FIND_PROMPT
+        try:
+            raw, _ = self._ask_raw(LENS_FIND_PROMPT, [image_b64], 768)
+        except Exception as exc:
+            log.warning("lens find failed: %s", exc)
+            return []
+        text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.I)
+        items: list = []
+        try:
+            data = json.loads(re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.I).strip())
+        except Exception:
+            try:
+                data = extract_json(text)
+            except Exception:
+                data = None
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            for k in ("boxes", "numbers", "items", "results", "detections"):
+                if isinstance(data.get(k), list):
+                    items = data[k]
+                    break
+            else:
+                items = [data] if (data.get("bbox") or data.get("bbox_2d")) else []
+        out = []
+        for b in items:
+            if not isinstance(b, dict):
+                continue
+            try:
+                v = re.sub(r"\D", "", str(b.get("value") or b.get("number") or b.get("text") or b.get("label") or ""))
+                box = b.get("bbox") or b.get("bbox_2d") or b.get("box") or b.get("bounding_box")
+                x1, y1, x2, y2 = (float(c) for c in box)
+            except (TypeError, ValueError):
+                continue
+            scale = 1.0 if max(x1, y1, x2, y2) <= 1.0 else 1000.0           # fractions or Qwen's 0..1000 grid
+            x1, y1, x2, y2 = (max(0.0, min(1.0, c / scale)) for c in (x1, y1, x2, y2))
+            if len(v) == 10 and x2 > x1 and y2 > y1:
+                out.append({"value": v, "x": x1, "y": y1, "w": x2 - x1, "h": y2 - y1})
+        log.info("lens find: model answered %r -> %d box(es)", raw[:200], len(out))
+        return out
 
     def read_totals(self, images: list[str]) -> dict:
         """Focused re-read of the totals box (bottom half of each page, high resolution). {} on any error."""

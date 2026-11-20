@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 import mimetypes
 from pathlib import Path
@@ -14,14 +15,17 @@ from ..models import AuditLog, Invoice, InvoiceLine, QUEUES, User
 from ..schemas import InvoiceEdit, ResolveIn  # LineEdit kept in schemas for future typed use
 from ..security import current_user, require
 from ..config import get_settings
-from ..services import doctype, pdfio, robot
+from ..services import doctype, evidence, lens, pdfio, robot
+from ..services.vlm import get_vlm
 from ..services.sap import get_sap, sap_enrich
 from ..services.compare import build_compare
 from ..services.persist import audit, find_duplicate, header_from_invoice
 from ..services.pipeline import recheck_invoice
 from ..services.textutil import is_service_po
+from ..services.gst import resolve_tax_code_input
 from .common import apply_effective, invoice_row, iso
 
+log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
 # edit field -> (Invoice column, header key)
@@ -142,6 +146,16 @@ def edit(invoice_id: int, body: dict, db: Session = Depends(get_db),
             before[k] = getattr(inv, col)
             if isinstance(v, str):
                 v = v.strip()
+            if k == "gst_tax_code" and v:                 # a code ('I3') or a rate ('9', '9%', '18%') -> the master's tax code
+                nature = inv.gst_nature or ("IGST" if (inv.igst or 0) > 0 and not (inv.cgst or inv.sgst) else "CGST_SGST")
+                hit = resolve_tax_code_input(db, v, nature)
+                if hit is None:
+                    db.rollback()
+                    raise HTTPException(422, f"'{v}' is not a GST tax code or a GST rate found in the GST master")
+                v, inv.gst_tax_code_desc, pct = hit
+                if pct is not None:
+                    inv.gst_percent = pct
+                changes[k] = v
             setattr(inv, col, v)
             if k == "doc_type":
                 inv.doc_type = (v or "").upper() or None
@@ -278,6 +292,103 @@ def page_image(invoice_id: int, page: int, zoom: float = 1.6, db: Session = Depe
         raise HTTPException(404, "No such page")
     return Response(pdfio.render_page_png(path, page, min(max(zoom, 0.5), 3.0)), media_type="image/png",
                     headers={"Cache-Control": "private, max-age=3600"})
+
+
+def _pdf_or_404(inv: Invoice, page: int) -> Path:
+    path = pdfio.locate_pdf(inv.filename, inv.source_path)
+    if path is None:
+        raise HTTPException(404, "Original PDF not found on the server")
+    if page < 1 or page > pdfio.page_count(path):
+        raise HTTPException(404, "No such page")
+    return path
+
+
+@router.get("/{invoice_id}/page/{page}/numbers")
+def page_numbers(invoice_id: int, page: int, ai: bool = False, db: Session = Depends(get_db),
+                 _: User = Depends(current_user)):
+    """Lens: 10-digit GRN / PO numbers on a page with their position (fractions), so the viewer can outline them.
+    Printed numbers come from OCR (Tesseract, when installed). ai=true asks the vision model instead - it also finds
+    handwriting, but takes a while and its boxes are approximate."""
+    inv = _get(db, invoice_id)
+    path = _pdf_or_404(inv, page)
+    boxes = [] if ai else evidence.find_numbers(path, page)
+    if ai:
+        import base64
+        client = get_vlm()
+        if hasattr(client, "find_numbers"):
+            png = pdfio.render_page_png(path, page, max(1.0, 1800 / max(pdfio.page_size(path, page))))
+            boxes = [dict(b, value=lens._fix(b["value"])) for b in client.find_numbers(base64.b64encode(png).decode())]
+            boxes = [b for b in boxes if lens.classify(b["value"]) != "OTHER"]
+    for b in boxes:
+        b["kind"] = lens.classify(b["value"])
+    return {"available": evidence.available(), "ai": bool(ai), "boxes": boxes}
+
+
+def _thumb(png: bytes, width: int = 720) -> str:
+    """The captured area as a small base64 PNG, shown next to the result so the person can compare the digits."""
+    if not png:
+        return ""
+    import base64
+    import io
+    from PIL import Image
+    im = Image.open(io.BytesIO(png)).convert("RGB")
+    if im.width > width:
+        im = im.resize((width, max(1, round(im.height * width / im.width))))
+    buf = io.BytesIO()
+    im.save(buf, "PNG", optimize=True)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+@router.post("/{invoice_id}/lens")
+def lens_scan(invoice_id: int, body: dict, db: Session = Depends(get_db), _: User = Depends(current_user)):
+    """Lens: read the number inside a box drawn on the digital invoice.
+
+    Body: {"page": 1, "x": .., "y": .., "w": .., "h": ..}  (fractions of the page as displayed)  or {"page": 1, "value": "5100002448"}
+    (a number the viewer already detected). Returns candidates classified as PO / GRN, each checked against SAP.
+    """
+    inv = _get(db, invoice_id)
+    page = int(body.get("page") or 1)
+    path = _pdf_or_404(inv, page)
+    ocr_text, ai_numbers, ai_ok, ai_raw, crop_png = "", [], None, "", b""
+    target = str(body.get("target") or "").upper()
+    target = target if target in ("PO", "GRN") else ""      # the field the person is filling: read ONLY the number in the box
+    has_rect = all(k in body for k in ("x", "y", "w", "h"))
+    if has_rect:
+        try:
+            crop_png = pdfio.render_crop_png(path, page, float(body["x"]), float(body["y"]), float(body["w"]), float(body["h"]))
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(422, f"Invalid selection: {exc}")
+    elif not body.get("value"):
+        raise HTTPException(422, "Invalid selection: give x, y, w, h or a value")
+    if body.get("value"):
+        ocr_text = str(body["value"])                      # a number the viewer already outlined
+    else:
+        if evidence.available():
+            ocr_text = "\n".join(evidence._ocr(crop_png, psm) for psm in (7, 6))
+        try:
+            client = get_vlm()
+            if hasattr(client, "read_region"):
+                import base64
+                b64 = base64.b64encode(crop_png).decode()
+                ans = client.read_region(b64, expected_digits=10) if target else client.read_region(b64)
+                ai_numbers, ai_ok, ai_raw = ans.get("numbers", []), bool(ans) and not ans.get("error"), ans.get("raw", "")
+        except Exception as exc:
+            log.exception("lens AI read failed")
+            ai_ok, ai_raw = False, f"error: {exc}"[:300]
+    cands = lens.build_candidates(ocr_text, ai_numbers)[:6]
+    try:
+        gw = get_sap()
+        h, lines = header_from_invoice(inv)
+    except Exception as exc:                               # SAP / header problems must not turn the scan into a 500
+        log.warning("lens: SAP context unavailable: %s", exc)
+        gw = h = lines = None
+    for c in cands:
+        try:
+            c["sap"] = lens.sap_check(gw, h, lines, c["value"], target or c["kind"], sap_enrich) if gw is not None else {"checked": False, "note": "SAP not available"}
+        except Exception as exc:
+            log.warning("lens: SAP check failed for %s: %s", c["value"], exc)
+            c["sap"] = {"checked": False, "note": f"SAP check failed: {exc}"[:120]}
+    return {"target": target, "candidates": cands, "ocr": evidence.available(), "ai": ai_ok, "ai_raw": ai_raw, "crop": _thumb(crop_png)}
 
 
 @router.get("/{invoice_id}/file")

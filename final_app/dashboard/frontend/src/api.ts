@@ -66,6 +66,13 @@ export interface InvoiceDetail extends InvoiceRow {
   compare: { rows: CompareRow[]; lines: CompareLine[]; grn_rows: Record<string, unknown>[]; po_items: Record<string, unknown>[]; exception_type: string }
   history: { action: string; actor: string | null; at: string; detail: Record<string, unknown> }[]
 }
+export interface LensBox { value: string; kind: string; x: number; y: number; w: number; h: number }
+export interface LensRect { x: number; y: number; w: number; h: number }
+export interface LensCandidate {
+  value: string; kind: 'PO' | 'GRN' | 'SERVICE_PO' | 'OTHER'; sources: string[]; corrected_from?: string
+  sap: { checked: boolean; in_sap?: boolean; po_number?: string; grn_number?: string; plant_code?: string; vendor_code?: string }
+}
+export interface LensResult { target?: string; candidates: LensCandidate[]; ocr: boolean; ai: boolean | null; ai_raw?: string; crop?: string }
 export interface Job { id: number; filename: string; status: string; stage: string | null; source: string; invoice_id: number | null; queue: string | null; error: string | null; by: string | null; created_at: string; finished_at: string | null }
 export interface Stats { trend?: Record<string, number[]>; queues: Record<string, number>; value: Record<string, number>; posting: Record<string, number>; plants: { plant: string; count: number }[]; pending_jobs: number; total: number; straight_through_pct: number }
 
@@ -106,6 +113,8 @@ export const api = {
     files.forEach(f => fd.append('files', f))
     return request<{ jobs: { id: number; filename: string }[] }>('/api/jobs/upload', { method: 'POST', body: fd })
   },
+  lensNumbers: (id: number, page: number, ai = false) => request<{ available: boolean; ai: boolean; boxes: LensBox[] }>(`/api/invoices/${id}/page/${page}/numbers${ai ? '?ai=true' : ''}`),
+  lensScan: (id: number, body: Record<string, unknown>) => request<LensResult>(`/api/invoices/${id}/lens`, { method: 'POST', ...json(body) }),
   post: <T = unknown>(path: string, body: unknown) => request<T>(path, { method: 'POST', ...json(body) }),
   pageUrl: (id: number, page: number) => `${BASE}/api/invoices/${id}/page/${page}.png`,
   /** page images / CSV need the bearer token, so they are fetched and turned into blob URLs */

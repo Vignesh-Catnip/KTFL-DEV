@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, type CompareRow, type CompareLine, type InvoiceDetail } from '../api'
+import { api, type CompareRow, type CompareLine, type InvoiceDetail, type LensBox, type LensRect, type LensResult } from '../api'
 import { useAuth } from '../auth'
 import { Icon, ICONS, MiroTag, QueueTag, dt, inr, useToast } from '../ui'
 
@@ -24,18 +24,26 @@ function Stat({ s }: { s: CompareRow['status'] }) {
   return <span className="mstat bad" title={s === 'MISSING' ? 'Missing' : 'Does not match'}><Icon d={ICONS.x} size={14} /></span>
 }
 
+interface LensProps { on: boolean; boxes: LensBox[]; busy: boolean; onToggle: () => void; onSelect: (r: LensRect) => void; onBox: (b: LensBox) => void }
+
 /** Pan / zoom / rotate image. Toolbar: − + (wheel), Fit page, Fit width, ⟲ ⟳ (also R / Shift+R), 180°. Drag to move,
- *  double-click = 2.5x. Rotation re-fits the page, so a sideways scan is readable after one click. */
-function PanZoom({ src, alt, full, onFull }: { src: string; alt: string; full?: boolean; onFull?: () => void }) {
+ *  double-click = 2.5x. Rotation re-fits the page, so a sideways scan is readable after one click.
+ *  With `lens` there is a Scan button: drag a box around a number (PO / GRN, even handwritten) or click one of the
+ *  outlined printed numbers. Boxes are kept as fractions of the image, so they stay put when the page is rotated or zoomed. */
+function PanZoom({ src, alt, full, onFull, lens }: { src: string; alt: string; full?: boolean; onFull?: () => void; lens?: LensProps }) {
   const box = useRef<HTMLDivElement>(null)
+  const page = useRef<HTMLDivElement>(null)
   const [nat, setNat] = useState({ w: 0, h: 0 })
   const [bw, setBw] = useState({ w: 1, h: 1 })
   const [rot, setRot] = useState(0)
   const [z, setZ] = useState(1)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [drag, setDrag] = useState<{ x: number; y: number; px: number; py: number } | null>(null)
+  const [selA, setSelA] = useState<{ x: number; y: number } | null>(null)      // lens: start corner (image fractions)
+  const [sel, setSel] = useState<LensRect | null>(null)
   const clamp = (v: number) => Math.min(8, Math.max(0.2, v))
-  useEffect(() => { setZ(1); setPos({ x: 0, y: 0 }) }, [src])
+  useEffect(() => { setZ(1); setPos({ x: 0, y: 0 }); setSel(null) }, [src])
+  useEffect(() => { if (!lens?.on) { setSel(null); setSelA(null) } }, [lens?.on])
   useEffect(() => {
     const el = box.current
     if (!el) return
@@ -66,6 +74,36 @@ function PanZoom({ src, alt, full, onFull }: { src: string; alt: string; full?: 
   const reset = () => { setZ(1); setPos({ x: 0, y: 0 }) }
   const widthFit = () => { setZ(fit ? fitW / fit : 1); setPos({ x: 0, y: 0 }) }
   const stop = (e: React.MouseEvent) => e.stopPropagation()
+  /** screen point -> position on the (unrotated) image as fractions 0..1, for any rotation */
+  const toImg = (cx: number, cy: number) => {
+    const r = page.current!.getBoundingClientRect()
+    const fx = (cx - r.left) / r.width, fy = (cy - r.top) / r.height
+    const c = (v: number) => Math.min(1, Math.max(0, v))
+    if (rot === 90) return { x: c(fy), y: c(1 - fx) }
+    if (rot === 180) return { x: c(1 - fx), y: c(1 - fy) }
+    if (rot === 270) return { x: c(1 - fy), y: c(fx) }
+    return { x: c(fx), y: c(fy) }
+  }
+  const lensOn = !!lens?.on
+  const down = (e: React.MouseEvent) => {
+    if (lensOn && !lens?.busy) { setSelA(toImg(e.clientX, e.clientY)); setSel(null); return }
+    setDrag({ x: e.clientX, y: e.clientY, px: pos.x, py: pos.y })
+  }
+  const move = (e: React.MouseEvent) => {
+    if (selA) {
+      const b = toImg(e.clientX, e.clientY)
+      setSel({ x: Math.min(selA.x, b.x), y: Math.min(selA.y, b.y), w: Math.abs(b.x - selA.x), h: Math.abs(b.y - selA.y) })
+    } else if (drag) setPos({ x: drag.px + e.clientX - drag.x, y: drag.py + e.clientY - drag.y })
+  }
+  const up = () => {
+    if (selA) {
+      setSelA(null)
+      if (sel && sel.w > 0.004 && sel.h > 0.003) lens?.onSelect(sel)
+      else setSel(null)
+    }
+    setDrag(null)
+  }
+  const pct = (v: number) => `${(v * 100).toFixed(3)}%`
   return (
     <div className={`pz${full ? ' pz-full' : ''}`}>
       <div className="pz-bar" onClick={stop} onMouseDown={stop}>
@@ -77,19 +115,32 @@ function PanZoom({ src, alt, full, onFull }: { src: string; alt: string; full?: 
         <button className="btn sm" onClick={() => turn(-90)} aria-label="Rotate left" title="Rotate left (Shift+R)">⟲ 90°</button>
         <button className="btn sm" onClick={() => turn(90)} aria-label="Rotate right" title="Rotate right (R)">⟳ 90°</button>
         <button className="btn sm" onClick={() => turn(180)} title="Turn upside down">180°</button>
+        {lens && <button className={'btn sm' + (lens.on ? ' primary' : '')} onClick={lens.onToggle} aria-pressed={lens.on}
+          title="Scan: draw a box around a PO / GRN number (even handwritten) to read it">🔍 Scan</button>}
         {onFull && <button className="btn sm" onClick={onFull} title="Full screen">⤢</button>}
       </div>
       <div className="pz-stage" ref={box}
-        onMouseDown={e => setDrag({ x: e.clientX, y: e.clientY, px: pos.x, py: pos.y })}
-        onMouseMove={e => { if (drag) setPos({ x: drag.px + e.clientX - drag.x, y: drag.py + e.clientY - drag.y }) }}
-        onMouseUp={() => setDrag(null)} onMouseLeave={() => setDrag(null)}
-        onDoubleClick={() => (z === 1 ? setZ(2.5) : reset())}
-        style={{ cursor: drag ? 'grabbing' : 'grab' }}>
-        <img src={src} alt={alt} draggable={false}
-          onLoad={e => setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+        onMouseDown={down} onMouseMove={move} onMouseUp={up} onMouseLeave={up}
+        onDoubleClick={() => { if (!lensOn) (z === 1 ? setZ(2.5) : reset()) }}
+        style={{ cursor: lensOn ? 'crosshair' : drag ? 'grabbing' : 'grab' }}>
+        <div className="pz-page" ref={page}
           style={{ width: nat.w || undefined, height: nat.h || undefined,
                    transform: `translate(-50%, -50%) translate(${pos.x}px, ${pos.y}px) rotate(${rot}deg) scale(${scale})`,
-                   transition: drag ? 'none' : 'transform 0.15s ease' }} />
+                   transition: drag || selA ? 'none' : 'transform 0.15s ease' }}>
+          <img src={src} alt={alt} draggable={false}
+            onLoad={e => setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })} />
+          {lensOn && (
+            <div className={'pz-lens' + (lens?.busy ? ' busy' : '')}>
+              {lens?.boxes.map((b, i) => (
+                <button key={i} type="button" className={'pz-nbox ' + (b.kind === 'GRN' ? 'grn' : b.kind === 'PO' ? 'po' : 'oth')}
+                  style={{ left: pct(b.x - 0.004), top: pct(b.y - 0.003), width: pct(b.w + 0.008), height: pct(b.h + 0.006) }}
+                  title={`${b.kind === 'GRN' ? 'GRN' : b.kind === 'PO' ? 'PO' : 'Number'} ${b.value} - click to use`}
+                  onMouseDown={stop} onClick={e => { e.stopPropagation(); lens.onBox(b) }} />
+              ))}
+              {sel && <div className="pz-sel" style={{ left: pct(sel.x), top: pct(sel.y), width: pct(sel.w), height: pct(sel.h) }} />}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -140,19 +191,105 @@ function HsnDisplay({ value }: { value: string | null | undefined }) {
   )
 }
 
-function InvoicePages({ id, pages }: { id: number; pages: number }) {
+const KIND_LABEL: Record<string, string> = { PO: 'PO number', GRN: 'GRN number', SERVICE_PO: 'Service PO (81/82/83)', OTHER: 'Not a PO / GRN pattern' }
+
+function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, detecting, onDetect, detectMsg, target }: {
+  target: 'PO' | 'GRN' | null; res: LensResult | null; busy: boolean; err: string; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; onClose: () => void
+  canDetect: boolean; detecting: boolean; onDetect: () => void; detectMsg: string
+}) {
+  return (
+    <div className="lens-panel">
+      <div className="lens-h">
+        <b>{target ? `🔍 Scan for ${target} field` : '🔍 Scan'}</b>
+        {canDetect && <button className="btn sm" onClick={onDetect} disabled={detecting || busy} title="The AI outlines PO / GRN numbers on this page. Outlines are approximate - check them.">{detecting ? <><span className="spin" /> AI is looking…</> : '✨ Detect with AI'}</button>}
+        <span className="muted" style={{ fontSize: 11.5, flex: 1 }}>{detectMsg}</span>
+        <button className="btn sm ghost" onClick={onClose} aria-label="Close scan">✕</button>
+      </div>
+      {busy ? <div className="muted"><span className="spin" /> Reading the selected area…</div>
+        : err ? <div className="err" style={{ margin: 0 }}>{err}</div>
+        : !res ? <div className="muted">{target ? `Draw a box around the ${target} number - only the digits inside the box are read and put into the ${target} field.` : 'Draw a box around the PO / GRN number.'}</div>
+        : !res.candidates.length ? (
+          <div className="muted">{res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" />}No number found in that box. Draw the box a little bigger around the digits.{res.ai_raw && <div style={{ fontSize: 11.5, marginTop: 4 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}{res.ai === false ? ' (The AI reader did not answer - printed numbers still work.)' : ''}{!res.ocr && res.ai == null ? ' (OCR is not installed on the server.)' : ''}</div>
+        ) : (
+          <div className="lens-list">
+            {res.crop && <img className="lens-crop" src={`data:image/png;base64,${res.crop}`} alt="Captured area" title="The area you captured - compare the digits" />}
+            {res.candidates.map(c => (
+              <div className="lens-row" key={c.value}>
+                <span className="mono lens-val">{c.value}</span>
+                <span className={'lens-kind ' + c.kind.toLowerCase()}>{KIND_LABEL[c.kind]}</span>
+                <span className="lens-src" title="OCR = printed text read by Tesseract, AI = read by the vision model">{c.sources.join(' + ')}</span>
+                {c.sap.checked
+                  ? c.sap.in_sap ? <span className="lens-sap ok">✓ in SAP{c.sap.plant_code ? ` · plant ${c.sap.plant_code}` : ''}</span> : <span className="lens-sap bad">✗ not in SAP</span>
+                  : <span className="lens-sap">SAP not checked</span>}
+                {writable && (target ? (
+                  <span className="lens-act"><button className="btn sm primary" onClick={() => onApply(target, c.value)}>Use for {target} field</button></span>
+                ) : (
+                  <span className="lens-act">
+                    <button className={'btn sm' + (c.kind === 'PO' || c.kind === 'SERVICE_PO' ? ' primary' : '')} onClick={() => onApply('PO', c.value)}>Use as PO</button>
+                    <button className={'btn sm' + (c.kind === 'GRN' ? ' primary' : '')} onClick={() => onApply('GRN', c.value)}>Use as GRN</button>
+                  </span>
+                ))}
+              </div>
+            ))}
+            {res.ai_raw && <div className="muted" style={{ fontSize: 11.5 }}>AI read: <span className="mono">{res.ai_raw}</span></div>}
+            <div className="muted" style={{ fontSize: 11.5 }}>Check the digits against the picture, then press <b>Save</b> on the right. A value you apply is only a suggestion until you save.</div>
+          </div>
+        )}
+    </div>
+  )
+}
+
+function InvoicePages({ id, pages, writable, onApply, target, kick, clearTarget }: { id: number; pages: number; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; target: 'PO' | 'GRN' | null; kick: number; clearTarget: () => void }) {
   const [p, setP] = useState(1)
   const [src, setSrc] = useState('')
   const [err, setErr] = useState('')
   const [big, setBig] = useState(false)
+  const [lensOn, setLensOn] = useState(false)
+  useEffect(() => { if (kick > 0) { setLensOn(true); setRes(null); setLerr('') } }, [kick])      // the 🔍 button beside the PO / GRN field
+  const [boxes, setBoxes] = useState<LensBox[]>([])
+  const [res, setRes] = useState<LensResult | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [lerr, setLerr] = useState('')
+  const [ocrAvail, setOcrAvail] = useState(true)       // false when the server has no Tesseract: outlines then come from the AI on request
+  const [detecting, setDetecting] = useState(false)
+  const [detectMsg, setDetectMsg] = useState('')
   useEffect(() => {
     let url = ''
-    setSrc(''); setErr('')
+    setSrc(''); setErr(''); setRes(null); setLerr('')
     api.blobUrl(`/api/invoices/${id}/page/${p}.png?zoom=2.5`).then(u => { url = u; setSrc(u) }).catch(() => setErr('The original PDF is not available on the server.'))
     return () => { if (url) URL.revokeObjectURL(url) }
   }, [id, p])
+  useEffect(() => {
+    if (!lensOn) { setBoxes([]); return }
+    let live = true
+    setDetectMsg('')
+    api.lensNumbers(id, p).then(r => { if (live) { setBoxes(r.boxes); setOcrAvail(r.available) } }).catch(() => { if (live) setBoxes([]) })
+    return () => { live = false }
+  }, [lensOn, id, p])
+  const detectAi = async () => {
+    setDetecting(true); setDetectMsg('')
+    try {
+      const r = await api.lensNumbers(id, p, true)
+      setBoxes(r.boxes)
+      setDetectMsg(r.boxes.length ? `${r.boxes.length} number(s) outlined - click one.` : 'The AI found no PO / GRN number on this page. Draw a box around it.')
+    } catch (e) { setDetectMsg((e as Error).message || 'AI detection failed') } finally { setDetecting(false) }
+  }
+  const scan = async (body: Record<string, unknown>) => {
+    setBusy(true); setLerr(''); setRes(null)
+    try {
+      const r = await api.lensScan(id, { page: p, ...(target ? { target } : {}), ...body })
+      setRes(r)
+      if (target && r.candidates.length) onApply(target, r.candidates[0].value)          // the number under the box goes straight into the field
+    } catch (e) { setLerr((e as Error).message || 'Scan failed') } finally { setBusy(false) }
+  }
+  const lens: LensProps = {
+    on: lensOn, boxes, busy,
+    onToggle: () => { setLensOn(v => !v); setRes(null); setLerr(''); clearTarget() },
+    onSelect: r => { void scan({ x: r.x, y: r.y, w: r.w, h: r.h }) },
+    onBox: b => { void scan({ value: b.value, x: b.x, y: b.y, w: b.w, h: b.h }) },
+  }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
       {pages > 1 && (
         <div className="pagebar" style={{ flexShrink: 0 }}>
           <button className="btn sm" disabled={p <= 1} onClick={() => setP(p - 1)}>‹</button>
@@ -160,10 +297,10 @@ function InvoicePages({ id, pages }: { id: number; pages: number }) {
           <button className="btn sm" disabled={p >= pages} onClick={() => setP(p + 1)}>›</button>
         </div>
       )}
+      {lensOn && <LensPanel target={target} res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => { setLensOn(false); clearTarget() }}
+        canDetect={!ocrAvail} detecting={detecting} onDetect={() => void detectAi()} detectMsg={detectMsg} />}
       {err ? <div className="empty">{err}</div> : src ? (
-        <>
-          <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} />
-        </>
+        <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} lens={lens} />
       ) : <div className="empty"><span className="spin" /></div>}
       {big && <Viewer id={id} page={p} pages={pages} onClose={() => setBig(false)} onPage={setP} />}
     </div>
@@ -316,24 +453,6 @@ function InvoiceDateRow({ editVal, dateRow, invoiceDate, writable, onChange }: {
   )
 }
 
-function GstTaxRow({ show, editVal, invoiceVal, sapVal, onChange }: {
-  show: boolean; editVal: string | undefined; invoiceVal: string | null; sapVal: string | null; onChange: (v: string) => void
-}): JSX.Element {
-  if (!show) return <></>
-  const stat: CompareRow['status'] = invoiceVal && sapVal ? (invoiceVal === sapVal ? 'OK' : 'MISMATCH') : 'NA'
-  return (
-    <div className="mrow" style={{ marginTop: 6 }}>
-      <span className="field-k">GST tax code</span>
-      <input className={'cellbox' + (editVal !== undefined ? ' edited' : '')} aria-label="GST tax code"
-        value={editVal ?? invoiceVal ?? ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder="e.g. I3, I8" />
-      <div className="cellbox po mono">{sapVal || '—'}</div>
-      <Stat s={stat} />
-    </div>
-  )
-}
-
 export default function Recon() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -342,6 +461,8 @@ export default function Recon() {
   const [d, setD] = useState<InvoiceDetail | null>(null)
   const [err, setErr] = useState('')
   const [tab, setTab] = useState<'inv' | 'grn' | 'po'>('inv')
+  const [lensTarget, setLensTarget] = useState<'PO' | 'GRN' | null>(null)
+  const [lensKick, setLensKick] = useState(0)
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [reso, setReso] = useState('')
   const [note, setNote] = useState('')
@@ -433,7 +554,10 @@ export default function Recon() {
             ))}
           </div>
           <div className="docview">
-            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} />}
+            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} writable={writable} target={lensTarget} kick={lensKick} clearTarget={() => setLensTarget(null)} onApply={(kind, v) => {
+              setEdits(e => ({ ...e, [kind === 'PO' ? 'po_number' : 'grn_number']: v }))
+              toast(kind === 'PO' ? 'PO number set' : 'GRN number set', `${v} - check it, then press Save`)
+            }} />}
             {tab === 'grn' && <GrnCopy d={d} />}
             {tab === 'po' && <PoCopy d={d} />}
           </div>
@@ -459,9 +583,17 @@ export default function Recon() {
               <div className="mrow" key={r.field}>
                 <span className="field-k">{r.label}</span>
                 {EDITABLE[r.field] && writable ? (
-                  <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
-                    value={edits[EDITABLE[r.field]] ?? r.invoice}
-                    onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
+                  <div className="cellwrap">
+                    <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
+                      value={edits[EDITABLE[r.field]] ?? (r.field === 'gst_tax_code' ? (d.gst_tax_code ?? r.invoice) : r.invoice)}
+                      placeholder={r.field === 'gst_tax_code' ? 'I3 or 9%' : undefined}
+                      title={r.field === 'gst_tax_code' ? 'Type a tax code (I3) or the GST rate (9, 9%, 18%) - the code is picked from the GST master when you Save' : undefined}
+                      onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
+                    {(r.field === 'po_number' || r.field === 'grn_number') && (
+                      <button type="button" className="btn sm cellscan" title={`Scan the ${r.field === 'po_number' ? 'PO' : 'GRN'} number from the digital invoice`}
+                        onClick={() => { setLensTarget(r.field === 'po_number' ? 'PO' : 'GRN'); setTab('inv'); setLensKick(k => k + 1) }}>🔍</button>
+                    )}
+                  </div>
                 ) : r.field === 'hsn_sac' ? (
                   /* HSN: show single or multiple codes cleanly */
                   <HsnDisplay value={r.invoice} />
@@ -483,15 +615,6 @@ export default function Recon() {
               <Stat s={d.doc_type ? 'OK' : 'MISSING'} />
             </div>
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
-
-            {/* GST Tax Code edit row */}
-            <GstTaxRow
-              show={writable}
-              editVal={edits.gst_tax_code}
-              invoiceVal={d.gst_tax_code}
-              sapVal={d.sap_tax_code}
-              onChange={v => setEdits({ ...edits, gst_tax_code: v })}
-            />
 
             {/* SAP re-lookup button when PO or GRN is manually edited */}
             {(writable && (edits.po_number !== undefined || edits.grn_number !== undefined)) ? (

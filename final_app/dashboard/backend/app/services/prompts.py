@@ -114,8 +114,12 @@ You are given the pages of ONE tax invoice (first page plus any continuation pag
 Ignore weighment slips, counting charts, lorry receipts, delivery challans, debit notes and any other attachment.
 
 GENERAL RULES
-- Copy values exactly as printed. Do NOT calculate, correct, round, expand shorthand or reformat. A separate program checks them.
-- If a value is not visible or not printed, return "" (text) or 0.0 (number). Never guess and never invent digits.
+- Never guess missing values: do not make up data that you cannot see on the document.
+- Never create an invoice number (or any other identifier). Only copy one that is printed; otherwise return null.
+- If a value is not visible or not printed, return null (the program treats null, "" and 0 alike). Never guess and never invent digits.
+- Do not calculate missing values: never work out an amount, tax or total yourself. Only copy printed figures. A separate program checks them.
+- Preserve the original invoice values exactly as printed: do NOT correct, round, expand shorthand or reformat.
+- Return valid JSON only: no markdown, no comments, no text before or after the JSON object.
 - Indian number formats: "1,42,115.00" and "142115.00" are the same number. Count every digit before the decimal point.
   A dot is always a decimal point ("31.390" is thirty-one point three nine).
 - Numbers inside these instructions are placeholders. Read every number from the document.
@@ -263,3 +267,30 @@ Return JSON only: {"handwritten_po": "<10 digits or empty>", "where": "<short pl
 Do NOT return: printed numbers, phone / mobile numbers, E-way bill numbers, invoice numbers, dates, vehicle numbers,
 or the handwritten GRN (the GRN starts with 50 and is written inside the receiving stamp or the top margin).
 If you cannot see a handwritten PO, return {"handwritten_po": "", "where": ""}. Never guess digits."""
+
+
+# "Lens": the person drew a box around a number on the digital invoice; read what is inside it.
+LENS_PROMPT = """This image is a small crop of a document. Transcribe ONLY the number written or printed inside it, digit by digit,
+exactly as you see it - it may be handwritten. Ignore every other word, label, date and stamp in the crop. Do not use any outside
+knowledge and do not guess or add digits.
+Return JSON only: {"numbers": ["<the digits you can see>"]}
+If there is no number return {"numbers": []}."""
+
+
+# Qwen-only helpers (used when Tesseract is not installed)
+NUMBER_LABEL_PROMPT = """On this invoice, find the number {number} (printed or handwritten).
+Return JSON only: {{"found": true or false, "label": "<the words printed directly before or beside it, e.g. 'PO No', 'Mo. No.', 'Ph. No.', 'DC No', 'LR No', 'E-Way Bill No', 'Invoice No', 'Order No'>"}}
+If the number is not on the page return {{"found": false, "label": ""}}. Do not guess."""
+
+GSTIN_PROMPT = """This is the upper part of an Indian GST tax invoice. List every GSTIN on it (15 characters: 2 digits, 5 letters,
+4 digits, 1 letter, 1 letter-or-digit, the letter Z, 1 letter-or-digit) with the role of the party it belongs to.
+Return JSON only: {"gstins": [{"gstin": "<15 characters, exactly as printed>", "role": "seller" | "buyer" | "consignee"}]}
+The seller (supplier / "Details of Supplier" / the letterhead company) is the company issuing the invoice; the buyer is
+Kalyani Technoforge / KTFL. Copy each character carefully - letters O / 0, I / 1, S / 5, B / 8, G / C are easily confused."""
+
+LENS_FIND_PROMPT = """Find every 10-digit number on this invoice page that starts with 50, 51, 61, 81, 82 or 83 - a KTFL goods receipt
+(GRN, starts 50) or purchase order (PO, starts 51 / 61; service 81 / 82 / 83) - printed OR handwritten. Ignore phone numbers,
+E-way bill, invoice and vehicle numbers.
+Return JSON only: {"boxes": [{"value": "<10 digits>", "bbox": [x1, y1, x2, y2]}]}
+The bbox is the tight box around that number, in coordinates relative to the image: 0 = left / top edge, 1000 = right / bottom edge.
+If there is none return {"boxes": []}."""

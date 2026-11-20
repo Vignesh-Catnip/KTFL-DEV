@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 from openpyxl import load_workbook
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -154,8 +154,23 @@ def compute_gst(h: dict) -> None:
 
 def apply_tax_code(db: Session, h: dict, notes: list) -> None:
     """GST % on the invoice -> tax code from the master -> h['gst_tax_code'], then compare with SAP's."""
+    manual = (h.get("field_sources") or {}).get("gst_tax_code") == "MANUAL" and h.get("gst_tax_code")
+    manual_code, manual_desc, manual_pct = h.get("gst_tax_code"), h.get("gst_tax_code_desc"), h.get("gst_percent")
     compute_gst(h)
     pct, comp, nature = h["gst_percent"], h["gst_percent_component"], h["gst_nature"]
+    if manual:                                           # the person chose the code: keep it, only compare with SAP
+        h["gst_tax_code"], h["gst_tax_code_desc"] = manual_code, manual_desc or ""
+        if manual_pct is not None:
+            h["gst_percent"] = manual_pct
+        if not h.get("tax_code"):
+            h["tax_code"] = manual_code
+        if h.get("sap_tax_code"):
+            h["tax_code_match"] = h["sap_tax_code"].upper() == str(manual_code).upper()
+            if not h["tax_code_match"]:
+                notes.append(f"Tax-code mismatch: invoice -> {manual_code} vs PO/GR -> {h['sap_tax_code']}")
+        else:
+            h["tax_code_match"] = None
+        return
     h["gst_tax_code"] = ""
     h["gst_tax_code_desc"] = ""
     h["tax_code_match"] = None
@@ -178,3 +193,28 @@ def apply_tax_code(db: Session, h: dict, notes: list) -> None:
         h["tax_code_match"] = h["sap_tax_code"].upper() == h["gst_tax_code"].upper()
         if not h["tax_code_match"]:
             notes.append(f"Tax-code mismatch: invoice -> {h['gst_tax_code']} vs PO/GR -> {h['sap_tax_code']}")
+
+
+_PCT = re.compile(r"^\s*(\d{1,2}(?:\.\d+)?)\s*%?\s*$")
+
+
+def resolve_tax_code_input(db: Session, text: str, nature: str | None) -> tuple[str, str, float | None] | None:
+    """What the person typed in the GST tax code box -> (tax code, description, total GST %).
+    Accepts a code that exists in the GST master ('I3') or a rate: '9', '9%', '18%'.
+    A rate is looked up like the extraction does (9 % per half or 18 % total both give I3 for CGST+SGST; IGST 18 % gives I8).
+    None = neither a known code nor a known rate."""
+    t = (text or "").strip()
+    if not t:
+        return None
+    row = db.scalar(select(GstTaxCode).where(func.upper(GstTaxCode.tax_code) == t.upper(), GstTaxCode.tax_type == "V"))
+    if row:
+        return row.tax_code, row.description, row.rate
+    m = _PCT.match(t)
+    if not m:
+        return None
+    v = float(m.group(1))
+    for nat in ([nature] if nature in ("IGST", "CGST_SGST") else []) + ["CGST_SGST", "IGST"]:
+        row = pick_tax_code(db, v, v, nat)
+        if row:
+            return row.tax_code, row.description, row.rate
+    return None
