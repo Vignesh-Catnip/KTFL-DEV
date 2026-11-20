@@ -48,8 +48,6 @@ class MiroDb:
                 cur.execute(sql)
         self.conn.commit()
 
-<<<<<<< HEAD
-=======
     def _doc_cols(self) -> str:
         """', doc_type, doc_type_desc' when the dashboard has added these columns to invoices (Details-tab Doc. Type)."""
         if getattr(self, "_doc_cols_cache", None) is None:
@@ -61,7 +59,7 @@ class MiroDb:
             self._doc_cols_cache = "".join(f", {c}" for c in ("doc_type", "doc_type_desc") if c in have)
         return self._doc_cols_cache
 
->>>>>>> origin/main
+
     def close(self) -> None:
         if self.conn is not None:
             self.conn.close()
@@ -78,18 +76,18 @@ class MiroDb:
 
         CHECK mode is a dry run: it takes EVERY MATCHED invoice on every run (no reset needed),
         except ones already saved in SAP (POSTED / PARKED) or in doubt (UNKNOWN / IN_PROGRESS)."""
-<<<<<<< HEAD
+
         if mode == "CHECK":
             sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
-=======
+
         doc_cols = self._doc_cols()
         if mode == "CHECK":
             sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},
->>>>>>> origin/main
+
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
@@ -103,15 +101,13 @@ class MiroDb:
             return [self._clean(r) for r in rows]
 
         redo = ["FAILED"]                    # CHECKED is re-picked only when mode is PARK/POST
-<<<<<<< HEAD
         sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
-=======
+
         sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},
->>>>>>> origin/main
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s

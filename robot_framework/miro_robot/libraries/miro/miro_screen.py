@@ -12,11 +12,7 @@ All fields are located by technical NAME (FindByName), so the code keeps working
 subscreen number changes (6005 expanded / 6006 collapsed header).
 """
 from __future__ import annotations
-
-<<<<<<< HEAD
-=======
 import logging
->>>>>>> origin/main
 import re
 import time
 
@@ -25,11 +21,8 @@ from .matching import (MiroDataError, MiroRow, extract_document_number, format_s
                        format_sap_date, is_duplicate_message, parse_sap_number)
 from .sapgui import SapError, SapSession, get_scripting_application
 
-<<<<<<< HEAD
-=======
 log = logging.getLogger("miro.screen")
 
->>>>>>> origin/main
 TABLE = "SAPLMR1MTC_MR1M"
 
 
@@ -45,18 +38,15 @@ def _logged_on(sess) -> bool:
 def connect_sap(cfg: Config) -> SapSession:
     app = get_scripting_application(cfg)
 
-<<<<<<< HEAD
     # 1) reuse an already logged-on session of the right client
-=======
+
     # 1) reuse an already logged-on session of the right client (never open another window if one exists)
     seen: list[str] = []
->>>>>>> origin/main
     try:
         for ci in range(app.Children.Count):
             conn = app.Children.ElementAt(ci)
             for si in range(conn.Children.Count):
                 sess = conn.Children.ElementAt(si)
-<<<<<<< HEAD
                 if _logged_on(sess) and (not cfg.sap_client or str(sess.Info.Client) == cfg.sap_client):
                     if not cfg.sap_user or str(sess.Info.User).upper() == cfg.sap_user.upper():
                         s = SapSession(sess, cfg)
@@ -66,7 +56,6 @@ def connect_sap(cfg: Config) -> SapSession:
         pass
 
     # 2) open the connection from SAP Logon pad and log on
-=======
                 try:
                     info = (f"{getattr(conn, 'Description', '?')}/session{si}: user={sess.Info.User or '-'} "
                             f"client={sess.Info.Client or '-'} program={sess.Info.Program}")
@@ -116,20 +105,17 @@ def connect_sap(cfg: Config) -> SapSession:
             log.warning("could not reuse the open logon screen (%s) - opening a new connection", exc)
 
     # 3) last resort: open the connection from SAP Logon pad and log on (closed again by close_sap)
->>>>>>> origin/main
     if not cfg.sap_connection:
         raise SapError("No logged-on SAP session found and SAP_CONNECTION is not set "
                        "(name of the system in SAP Logon, e.g. 'KTFL PRD')")
     conn = app.OpenConnection(cfg.sap_connection, True)
     sess = conn.Children.ElementAt(0)
     s = SapSession(sess, cfg)
-<<<<<<< HEAD
     s.find("wnd[0]").Maximize()
     logon(s, cfg)
     return s
 
 
-=======
     s.opened_by_robot = True
     s.connection = conn
     s.find("wnd[0]").Maximize()
@@ -151,7 +137,6 @@ def close_sap(s) -> None:
         log.warning("could not close the SAP connection the robot opened: %s", exc)
 
 
->>>>>>> origin/main
 def logon(s: SapSession, cfg: Config) -> None:
     if _logged_on(s.s):
         return
@@ -198,8 +183,6 @@ def tax_code(inv: dict) -> str:
     return ""
 
 
-<<<<<<< HEAD
-=======
 def _norm(t: str) -> str:
     return " ".join(str(t or "").lower().replace("'", "'").split())
 
@@ -223,7 +206,6 @@ def pick_doc_type(entries: list[tuple[str, str]], key: str = "", desc: str = "")
     return ""
 
 
->>>>>>> origin/main
 def business_place(inv: dict) -> str:
     """invoices.business_place (e.g. 2002); fallback plant_code."""
     for k in ("business_place", "plant_code"):
@@ -277,8 +259,6 @@ class MiroScreen:
         self.leave()                                          # clean start, discards any half-entered doc
         self.collapsed = False
         self.s.okcode("/nMIRO")
-<<<<<<< HEAD
-=======
         # Dismiss any popups that appear after /nMIRO (e.g. session warnings, info dialogs)
         for _ in range(5):
             if not self.s.popup_open():
@@ -292,7 +272,6 @@ class MiroScreen:
             self.note(f"[open MIRO] popup dismissed: {ptxt[:120]}")
             self.s.enter(1)
         # Legacy path: company-code popup after /nMIRO (no loop caught it yet)
->>>>>>> origin/main
         if self.s.exists("wnd[1]/usr/ctxtBKPF-BUKRS"):
             self.s.find("wnd[1]/usr/ctxtBKPF-BUKRS").Text = self.cfg.company_code
             self.s.enter(1)
@@ -400,11 +379,9 @@ class MiroScreen:
         if got != code:
             raise SapError(f"SAP keeps tax code '{got}' instead of '{code}'")
 
-<<<<<<< HEAD
     def set_tax_code(self, code: str) -> None:
         """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
         combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
-=======
     @staticmethod
     def _changeable(el) -> bool:
         try:
@@ -424,7 +401,6 @@ class MiroScreen:
             if not self._changeable(combo):
                 raise SapError("Tax code field (INVFO-MWSKZ) stays read-only even after Enter - SAP does not allow "
                                "a tax code on this PO / screen variant (is 'Calculate tax' ticked?)")
->>>>>>> origin/main
         entries = []
         try:
             for i in range(combo.Entries.Count):
@@ -438,9 +414,7 @@ class MiroScreen:
         try:
             self.s.set_field("INVFO-MWSKZ", code)
         except Exception as e:
-<<<<<<< HEAD
             raise SapError(f"Could not set tax code '{code}': {e}")
-=======
             if "readonly" not in str(e).lower() and "read-only" not in str(e).lower():
                 raise SapError(f"Could not set tax code '{code}': {e}")
             self.note("Tax code was read-only - pressing Enter once and trying again")
@@ -450,7 +424,6 @@ class MiroScreen:
                 self.s.set_field("INVFO-MWSKZ", code)
             except Exception as e2:
                 raise SapError(f"Could not set tax code '{code}': {e2}")
->>>>>>> origin/main
         self.s.wait_ready()
         combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
         got = str(getattr(combo, "Key", "") or getattr(combo, "Text", "") or "").strip().upper()
@@ -471,8 +444,6 @@ class MiroScreen:
         self.s.set_field("RM08M-EBELN", po)
         self.s.enter()
         self.handle_messages("purchase order")
-<<<<<<< HEAD
-=======
         # After PO entry SAP may show a full-screen message display (SAPMSSY0/120 or similar).
         # This is NOT a wnd[1] popup - it replaces the main window. Detect and press Enter to return.
         for _ in range(3):
@@ -486,7 +457,6 @@ class MiroScreen:
                 self.handle_messages("purchase order after message screen")
             else:
                 break
->>>>>>> origin/main
 
     # ------------------------------------------------------------ amount / balance
     def enter_amount(self, inv: dict) -> float:
@@ -534,15 +504,12 @@ class MiroScreen:
         return balance
 
     def set_doc_type(self, inv: dict) -> None:
-<<<<<<< HEAD
         """Details tab: Doc. Type from MIRO_DOC_TYPE_BY_PLANT; else an entry whose text contains
         the plant code; else leave SAP's default."""
-=======
         """Details tab: Doc. Type. The SAP drop-down shows DESCRIPTIONS ("Invoice - R'gaon R1"), so the entry is
         found by the description stored on the invoice (invoices.doc_type_desc, from the dashboard's document-type
         master for the plant) - or by the key invoices.doc_type (X1 ...). Only when the invoice carries neither
         the old rules apply: MIRO_DOC_TYPE_BY_PLANT, else an entry whose text contains the plant code."""
->>>>>>> origin/main
         plant = business_place(inv)
         combo = self.s.find_name("INVFO-BLART", types=("GuiComboBox",), required=False)
         if combo is None:
@@ -554,8 +521,6 @@ class MiroScreen:
                 entries.append((str(e.Key).strip(), str(e.Value).strip()))
         except Exception:
             pass
-<<<<<<< HEAD
-=======
         want_key = str(inv.get("doc_type") or "").strip()
         want_desc = str(inv.get("doc_type_desc") or "").strip()
         if want_key or want_desc:
@@ -567,17 +532,13 @@ class MiroScreen:
             self.s.set_field("INVFO-BLART", key)
             self.note(f"Doc. Type {key} '{want_desc or want_key}' for plant {plant} (from the invoice)")
             return
->>>>>>> origin/main
         key = self.cfg.doc_type_for_plant(plant)
         if not key and plant:
             hits = [k for k, v in entries if plant in v or plant == k]
             key = hits[0] if len(hits) == 1 else ""
         if not key:
-<<<<<<< HEAD
             self.note(f"Doc. Type: no mapping for plant {plant} - kept '{combo.Value}'. "
-=======
             self.note(f"Doc. Type: invoice has no doc_type and no mapping for plant {plant} - kept '{combo.Value}'. "
->>>>>>> origin/main
                       f"Available: {entries}")
             self.s._show(combo, f"Doc. Type kept '{combo.Value}' (no mapping for plant {plant})")
             return
@@ -586,8 +547,6 @@ class MiroScreen:
         self.s.set_field("INVFO-BLART", key)
         self.note(f"Doc. Type {key} for plant {plant}")
 
-<<<<<<< HEAD
-=======
     def fill_details(self, inv: dict) -> None:
         """Details tab, always: Doc. Type of the invoice's plant (before the balance is settled / saved).
         Then back to Basic data."""
@@ -595,7 +554,6 @@ class MiroScreen:
         self.set_doc_type(inv)
         self.select_tab("HEADER_TOTAL")
 
->>>>>>> origin/main
     # ------------------------------------------------------------ simulate
     def simulate(self) -> str:
         """Press Simulate, read the result, close the simulation window. Raises on SAP errors."""
@@ -826,10 +784,7 @@ class MiroScreen:
     def post(self) -> tuple[str, str]:
         """Ctrl+S. Returns (document_number, status_text). Raises SapError if SAP refused."""
         self.s.vkey(11)
-<<<<<<< HEAD
-=======
         popup_doc = ""
->>>>>>> origin/main
         for _ in range(4):
             if not self.s.popup_open():
                 break
@@ -838,13 +793,11 @@ class MiroScreen:
             if is_duplicate_message(ptxt) and self.cfg.stop_on_duplicate_warning:
                 self.s.vkey(12, wnd=1)                          # cancel the popup
                 raise MiroDataError(f"SAP duplicate-invoice warning at posting: {ptxt}")
-<<<<<<< HEAD
             self.s.enter(1)
         mt, txt = self.s.status()
         doc = extract_document_number(txt)
         if mt == "S" and doc:
             return doc, txt
-=======
             # the document number can be shown in this popup - read it before Enter closes it
             popup_doc = extract_document_number(ptxt, strict=True) or popup_doc
             self.s.enter(1)
@@ -854,14 +807,12 @@ class MiroScreen:
             if popup_doc:
                 self.note(f"[post] document number {doc}" + (" (from popup)" if not extract_document_number(txt) else ""))
             return doc, txt or f"Document {doc} posted"
->>>>>>> origin/main
         if mt in ("E", "A"):
             raise SapError(f"[post] SAP refused posting: {txt}")
         return "", txt
 
     def park(self) -> tuple[str, str]:
         self.s.select_menu(*[p.strip() for p in self.cfg.park_menu.split(">")])
-<<<<<<< HEAD
         for _ in range(3):
             if not self.s.popup_open():
                 break
@@ -871,7 +822,6 @@ class MiroScreen:
         doc = extract_document_number(txt)
         if mt == "S" and doc:
             return doc, txt
-=======
         popup_doc = ""
         for _ in range(3):
             if not self.s.popup_open():
@@ -884,7 +834,6 @@ class MiroScreen:
         doc = extract_document_number(txt) or popup_doc
         if mt in ("S", "I", "") and doc:
             return doc, txt or f"Document {doc} parked"
->>>>>>> origin/main
         if mt in ("E", "A"):
             raise SapError(f"[park] SAP refused parking: {txt}")
         return "", txt

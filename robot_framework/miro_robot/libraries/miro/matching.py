@@ -211,11 +211,10 @@ def plan_hsn(rows: list, invoice: dict, amount_tolerance: float = 1.0) -> tuple[
 DOC_NO_RE = re.compile(r"\b(\d{10})\b")
 
 
-<<<<<<< HEAD
+
 def extract_document_number(status_text: str) -> str:
     """'Document no. 5105600123 created' -> '5105600123'."""
     m = DOC_NO_RE.search(status_text or "")
-=======
 # A popup can mention other 10-digit numbers (PO, reference), so for popups only a number that sits next to
 # "document"/"invoice"/"posted"/"created"/"parked" counts.
 _DOC_CONTEXT_RE = re.compile(
@@ -234,7 +233,6 @@ def extract_document_number(status_text: str, strict: bool = False) -> str:
     if strict:
         return ""
     m = DOC_NO_RE.search(t)
->>>>>>> origin/main
     return m.group(1) if m else ""
 
 
