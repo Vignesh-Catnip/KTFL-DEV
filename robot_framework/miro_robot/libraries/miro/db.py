@@ -59,7 +59,6 @@ class MiroDb:
             self._doc_cols_cache = "".join(f", {c}" for c in ("doc_type", "doc_type_desc") if c in have)
         return self._doc_cols_cache
 
-
     def close(self) -> None:
         if self.conn is not None:
             self.conn.close()
@@ -76,18 +75,15 @@ class MiroDb:
 
         CHECK mode is a dry run: it takes EVERY MATCHED invoice on every run (no reset needed),
         except ones already saved in SAP (POSTED / PARKED) or in doubt (UNKNOWN / IN_PROGRESS)."""
-
         if mode == "CHECK":
             sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
-
         doc_cols = self._doc_cols()
         if mode == "CHECK":
             sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},
-
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
@@ -104,7 +100,6 @@ class MiroDb:
         sql = """
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
-
         sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},

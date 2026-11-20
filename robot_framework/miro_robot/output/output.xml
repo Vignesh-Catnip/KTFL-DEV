@@ -1,44 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot generator="Robot 7.2.2 (Python 3.12.3 on win32)" generated="2026-11-20T14:37:32.368157" rpa="true" schemaversion="5">
+<robot generator="Robot 7.2.2 (Python 3.12.3 on win32)" generated="2026-11-20T14:45:02.523756" rpa="true" schemaversion="5">
 <suite id="s1" name="Miro Posting" source="C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot">
 <kw name="Start Robot" type="SETUP">
 <kw name="Initialize MIRO Robot">
-<msg time="2026-11-20T14:37:32.462161" level="FAIL">No keyword with name 'Initialize MIRO Robot' found.</msg>
-<status status="FAIL" start="2026-11-20T14:37:32.462161" elapsed="0.000000">No keyword with name 'Initialize MIRO Robot' found.</status>
+<msg time="2026-11-20T14:45:02.636290" level="FAIL">No keyword with name 'Initialize MIRO Robot' found.</msg>
+<status status="FAIL" start="2026-11-20T14:45:02.636290" elapsed="0.000000">No keyword with name 'Initialize MIRO Robot' found.</status>
 </kw>
 <kw name="Connect To Invoice Database">
-<status status="NOT RUN" start="2026-11-20T14:37:32.463162" elapsed="0.000000"/>
+<status status="NOT RUN" start="2026-11-20T14:45:02.637294" elapsed="0.000000"/>
 </kw>
-<status status="FAIL" start="2026-11-20T14:37:32.460160" elapsed="0.003002">No keyword with name 'Initialize MIRO Robot' found.</status>
+<status status="FAIL" start="2026-11-20T14:45:02.634292" elapsed="0.003002">No keyword with name 'Initialize MIRO Robot' found.</status>
 </kw>
 <test id="s1-t1" name="Enter Matched Invoices In MIRO" line="24">
-<status status="FAIL" start="2026-11-20T14:37:32.463162" elapsed="0.000996">Parent suite setup failed:
+<status status="FAIL" start="2026-11-20T14:45:02.637294" elapsed="0.000997">Parent suite setup failed:
 No keyword with name 'Initialize MIRO Robot' found.</status>
 </test>
 <kw name="Stop Robot" type="TEARDOWN">
 <kw name="Run Keyword And Ignore Error" owner="BuiltIn">
 <kw name="Reset SAP Screen">
-<msg time="2026-11-20T14:37:32.473159" level="FAIL">No keyword with name 'Reset SAP Screen' found.</msg>
-<status status="FAIL" start="2026-11-20T14:37:32.473159" elapsed="0.000000">No keyword with name 'Reset SAP Screen' found.</status>
+<msg time="2026-11-20T14:45:02.641288" level="FAIL">No keyword with name 'Reset SAP Screen' found.</msg>
+<status status="FAIL" start="2026-11-20T14:45:02.641288" elapsed="0.000000">No keyword with name 'Reset SAP Screen' found.</status>
 </kw>
 <arg>Reset SAP Screen</arg>
 <doc>Runs the given keyword with the given arguments and ignores possible error.</doc>
-<status status="PASS" start="2026-11-20T14:37:32.472159" elapsed="0.001000"/>
+<status status="PASS" start="2026-11-20T14:45:02.640291" elapsed="0.002021"/>
 </kw>
 <kw name="Run Keyword And Ignore Error" owner="BuiltIn">
 <kw name="Write Run Summary">
-<msg time="2026-11-20T14:37:32.474158" level="FAIL">No keyword with name 'Write Run Summary' found.</msg>
-<status status="FAIL" start="2026-11-20T14:37:32.474158" elapsed="0.000000">No keyword with name 'Write Run Summary' found.</status>
+<msg time="2026-11-20T14:45:02.643293" level="FAIL">No keyword with name 'Write Run Summary' found.</msg>
+<status status="FAIL" start="2026-11-20T14:45:02.643293" elapsed="0.000000">No keyword with name 'Write Run Summary' found.</status>
 </kw>
 <arg>Write Run Summary</arg>
 <doc>Runs the given keyword with the given arguments and ignores possible error.</doc>
-<status status="PASS" start="2026-11-20T14:37:32.473159" elapsed="0.002001"/>
+<status status="PASS" start="2026-11-20T14:45:02.642312" elapsed="0.000981"/>
 </kw>
 <kw name="Close Connections">
-<msg time="2026-11-20T14:37:32.475160" level="FAIL">No keyword with name 'Close Connections' found.</msg>
-<status status="FAIL" start="2026-11-20T14:37:32.475160" elapsed="0.000000">No keyword with name 'Close Connections' found.</status>
+<msg time="2026-11-20T14:45:02.644291" level="FAIL">No keyword with name 'Close Connections' found.</msg>
+<status status="FAIL" start="2026-11-20T14:45:02.644291" elapsed="0.000000">No keyword with name 'Close Connections' found.</status>
 </kw>
-<status status="FAIL" start="2026-11-20T14:37:32.472159" elapsed="0.003001">No keyword with name 'Close Connections' found.</status>
+<status status="FAIL" start="2026-11-20T14:45:02.640291" elapsed="0.005004">No keyword with name 'Close Connections' found.</status>
 </kw>
 <doc>KTFL - MIRO invoice entry robot
 
@@ -54,7 +54,7 @@ invoice extractor) and enters them in MIRO:
 
 MIRO_MODE = CHECK (default, nothing saved) | PARK | POST
 Run:  run_miro.bat      or      robot --outputdir output tasks\miro_posting.robot</doc>
-<status status="FAIL" start="2026-11-20T14:37:32.372156" elapsed="0.104004">Suite setup failed:
+<status status="FAIL" start="2026-11-20T14:45:02.530756" elapsed="0.114539">Suite setup failed:
 No keyword with name 'Initialize MIRO Robot' found.
 
 Also suite teardown failed:
@@ -71,7 +71,7 @@ No keyword with name 'Close Connections' found.</status>
 </suite>
 </statistics>
 <errors>
-<msg time="2026-11-20T14:37:32.449170" level="ERROR">Error in file 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot' on line 17: Importing library 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py' failed: SyntaxError: invalid syntax (db.py, line 88)
+<msg time="2026-11-20T14:45:02.626291" level="ERROR">Error in file 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot' on line 17: Importing library 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py' failed: SyntaxError: invalid syntax (db.py, line 85)
 Traceback (most recent call last):
   File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py", line 22, in &lt;module&gt;
     from miro.db import MiroDb                         # noqa: E402
