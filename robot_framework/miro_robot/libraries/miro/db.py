@@ -75,10 +75,6 @@ class MiroDb:
 
         CHECK mode is a dry run: it takes EVERY MATCHED invoice on every run (no reset needed),
         except ones already saved in SAP (POSTED / PARKED) or in doubt (UNKNOWN / IN_PROGRESS)."""
-        if mode == "CHECK":
-            sql = """
-            SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
         doc_cols = self._doc_cols()
         if mode == "CHECK":
             sql = f"""
@@ -97,9 +93,6 @@ class MiroDb:
             return [self._clean(r) for r in rows]
 
         redo = ["FAILED"]                    # CHECKED is re-picked only when mode is PARK/POST
-        sql = """
-            SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
-                   currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place,
         sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},
