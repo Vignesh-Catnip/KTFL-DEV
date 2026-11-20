@@ -1,0 +1,37 @@
+[ ERROR ] Error in file 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot' on line 17: Importing library 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py' failed: SyntaxError: invalid syntax (db.py, line 51)
+Traceback (most recent call last):
+  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py", line 22, in <module>
+    from miro.db import MiroDb                         # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+PYTHONPATH:
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot
+  C:\Program Files\Python312\python312.zip
+  C:\Program Files\Python312\DLLs
+  C:\Program Files\Python312\Lib
+  C:\Program Files\Python312
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\venv
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\venv\Lib\site-packages
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\venv\Lib\site-packages\win32
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\venv\Lib\site-packages\win32\lib
+  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\venv\Lib\site-packages\pythonwin
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+Enter Matched Invoices In MIRO                                                                                  | FAIL |
+Parent suite setup failed:
+No keyword with name 'Initialize MIRO Robot' found.
+------------------------------------------------------------------------------------------------------------------------
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | FAIL |
+Suite setup failed:
+No keyword with name 'Initialize MIRO Robot' found.
+
+Also suite teardown failed:
+No keyword with name 'Close Connections' found.
+
+1 task, 0 passed, 1 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261120_134722\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261120_134722\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261120_134722\report.html
