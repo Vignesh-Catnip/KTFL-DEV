@@ -145,6 +145,9 @@ FIELDS
 - plant_hint: the KTFL plant named in the Ship To / Dispatch To block, copied as printed (for example the plant name
   or place line).
 - hsn_sac: the HSN of the highest-value material row (one code only).
+- gst_rate_percent: the GST rate PRINTED in the item table column "GST%" / "GST Rate" / "Tax %" (one number for the invoice,
+  copied as printed, e.g. the value under that column heading). null if no rate is printed. Never work it out from amounts.
+- buyer_gstin: the 15-character GSTIN printed in the "Bill To" / "Buyer" block (the KTFL GSTIN). null if not printed.
 - handwritten_references: short note (under 40 characters) of handwritten PO/GRN notes only. Never bundle or heat numbers.
 
 LINE ITEMS (lines[])
@@ -182,6 +185,8 @@ Return strictly valid JSON with exactly these keys, no markdown:
   "vendor_code": "",
   "plant_hint": "",
   "hsn_sac": "",
+  "gst_rate_percent": null,
+  "buyer_gstin": "",
   "currency": "INR",
   "subtotal": 0.0,
   "cgst": 0.0,

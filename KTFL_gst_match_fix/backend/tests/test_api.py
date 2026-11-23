@@ -198,3 +198,26 @@ def test_gst_tax_code_box_text_is_forgiven(client):
         r = client.patch(f"/api/invoices/{iid}", json={"gst_tax_code": typed})
         assert r.status_code == 200, (typed, r.text)
         assert client.get(f"/api/invoices/{iid}").json()["gst_tax_code"] == "I3", typed
+
+
+def test_gst_nature_from_printed_rate_and_states(client):
+    """Real invoice (Polycab): totals page missing, GST% 18 printed in the item table, seller + buyer both GSTIN 27."""
+    from app.database import session_factory
+    from app.services.gst import apply_tax_code, compute_gst
+    from app.services.normalize import new_header
+    def hdr(seller, buyer):
+        h = new_header("x.pdf")
+        h.update(gstin=seller, buyer_gstin=buyer, gst_rate_printed=18.0, sap_tax_code="I3")
+        return h
+    with session_factory()() as db:
+        h = hdr("27AABCI4883P1ZV", "27AABCK0618A1Z7"); notes = []
+        apply_tax_code(db, h, notes)
+        assert (h["gst_nature"], h["gst_percent"], h["gst_percent_component"], h["gst_tax_code"]) == ("CGST_SGST", 18.0, 9.0, "I3")
+        assert h["tax_code_match"] is True
+        h = hdr("29AAJCS4396P1Z9", "27AABCK0618A1Z7"); apply_tax_code(db, h, [])
+        assert (h["gst_nature"], h["gst_tax_code"], h["tax_code_match"]) == ("IGST", "I8", False)
+        h = hdr("", ""); apply_tax_code(db, h, [])                       # states unknown: no guess
+        assert h["gst_tax_code"] == "" and h["gst_percent"] is None
+        h = new_header("x.pdf"); h.update(gst_percent=18.0, gst_percent_component=9.0, gst_nature="CGST_SGST")   # re-check, no amounts
+        compute_gst(h)
+        assert (h["gst_percent"], h["gst_nature"]) == (18.0, "CGST_SGST")

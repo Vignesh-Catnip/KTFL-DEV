@@ -117,11 +117,19 @@ def pick_tax_code(db: Session, gst_total, gst_component, nature, is_import=False
     return cands[0] if cands else None
 
 
+def _state(g) -> str:
+    g = (g or "").strip().upper()
+    return g[:2] if re.match(r"^\d{2}[A-Z0-9]{13}$", g) else ""
+
+
 def compute_gst(h: dict) -> None:
-    """Work out the GST % really charged on the invoice from the extracted amounts.
+    """Work out the GST % really charged on the invoice.
+    From the printed tax amounts when they were read; otherwise from the GST % printed in the item table, with CGST+SGST
+    when seller and buyer GSTIN are in the same state (IGST when not); otherwise what was stored before (a re-check).
       gst_percent_component = per half (CGST 9 %)     gst_percent = total (9 + 9 = 18 %)"""
     sub, cgst, sgst, igst = h["subtotal"], h["cgst"], h["sgst"], h["igst"]
     tax_total = round(cgst + sgst + igst, 2) or h["total_tax"]
+    prev = (h.get("gst_percent"), h.get("gst_percent_component"), h.get("gst_nature"))
 
     if igst > 0 and (cgst + sgst) == 0:
         nature = "IGST"
@@ -140,12 +148,22 @@ def compute_gst(h: dict) -> None:
                     if (cgst or sgst) else round(pct / 2, 2))
         else:
             comp = pct
-    elif h.get("gst_rate_printed", 0) > 0:
+    elif h.get("gst_rate_printed", 0) > 0 and tax_total == 0:
         r = snap_gst_rate(h["gst_rate_printed"])
-        if nature == "CGST_SGST" and r and r <= 14:         # a printed "9%" on CGST+SGST = 9 per half
-            comp, pct = r, snap_gst_rate(r * 2)
+        s_state, b_state = _state(h.get("gstin")), _state(h.get("buyer_gstin"))
+        if nature == "NIL" and s_state and b_state:           # no tax amounts read: same state -> CGST+SGST, else IGST
+            nature = "CGST_SGST" if s_state == b_state else "IGST"
+        if nature == "CGST_SGST":
+            if r and r <= 14:                                 # a printed "9%" on CGST+SGST = 9 per half
+                comp, pct = r, snap_gst_rate(r * 2)
+            else:
+                pct, comp = r, snap_gst_rate(round((r or 0) / 2, 2), component=True)
         else:
             pct = comp = r
+        if nature == "NIL":                                   # the states are unknown: do not guess the kind of tax
+            pct = comp = None
+    elif nature == "NIL" and prev[2] in ("CGST_SGST", "IGST") and prev[0]:
+        pct, comp, nature = prev[0], prev[1], prev[2]         # a re-check with no amounts: keep what was stored
     elif nature == "NIL":
         pct = comp = 0.0
 

@@ -15,7 +15,7 @@ def new_header(filename: str = "") -> dict:
         "po_number": "", "po_numbers_printed": [], "gstin": "", "hsn_sac": "", "vendor_code": "",
         "plant_code": "", "plant_source": "", "company_code": "", "currency": "INR",
         "subtotal": 0.0, "cgst": 0.0, "sgst": 0.0, "igst": 0.0, "total_tax": 0.0, "total": 0.0,
-        "gst_rate_printed": 0.0, "grn_number": "", "handwritten_references": "", "confidence": 0.0,
+        "gst_rate_printed": 0.0, "buyer_gstin": "", "grn_number": "", "handwritten_references": "", "confidence": 0.0,
         "tax_code": "", "po_date": "", "grn_date": "", "grn_amount": None,
         "po_list": "", "multi_po_flag": False, "red_flag_reason": "",
         "gst_percent": None, "gst_percent_component": None, "gst_nature": "",
@@ -82,6 +82,7 @@ def normalize(data: dict, filename: str):
         "round_off": round(to_float(data.get("round_off")), 2),
         "other_charges": round(to_float(data.get("other_charges")), 2),
         "gst_rate_printed": to_float(data.get("gst_rate_percent")),
+        "buyer_gstin": clean(data.get("buyer_gstin")).upper().replace(" ", "")[:15],
         "handwritten_references": clean(hw),
         "confidence": round(max(0, min(1, to_float(data.get("confidence")))) * 100, 1),
     })
