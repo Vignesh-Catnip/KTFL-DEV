@@ -134,6 +134,7 @@ def header_from_invoice(inv: Invoice) -> tuple[dict, list[dict]]:
         "field_sources": dict(inv.field_sources or {}), "approved_variance": bool(inv.approved_variance),
         "po_numbers_printed": [],
         "gst_percent": inv.gst_percent, "gst_percent_component": inv.gst_percent_component, "gst_nature": inv.gst_nature or "",
+        "gst_tax_code": inv.gst_tax_code or "", "gst_tax_code_desc": inv.gst_tax_code_desc or "",
     })
     lines = [{
         "item": l.item, "quantity": l.quantity or 0.0, "uom": l.uom or "", "rate": l.rate or 0.0,
