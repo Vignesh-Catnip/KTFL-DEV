@@ -10,6 +10,28 @@ def _text_hit(item: str, sgtxt: str) -> bool:
     return len(a) >= 6 and len(b) >= 6 and (a in b or b in a)
 
 
+_TOK = __import__("re").compile(r"[a-z0-9]+")
+
+
+def _tokens(text: str) -> list[str]:
+    return [t for t in _TOK.findall((text or "").lower()) if len(t) >= 2]
+
+
+def _text_score(item: str, sgtxt: str) -> float:
+    """Share of the shorter text's words that also appear in the other text. A word counts when it is equal, or one is
+    the start of the other ('20MNCr5H' ~ '20MNCR5'); plain numbers must be equal ('70' = '70')."""
+    a, b = _tokens(item), _tokens(sgtxt)
+    if not a or not b:
+        return 0.0
+    hits = 0
+    for t in set(b):
+        for u in set(a):
+            if t == u or (not t.isdigit() and not u.isdigit() and min(len(t), len(u)) >= 4 and (t.startswith(u) or u.startswith(t))):
+                hits += 1
+                break
+    return hits / min(len(set(a)), len(set(b))) if hits >= 2 else 0.0
+
+
 def compare_lines(inv_lines: list[dict], gr_rows: list[dict], po_items: dict | None = None):
     """
     Pair every invoice line with ONE goods-receipt row and report what differs.
@@ -72,6 +94,33 @@ def compare_lines(inv_lines: list[dict], gr_rows: list[dict], po_items: dict | N
                 if q and abs(to_float(r["MENGE"]) - q) <= qtol:
                     cand = (i, r)
                     break
+
+        if cand is None:                                     # similar words in the item text ('20MNCr5H 70 DIA' ~ '20MNCR5 - 70 DIA')
+            best = 0.0
+            for i, r in free:
+                sc = _text_score(l.get("item", ""), r.get("SGTXT", ""))
+                if sc >= 0.5 and sc > best:
+                    best, cand = sc, (i, r)
+        if cand is None and q and a:                         # same rate per unit: only the quantity (and so the amount) differs
+            rate = a / q
+            for i, r in free:
+                rq, rv = to_float(r["MENGE"]), to_float(r["DMBTR"])
+                if rq and rv > 0 and abs(rv / rq - rate) <= max(0.005 * rate, 0.01):
+                    cand = (i, r)
+                    break
+        if cand is None and q:                               # quantity within 5 % (closest wins)
+            near = [(abs(to_float(r["MENGE"]) - q) / q, i, r) for i, r in free if to_float(r["MENGE"]) > 0]
+            near = [t for t in near if t[0] <= 0.05]
+            if near:
+                near.sort(key=lambda t: t[0])
+                cand = (near[0][1], near[0][2])
+        if cand is None and len(free) == 1:                  # the last free GR row and the last open invoice line belong together
+            open_lines = [x for x in inv_lines[idx:] if to_float(x.get("quantity")) or to_float(x.get("amount"))]
+            r0 = free[0][1]
+            rq0, rv0 = to_float(r0["MENGE"]), to_float(r0["DMBTR"])
+            near = (q and rq0 and abs(rq0 - q) / q <= 0.25) or (a and rv0 and abs(rv0 - a) / a <= 0.25)
+            if len(open_lines) == 1 and near:                # ...and are not wildly different
+                cand = free[0]
 
         name = (l.get("item") or "")[:35]
         if cand is None:

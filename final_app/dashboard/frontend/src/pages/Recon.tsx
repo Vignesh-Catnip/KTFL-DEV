@@ -490,7 +490,11 @@ export default function Recon() {
     setBusy(true)
     try {
       let queue = d.queue
-      if (Object.keys(edits).length) queue = (await api.edit(iid, edits)).queue as typeof d.queue
+      if (Object.keys(edits).length) {
+        const r = await api.edit(iid, edits)
+        queue = r.queue as typeof d.queue
+        if (edits.gst_tax_code && r.gst_tax_code) toast('GST tax code set', `${r.gst_tax_code}${r.gst_tax_code_desc ? ' - ' + r.gst_tax_code_desc : ''}`)
+      }
       if (reso && queue !== 'BLOCKED') queue = (await api.resolve(iid, { resolution: reso, note, approve_variance: approve })).queue as typeof d.queue
       setEdits({})
       load()

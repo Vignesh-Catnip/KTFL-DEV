@@ -96,7 +96,7 @@ export const api = {
     return request<{ total: number; page: number; size: number; items: InvoiceRow[] }>(`/api/invoices?${qs}`)
   },
   invoice: (id: number) => request<InvoiceDetail>(`/api/invoices/${id}`),
-  edit: (id: number, body: Record<string, unknown>) => request<{ queue: string }>(`/api/invoices/${id}`, { method: 'PATCH', ...json(body) }),
+  edit: (id: number, body: Record<string, unknown>) => request<{ queue: string; gst_tax_code?: string | null; gst_tax_code_desc?: string | null }>(`/api/invoices/${id}`, { method: 'PATCH', ...json(body) }),
   recheck: (id: number) => request<{ queue: string }>(`/api/invoices/${id}/recheck`, { method: 'POST' }),
   resolve: (id: number, body: { resolution: string; note: string; approve_variance: boolean }) =>
     request<{ queue: string }>(`/api/invoices/${id}/resolve`, { method: 'POST', ...json(body) }),

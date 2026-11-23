@@ -173,7 +173,7 @@ def edit(invoice_id: int, body: dict, db: Session = Depends(get_db),
         audit(db, "LINES_EDITED", inv.id, {"before": line_before, "lines": {str(k): v for k, v in line_changes.items()}}, user.username)
     if changes:
         audit(db, "FIELDS_EDITED", inv.id, {"before": before, "after": changes}, user.username)
-    return {"queue": inv.queue, "status": inv.status}
+    return {"queue": inv.queue, "status": inv.status, "gst_tax_code": inv.gst_tax_code, "gst_tax_code_desc": inv.gst_tax_code_desc}
 
 
 @router.post("/{invoice_id}/recheck")
