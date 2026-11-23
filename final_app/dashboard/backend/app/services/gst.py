@@ -200,16 +200,23 @@ _PCT = re.compile(r"^\s*(\d{1,2}(?:\.\d+)?)\s*%?\s*$")
 
 def resolve_tax_code_input(db: Session, text: str, nature: str | None) -> tuple[str, str, float | None] | None:
     """What the person typed in the GST tax code box -> (tax code, description, total GST %).
-    Accepts a code that exists in the GST master ('I3') or a rate: '9', '9%', '18%'.
-    A rate is looked up like the extraction does (9 % per half or 18 % total both give I3 for CGST+SGST; IGST 18 % gives I8).
-    None = neither a known code nor a known rate."""
+    Forgiving: 'I3', 'i3', '9', '9%', '18 %', 'I3 (18%)', '(18%)', 'I3 - Input CGST+SGST @ 9%+9%' all work.
+    A code that exists in the GST master wins; otherwise a rate is looked up like the extraction does
+    (9 % per half or 18 % total both give I3 for CGST+SGST; IGST 18 % gives I8). None = nothing usable."""
     t = (text or "").strip()
     if not t:
         return None
-    row = db.scalar(select(GstTaxCode).where(func.upper(GstTaxCode.tax_code) == t.upper(), GstTaxCode.tax_type == "V"))
+
+    def code_row(c: str):
+        return db.scalar(select(GstTaxCode).where(func.upper(GstTaxCode.tax_code) == c.upper(), GstTaxCode.tax_type == "V"))
+
+    row = code_row(t)
+    if not row:
+        m = re.match(r"^\s*([A-Za-z][A-Za-z0-9])(?![A-Za-z0-9])", t)           # a code in front: 'I3 (18%)', 'I3 - Input ...'
+        row = code_row(m.group(1)) if m else None
     if row:
         return row.tax_code, row.description, row.rate
-    m = _PCT.match(t)
+    m = _PCT.match(t) or re.search(r"(\d{1,2}(?:\.\d+)?)\s*%", t) or re.match(r"^\D*(\d{1,2}(?:\.\d+)?)\D*$", t)
     if not m:
         return None
     v = float(m.group(1))

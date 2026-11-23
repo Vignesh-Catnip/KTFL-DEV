@@ -589,7 +589,7 @@ export default function Recon() {
                 {EDITABLE[r.field] && writable ? (
                   <div className="cellwrap">
                     <input className={'cellbox' + (edits[EDITABLE[r.field]] !== undefined ? ' edited' : '')} aria-label={r.label}
-                      value={edits[EDITABLE[r.field]] ?? (r.field === 'gst_tax_code' ? (d.gst_tax_code ?? r.invoice) : r.invoice)}
+                      value={edits[EDITABLE[r.field]] ?? (r.field === 'gst_tax_code' ? (d.gst_tax_code || '') : r.invoice)}
                       placeholder={r.field === 'gst_tax_code' ? 'I3 or 9%' : undefined}
                       title={r.field === 'gst_tax_code' ? 'Type a tax code (I3) or the GST rate (9, 9%, 18%) - the code is picked from the GST master when you Save' : undefined}
                       onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
