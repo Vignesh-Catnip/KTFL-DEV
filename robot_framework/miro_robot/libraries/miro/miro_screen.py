@@ -38,8 +38,6 @@ def _logged_on(sess) -> bool:
 def connect_sap(cfg: Config) -> SapSession:
     app = get_scripting_application(cfg)
 
-    # 1) reuse an already logged-on session of the right client
-
     # 1) reuse an already logged-on session of the right client (never open another window if one exists)
     seen: list[str] = []
     try:
@@ -47,15 +45,6 @@ def connect_sap(cfg: Config) -> SapSession:
             conn = app.Children.ElementAt(ci)
             for si in range(conn.Children.Count):
                 sess = conn.Children.ElementAt(si)
-                if _logged_on(sess) and (not cfg.sap_client or str(sess.Info.Client) == cfg.sap_client):
-                    if not cfg.sap_user or str(sess.Info.User).upper() == cfg.sap_user.upper():
-                        s = SapSession(sess, cfg)
-                        s.find("wnd[0]").Maximize()
-                        return s
-    except Exception:
-        pass
-
-    # 2) open the connection from SAP Logon pad and log on
                 try:
                     info = (f"{getattr(conn, 'Description', '?')}/session{si}: user={sess.Info.User or '-'} "
                             f"client={sess.Info.Client or '-'} program={sess.Info.Program}")
@@ -111,11 +100,6 @@ def connect_sap(cfg: Config) -> SapSession:
     conn = app.OpenConnection(cfg.sap_connection, True)
     sess = conn.Children.ElementAt(0)
     s = SapSession(sess, cfg)
-    s.find("wnd[0]").Maximize()
-    logon(s, cfg)
-    return s
-
-
     s.opened_by_robot = True
     s.connection = conn
     s.find("wnd[0]").Maximize()
@@ -379,9 +363,6 @@ class MiroScreen:
         if got != code:
             raise SapError(f"SAP keeps tax code '{got}' instead of '{code}'")
 
-    def set_tax_code(self, code: str) -> None:
-        """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
-        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
     @staticmethod
     def _changeable(el) -> bool:
         try:
@@ -534,7 +515,6 @@ class MiroScreen:
             hits = [k for k, v in entries if plant in v or plant == k]
             key = hits[0] if len(hits) == 1 else ""
         if not key:
-            self.note(f"Doc. Type: no mapping for plant {plant} - kept '{combo.Value}'. "
             self.note(f"Doc. Type: invoice has no doc_type and no mapping for plant {plant} - kept '{combo.Value}'. "
                       f"Available: {entries}")
             self.s._show(combo, f"Doc. Type kept '{combo.Value}' (no mapping for plant {plant})")
