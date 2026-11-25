@@ -1376,3 +1376,340 @@
 2026-11-25 14:41:02,355 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
 2026-11-25 14:41:07,042 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
 2026-11-25 14:41:21,978 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:41:37,869 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:41:53,023 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:42:02,466 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:42:07,735 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:42:59,749 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:43:02,506 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:43:50,827 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:43:51,984 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:44:02,550 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:44:08,033 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:44:22,725 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:44:37,747 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:44:59,723 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:45:02,572 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:46:00,061 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:46:02,731 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:46:59,778 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:47:02,849 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:47:08,759 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:47:22,731 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:47:37,725 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:47:52,732 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:48:02,921 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:48:07,739 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:48:22,721 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:48:37,745 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:48:59,726 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:49:02,942 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:49:59,761 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:50:02,961 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:51:00,023 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:51:02,979 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:51:59,740 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:52:02,999 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:52:07,013 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:52:21,993 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:52:24,489 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:52:39,482 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:52:54,466 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:53:03,027 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:53:09,455 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:53:24,474 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:53:39,474 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:53:54,467 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:54:03,047 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:54:09,480 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:54:26,449 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:54:39,772 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:54:54,491 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:55:03,221 INFO clearmatch.robot: Periodic check: 8 matched invoice(s) waiting — starting robot
+2026-11-25 14:55:10,050 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:55:24,774 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:55:39,822 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:55:54,799 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:56:43,773 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:56:54,521 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:57:09,521 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:57:24,505 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:57:39,745 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:57:54,502 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:58:09,483 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:58:24,819 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:58:39,830 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:58:54,772 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:59:09,799 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:59:15,311 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 14:59:24,484 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:59:39,494 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 14:59:54,477 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:00:09,517 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:00:15,354 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:00:24,511 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:00:39,491 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:00:54,498 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:01:09,477 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:01:15,375 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:01:24,526 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:01:39,486 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:01:54,520 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:02:09,486 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:02:13,878 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:02:15,398 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:02:19,860 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:02:35,146 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:02:49,867 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:03:04,913 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:03:15,821 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:03:19,843 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:03:34,848 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:03:49,853 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:04:04,897 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:04:15,842 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:04:19,851 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:04:34,853 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:04:49,897 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:05:04,832 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:05:15,864 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:05:19,851 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:05:34,857 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:05:49,860 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:06:04,854 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:06:15,884 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:06:19,843 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:06:34,832 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:06:49,839 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:07:04,877 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:07:15,905 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:07:19,861 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:07:34,845 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:07:49,850 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:08:05,087 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:08:06,231 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:08:15,929 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:08:21,121 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:08:36,115 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:08:51,126 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:09:06,137 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:09:16,168 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:09:21,183 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:09:36,260 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:09:51,115 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:10:06,203 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:10:16,769 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:10:21,137 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:10:36,151 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:10:51,158 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:11:06,166 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:11:16,926 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:11:21,131 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:11:36,151 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:11:51,208 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:12:06,164 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:12:16,945 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:12:21,124 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:12:36,146 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:12:51,127 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:13:06,135 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:13:16,966 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:13:21,147 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:13:36,159 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:13:51,426 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:14:06,131 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:14:17,042 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:14:21,122 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:14:36,158 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:14:51,125 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:15:06,153 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:15:17,068 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:15:21,140 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:15:36,152 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:15:51,169 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:16:06,163 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:16:17,085 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:16:21,193 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:16:36,144 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:16:51,170 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:17:06,148 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:17:17,108 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:17:21,144 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:17:36,151 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:17:51,154 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:18:06,171 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:18:17,132 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:18:21,155 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:18:36,146 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:18:51,168 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:19:06,156 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:19:17,150 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:19:21,129 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:19:36,192 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:19:51,326 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:20:06,894 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:20:17,590 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:20:21,567 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:20:36,510 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:20:51,169 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:21:06,163 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:21:17,729 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:21:21,182 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:21:36,145 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:21:51,153 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:22:06,211 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:22:17,800 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:22:21,232 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:22:36,820 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:22:51,844 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:23:06,890 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:23:17,819 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:23:21,859 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:23:52,679 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:24:06,808 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:24:17,845 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:24:21,841 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:24:36,839 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:24:51,888 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:25:07,147 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:25:17,871 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:25:21,850 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:25:36,830 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:25:51,814 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:26:06,918 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:26:17,959 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:26:21,936 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:26:59,847 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:27:17,988 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:27:42,026 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:27:44,433 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:27:59,513 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:28:14,706 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:28:18,009 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:28:29,520 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:28:44,452 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:28:59,451 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:29:14,427 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:29:18,033 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:29:29,480 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:29:44,498 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:29:59,409 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:30:14,464 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:30:18,057 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:30:29,431 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:30:44,443 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:30:59,472 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:31:14,429 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:31:18,086 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:31:29,467 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:31:44,514 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:31:59,439 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:32:14,425 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:32:18,116 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:32:29,483 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:32:44,425 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:32:59,419 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:33:14,422 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:33:18,138 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:33:29,830 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:33:44,823 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:33:59,832 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:34:14,841 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:34:18,156 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:34:29,423 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:34:44,425 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:34:59,428 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:35:05,782 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:35:18,181 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:35:20,597 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:35:35,859 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:35:50,608 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:35:55,058 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:36:09,712 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:36:18,298 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:36:24,718 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:36:39,682 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:36:54,740 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:37:09,682 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:37:18,367 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:37:24,676 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:37:39,667 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:37:54,698 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:38:09,815 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:38:18,440 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:38:24,866 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:38:39,836 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:38:54,849 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:39:18,579 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:39:28,809 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:39:34,863 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:39:40,181 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:39:55,833 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:40:10,361 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:40:19,200 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:40:25,915 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:40:40,826 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:40:55,878 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:41:10,827 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:41:19,242 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:41:59,851 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:42:14,996 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:42:19,266 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:42:25,033 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:42:25,792 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:42:40,733 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:42:55,743 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:43:10,741 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:43:19,286 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:43:25,764 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:43:40,730 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:43:55,726 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:44:10,746 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:44:19,307 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:44:25,789 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:44:40,766 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:44:55,758 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:45:10,725 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:45:19,341 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:45:25,784 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:45:40,771 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:45:55,798 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:46:10,782 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:46:19,372 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:46:25,804 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:46:40,832 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:46:55,788 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:47:10,765 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:47:19,462 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:47:25,781 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:47:40,752 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:47:55,838 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:48:10,763 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:48:19,498 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:48:25,794 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:48:40,773 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:48:55,754 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:49:10,736 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:49:19,525 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:49:25,774 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:49:40,730 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:49:55,811 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:50:10,759 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:50:19,555 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:50:25,789 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:50:40,751 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:50:55,757 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:51:10,800 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:51:19,576 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:51:25,782 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:51:40,836 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:51:55,751 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:52:10,773 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:52:19,604 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:52:25,779 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:52:40,753 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:52:55,776 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:53:10,854 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:53:19,624 INFO clearmatch.robot: Periodic check: 6 matched invoice(s) waiting — starting robot
+2026-11-25 15:53:25,926 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-11-25 15:53:40,854 INFO httpx: HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
