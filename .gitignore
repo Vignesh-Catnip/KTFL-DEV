@@ -6,4 +6,4 @@ dashboard/dashboard.zip
 *.zip
 video/
 /final_app/dashboard/backend/data/uploads/
-/KTFL-EXTRACTION/robot_framework/miro_robot/output
+/KTFL-EXTRACTION/robot_framework/miro_robot/output/screenshots

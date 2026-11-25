@@ -1,0 +1,54 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s
+[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
+Enter Matched Invoices In MIRO                                                                                  1 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (ME23N/SAPLMEGUI/14)
+=== Invoice 27407507 | PO 5100002049 | GRN 5000346407 | total 56965.68 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 08.08.2026
+  > Type INVFO-XBLNR = 27407507
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002049
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+27407507: first try failed (SAP: [tax code] SAP error: Check if invoice already entered under journal entry 2728004529 2027) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 27407507 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 08.08.2026
+  > Type INVFO-XBLNR = 27407507
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002049
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+[ WARN ] 27407507: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2728004529 2027
+  > Command field: /n
+  > Press Enter
+27407507 -> FAILED (after retry)
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+  > Command field: /n
+  > Press Enter
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 1 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_142904\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_142904\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_142904\report.html

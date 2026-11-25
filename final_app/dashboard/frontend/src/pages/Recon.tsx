@@ -239,7 +239,7 @@ function LensPanel({ res, busy, err, writable, onApply, onClose, canDetect, dete
   )
 }
 
-function InvoicePages({ id, pages, writable, onApply, target, kick, clearTarget }: { id: number; pages: number; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; target: 'PO' | 'GRN' | null; kick: number; clearTarget: () => void }) {
+function InvoicePages({ id, pages, writable, onApply, target, kick, clearTarget, onViewerOpen, onViewerClose }: { id: number; pages: number; writable: boolean; onApply: (kind: 'PO' | 'GRN', v: string) => void; target: 'PO' | 'GRN' | null; kick: number; clearTarget: () => void; onViewerOpen?: () => void; onViewerClose?: () => void }) {
   const [p, setP] = useState(1)
   const [src, setSrc] = useState('')
   const [err, setErr] = useState('')
@@ -300,9 +300,9 @@ function InvoicePages({ id, pages, writable, onApply, target, kick, clearTarget 
       {lensOn && <LensPanel target={target} res={res} busy={busy} err={lerr} writable={writable} onApply={onApply} onClose={() => { setLensOn(false); clearTarget() }}
         canDetect={!ocrAvail} detecting={detecting} onDetect={() => void detectAi()} detectMsg={detectMsg} />}
       {err ? <div className="empty">{err}</div> : src ? (
-        <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => setBig(true)} lens={lens} />
+        <PanZoom src={src} alt={`Invoice page ${p}`} onFull={() => { setBig(true); onViewerOpen?.() }} lens={lens} />
       ) : <div className="empty"><span className="spin" /></div>}
-      {big && <Viewer id={id} page={p} pages={pages} onClose={() => setBig(false)} onPage={setP} />}
+      {big && <Viewer id={id} page={p} pages={pages} onClose={() => { setBig(false); onViewerClose?.() }} onPage={setP} />}
     </div>
   )
 }
@@ -463,6 +463,11 @@ export default function Recon() {
   const [tab, setTab] = useState<'inv' | 'grn' | 'po'>('inv')
   const [lensTarget, setLensTarget] = useState<'PO' | 'GRN' | null>(null)
   const [lensKick, setLensKick] = useState(0)
+  const [viewerOpen, setViewerOpen] = useState(false)
+  /** last value copied to clipboard via scan; auto-pastes into the matching input on focus */
+  const [clipScan, setClipScan] = useState<{ field: 'po_number' | 'grn_number'; value: string } | null>(null)
+  /** which match-detail field is currently focused (for showing the scan button) */
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [reso, setReso] = useState('')
   const [note, setNote] = useState('')
@@ -529,7 +534,7 @@ export default function Recon() {
   return (
     <section style={{ maxWidth: '100%', width: '100%' }}>
       <div className="recon-top">
-        <button className="back" onClick={() => nav(-1)} aria-label="Back"><Icon d={ICONS.back} size={18} /></button>
+        <button className="back" onClick={() => { if (viewerOpen) { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })) } else { nav(-1) } }} aria-label="Back"><Icon d={ICONS.back} size={18} /></button>
         <div className="recon-title">
           <h1>Three-way reconciliation</h1>
           <p><span className="mono">{d.invoice_number || d.filename}</span> · {d.vendor}</p>
@@ -554,12 +559,15 @@ export default function Recon() {
         <div className="docwrap">
           <div className="doctabs">
             {([['inv', 'Digital Invoice'], ['grn', 'GRN Copy'], ['po', 'PO Copy']] as const).map(([k, l]) => (
-              <button key={k} className={'doctab' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>
+              <button key={k} className={'doctab' + (tab === k ? ' on' : '')} onClick={() => { setTab(k); if (k !== 'inv') setViewerOpen(false) }}>{l}</button>
             ))}
           </div>
           <div className="docview">
-            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} writable={writable} target={lensTarget} kick={lensKick} clearTarget={() => setLensTarget(null)} onApply={(kind, v) => {
-              setEdits(e => ({ ...e, [kind === 'PO' ? 'po_number' : 'grn_number']: v }))
+            {tab === 'inv' && <InvoicePages id={iid} pages={d.page_count || 1} writable={writable} target={lensTarget} kick={lensKick} clearTarget={() => setLensTarget(null)} onViewerOpen={() => setViewerOpen(true)} onViewerClose={() => setViewerOpen(false)} onApply={(kind, v) => {
+              const field = kind === 'PO' ? 'po_number' : 'grn_number'
+              setEdits(e => ({ ...e, [field]: v }))
+              setClipScan({ field, value: v })
+              navigator.clipboard.writeText(v).catch(() => {/* clipboard permission denied — value is still set in the field */})
               toast(kind === 'PO' ? 'PO number set' : 'GRN number set', `${v} - check it, then press Save`)
             }} />}
             {tab === 'grn' && <GrnCopy d={d} />}
@@ -592,10 +600,21 @@ export default function Recon() {
                       value={edits[EDITABLE[r.field]] ?? (r.field === 'gst_tax_code' ? (d.gst_tax_code || '') : r.invoice)}
                       placeholder={r.field === 'gst_tax_code' ? 'I3 or 9%' : undefined}
                       title={r.field === 'gst_tax_code' ? 'Type a tax code (I3) or the GST rate (9, 9%, 18%) - the code is picked from the GST master when you Save' : undefined}
+                      onFocus={() => {
+                        setFocusedField(EDITABLE[r.field])
+                        /* auto-paste the last scanned value when the user clicks into the matching field */
+                        if (clipScan && clipScan.field === EDITABLE[r.field] && !edits[EDITABLE[r.field]]) {
+                          setEdits(e => ({ ...e, [clipScan.field]: clipScan.value }))
+                          setClipScan(null)
+                        }
+                      }}
+                      onBlur={() => setFocusedField(null)}
                       onChange={e => setEdits({ ...edits, [EDITABLE[r.field]]: e.target.value })} />
-                    {(r.field === 'po_number' || r.field === 'grn_number') && (
-                      <button type="button" className="btn sm cellscan" title={`Scan the ${r.field === 'po_number' ? 'PO' : 'GRN'} number from the digital invoice`}
-                        onClick={() => { setLensTarget(r.field === 'po_number' ? 'PO' : 'GRN'); setTab('inv'); setLensKick(k => k + 1) }}>🔍</button>
+                    {/* 🔍 SAP re-check button: visible only while PO/GRN field is focused or being edited */}
+                    {(r.field === 'po_number' || r.field === 'grn_number') && (focusedField === EDITABLE[r.field] || edits[EDITABLE[r.field]] !== undefined) && (
+                      <button type="button" className="btn sm cellscan" title="Re-check SAP with this PO / GRN number"
+                        onMouseDown={e => e.preventDefault()}   /* prevent blur before click fires */
+                        onClick={onSapLookup}>🔍</button>
                     )}
                   </div>
                 ) : r.field === 'hsn_sac' ? (
@@ -620,28 +639,16 @@ export default function Recon() {
             </div>
             <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>HSN is read from the invoice only — the right-hand value is SAP's HSN, used just to compare.</div>
 
-            {/* SAP re-lookup button when PO or GRN is manually edited */}
-            {(writable && (edits.po_number !== undefined || edits.grn_number !== undefined)) ? (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button className="btn sm" onClick={onSapLookup} disabled={sapLooking}>
-                  {sapLooking ? '…' : '🔍'} Re-check SAP with entered PO/GRN
-                </button>
-                {sapResult != null ? (
-                  <span style={{ fontSize: 12, color: (sapResult.po_in_sap || sapResult.grn_in_sap) ? '#16a34a' : '#dc2626' }}>
-                    {(sapResult.po_in_sap || sapResult.grn_in_sap)
-                      ? `✓ Found — PO: ${sapResult.po_number || '—'}  GRN: ${sapResult.grn_number || '—'}  Plant: ${sapResult.plant_code || '—'}`
-                      : '✗ Not found in SAP'}
-                  </span>
-                ) : null}
+            {/* SAP re-check result — shown inline after the 🔍 icon in the PO/GRN field is clicked */}
+            {sapResult != null && (
+              <div style={{ marginTop: 8, padding: '8px 10px', background: (sapResult.po_in_sap || sapResult.grn_in_sap) ? '#f0fdf4' : '#fef2f2', borderRadius: 6, border: `1px solid ${(sapResult.po_in_sap || sapResult.grn_in_sap) ? '#bbf7d0' : '#fecaca'}`, fontSize: 12 }}>
+                {(sapResult.po_in_sap || sapResult.grn_in_sap) ? (
+                  <><b>✓ SAP matched</b> — PO: {String(sapResult.po_number || '—')} · GRN: {String(sapResult.grn_number || '—')} · Plant: {String(sapResult.plant_code || '—')}<br />
+                  PO date: {String(sapResult.po_date || '—')} · GRN date: {String(sapResult.grn_date || '—')} · GRN amount: {sapResult.grn_amount ? `₹${Number(sapResult.grn_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}<br />
+                  Vendor: {String(sapResult.sap_vendor_code || sapResult.vendor_code || '—')} · Tax code: {String(sapResult.sap_tax_code || '—')}</>
+                ) : <b>✗ Not found in SAP</b>}
               </div>
-            ) : null}
-            {(sapResult != null && (sapResult.po_in_sap || sapResult.grn_in_sap)) ? (
-              <div style={{ marginTop: 8, padding: '8px 10px', background: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', fontSize: 12 }}>
-                <b>SAP matched details</b><br />
-                PO date: {String(sapResult.po_date || '—')} · GRN date: {String(sapResult.grn_date || '—')} · GRN amount: {sapResult.grn_amount ? `₹${Number(sapResult.grn_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}<br />
-                Vendor code: {String(sapResult.sap_vendor_code || sapResult.vendor_code || '—')} · Plant: {String(sapResult.plant_code || '—')} · Tax code: {String(sapResult.sap_tax_code || '—')} · Company: {String(sapResult.company_code || '—')}
-              </div>
-            ) : null}
+            )}
           </div>
 
           {open.length > 0 && (
