@@ -145,9 +145,6 @@ FIELDS
 - plant_hint: the KTFL plant named in the Ship To / Dispatch To block, copied as printed (for example the plant name
   or place line).
 - hsn_sac: the HSN of the highest-value material row (one code only).
-- gst_rate_percent: the GST rate PRINTED in the item table column "GST%" / "GST Rate" / "Tax %" (one number for the invoice,
-  copied as printed, e.g. the value under that column heading). null if no rate is printed. Never work it out from amounts.
-- buyer_gstin: the 15-character GSTIN printed in the "Bill To" / "Buyer" block (the KTFL GSTIN). null if not printed.
 - handwritten_references: short note (under 40 characters) of handwritten PO/GRN notes only. Never bundle or heat numbers.
 
 LINE ITEMS (lines[])
@@ -171,8 +168,13 @@ TOTALS (from the printed summary at the bottom, not from your own sums)
 - total: the printed final "Grand Total" / "Total Invoice Value" (the rounded payable amount).
 - currency: "INR" unless another currency is printed.
 
+GROSS WT vs NET WT RULE (applies to ALL invoices, not just HINDALCO):
+- When a table has BOTH a GROSS WT column AND a NET WT column, ALWAYS use the NET WT value as quantity. Never use GROSS WT.
+- When only one weight column exists (either GROSS WT or NET WT), use that value as quantity.
+- When no weight column exists and a QTY column is present, use QTY as quantity.
+
 HINDALCO-STYLE TABLES: columns run "Sr & Description | HSN | Alloy/Section | PKGS | PCS | GROSS WT | NET WT | UOM | RATE | ...
-| TAXABLE VALUE". quantity is the NET WT value immediately left of "KG" (a decimal weight, not PCS).
+| TAXABLE VALUE". quantity is the NET WT value (the column immediately left of UOM/KG). GROSS WT is the column before NET WT — never use it as quantity.
 
 Return strictly valid JSON with exactly these keys, no markdown:
 {
@@ -185,8 +187,6 @@ Return strictly valid JSON with exactly these keys, no markdown:
   "vendor_code": "",
   "plant_hint": "",
   "hsn_sac": "",
-  "gst_rate_percent": null,
-  "buyer_gstin": "",
   "currency": "INR",
   "subtotal": 0.0,
   "cgst": 0.0,
