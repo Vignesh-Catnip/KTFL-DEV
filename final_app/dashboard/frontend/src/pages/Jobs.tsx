@@ -34,8 +34,8 @@ export default function Jobs() {
         <div className="panel" style={{ padding: 16, marginBottom: 18 }}>
           <b>Where the PDF is</b>
           <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap', alignItems: 'stretch' }}>
-            {([['1  Input', cfg.folders.input, 'drop PDFs here'], ['2  Processing', cfg.folders.processing, 'agent is reading it'],
-               ['3  Output', cfg.folders.output, 'matched / reconcile / blocked'], ['4  Finish', cfg.folders.finish, 'posted / parked / duplicate']] as const).map(([t, p, d], i) => (
+            {([['1  Input', cfg.folders.input, 'drop PDFs here'], ['2  Processing', cfg.folders.processing, 'matched / reconcile'],
+               ['3  Output', cfg.folders.output, 'posted / parked invoices'], ['4  Exception', cfg.folders.finish, 'ocr error / sap error']] as const).map(([t, p, d], i) => (
               <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {i > 0 && <span className="muted">→</span>}
                 <div style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '8px 12px', minWidth: 190 }}>
