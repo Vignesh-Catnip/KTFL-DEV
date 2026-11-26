@@ -120,9 +120,9 @@ def run_job(job_id: int) -> None:
             log.info("extraction finished: job %s  %s  -> %s / %s  invoice_id=%s", job_id, job.filename,
                      res.outcome, res.queue, res.invoice_id)
             if res.outcome == "EXCEPTION":
-                workflow.place_exception(job, res.reason)                    # processing -> exception\\<reason>
+                workflow.place_exception(job, res.reason)   # processing -> exception/ocr_error
             else:
-                workflow.place_after_extraction(job, res.outcome, res.queue)  # processing -> output\\<queue>
+                workflow.place_after_extraction(job, res.outcome, res.queue)  # processing -> output/<queue> or exception/ocr_error
             if res.outcome == "CREATED" and res.queue == "MATCHED":
                 robot.schedule_auto()                   # matched invoices go to the MIRO robot by themselves
         except Exception as exc:
@@ -133,7 +133,7 @@ def run_job(job_id: int) -> None:
             raw_err = f"{type(exc).__name__}: {exc}"
             friendly = _friendly_error(exc, raw_err)
             job.status, job.error, job.stage = "FAILED", friendly[:1000], "Failed"
-            workflow.place_failed(job)                                           # processing -> error
+            workflow.place_failed(job)                                           # processing -> exception/ocr_error
             audit(db, "EXTRACTION_FAILED", None, {"file": job.filename, "error": job.error,
                                                    "raw_error": raw_err[:500]}, job.created_by)
         job.finished_at = now()
