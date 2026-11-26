@@ -1,11 +1,5 @@
-5000344355.pdf
-
-2728004529 2027
-2729004534 2027
-2725004617 2027
-2728004532 2027
-
-
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app
-
-CLEARMATCH_APP_ROOT=C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard
+SELECT filename, po_number, invoice_number, grn_number, grn_date
+FROM invoices
+WHERE TO_DATE(grn_date, 'DD-MM-YYYY') > '2026-10-02'
+  AND grn_date IS NOT NULL
+ORDER BY grn_date DESC;
