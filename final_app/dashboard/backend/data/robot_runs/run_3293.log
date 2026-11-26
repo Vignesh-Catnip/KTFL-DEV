@@ -1,0 +1,78 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: POST | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s
+[ WARN ] MIRO_MODE=POST - invoices WILL be posted in SAP
+Enter Matched Invoices In MIRO                                                                                  1 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+=== Invoice 4678/26-27 | PO 6100019846 | GRN 5000340790 | total 24335.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Press Enter (popup)
+  > Type INVFO-BLDAT = 31.07.2026
+  > Type INVFO-XBLNR = 4678/26-27
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100019846
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2001
+  > Type INVFO-SECCO = 2001
+  > Type INVFO-SGTXT = HT Allen Cap 20*80 H.T. (103143)
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+  > Press button DESELECT_ALL
+  > Tick item row 8
+  > Tick item row 10
+  > Tick item row 13
+  > Tick item row 17
+  > Tick item row 18
+  > Press Enter
+  > Press button REFRESH
+  > Reading MIRO item table (all rows, Reference Document column)
+Refresh: rows [8, 10, 13, 17, 18] kept, other rows removed -> now rows [1, 2, 3, 4, 5]
+Selected 5 row(s) [1, 2, 3, 4, 5] for GRN 5000340790 = 20,623.00 (invoice taxable 20,623.00); other GRNs left unselected: ['5000324084', '5000348764', '5000359571']
+  > Reading MIRO item table (all rows, Reference Document column)
+HSN row 1: 73181500 OK (only HSN on invoice)
+HSN row 2: 73181500 OK (only HSN on invoice)
+HSN row 3: 73181500 OK (only HSN on invoice)
+HSN row 4: 73181500 OK (only HSN on invoice)
+HSN row 5: 73181500 OK (only HSN on invoice)
+  > Press button RM08M-HEADER_COLLAPSE
+  > Open tab Basic data
+  > Type INVFO-WRBTR = 24335.00
+  > Press Enter
+  > Open tab Basic data
+Balance after amount: -0.16
+  > Balance -0.16 not zero -> Details tab, Unpl. Del. Csts
+  > Open tab Details
+  > Type INVFO-BLART = X0
+  > Type INVFO-BEZNK = -0.16
+  > Press Enter
+Doc. Type set: X0 Invoice - Mundhwa
+Unpl. Del. Csts -0.16 entered - balance 0
+  > Press Simulate
+  > Press Cancel (F12) (popup)
+Simulate OK - Simulate Document in INR (Document currency) | Debit | 24,335.16 | Credit | 24,335.16 | Bal. | 0.00
+  > Press Save (Ctrl+S)
+POSTED: SAP document 5100205692
+4678/26-27 -> POSTED
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+  > Command field: /n
+  > Press Enter
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 1 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_160133\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_160133\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261125_160133\report.html

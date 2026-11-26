@@ -1,40 +1,9 @@
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>python -m robot --outputdir output tasks\miro_posting.robot
-[ ERROR ] Error in file 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot' on line 17: Importing library 'C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py' failed: IndentationError: unexpected indent (miro_screen.py, line 59)
-Traceback (most recent call last):
-  File "C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries\MiroLibrary.py", line 24, in <module>
-    from miro.miro_screen import MiroScreen, connect_sap       # noqa: E402
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-PYTHONPATH:
-  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries
-  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\libraries
-  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot
-  C:\Program Files\Python312\python312.zip
-  C:\Program Files\Python312\DLLs
-  C:\Program Files\Python312\Lib
-  C:\Program Files\Python312
-  C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages
-  C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\win32
-  C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\win32\lib
-  C:\Users\ckts00126\AppData\Roaming\Python\Python312\site-packages\Pythonwin
-  C:\Program Files\Python312\Lib\site-packages
-==============================================================================
-Miro Posting :: KTFL - MIRO invoice entry robot
-==============================================================================
-Enter Matched Invoices In MIRO                                        | FAIL |
-Parent suite setup failed:
-No keyword with name 'Initialize MIRO Robot' found.
-------------------------------------------------------------------------------
-Miro Posting :: KTFL - MIRO invoice entry robot                       | FAIL |
-Suite setup failed:
-No keyword with name 'Initialize MIRO Robot' found.
+5000344355.pdf
 
-Also suite teardown failed:
-No keyword with name 'Close Connections' found.
+2728004529 2027
+2729004534 2027
+2725004617 2027
+2728004532 2027
 
-1 task, 0 passed, 1 failed
-==============================================================================
-Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\output.xml
-Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\log.html
-Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\report.html
 
-C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot>
+C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app
