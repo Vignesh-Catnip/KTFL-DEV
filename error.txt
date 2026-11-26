@@ -7,3 +7,5 @@
 
 
 C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard\backend\app
+
+CLEARMATCH_APP_ROOT=C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\final_app\dashboard
