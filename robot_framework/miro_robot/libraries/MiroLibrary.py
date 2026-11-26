@@ -131,11 +131,13 @@ class MiroLibrary:
     @_track
     def enter_po(self, invoice):
         self.miro.enter_po(invoice["po_number"])
+        self._check_abap(invoice, "enter_po")
 
     @keyword("Enter Tax And Business Place")
     @_track
     def enter_tax_and_plant(self, invoice):
         self.miro.fill_tax_and_plant(invoice)
+        self._check_abap(invoice, "tax_and_plant")
 
     @keyword("Select GRN Lines")
     @_track
@@ -188,6 +190,7 @@ class MiroLibrary:
         """Amount = invoice total. Balance 0 -> OK, the Details tab is NOT opened. Balance > 0 (up to
         MIRO_MAX_UNPLANNED_COST) -> Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0."""
         bal = self.miro.enter_amount(invoice)
+        self._check_abap(invoice, "enter_amount")
         logger.info(f"Balance after amount: {bal:,.2f}", also_console=True)
         unpl = self.miro.settle_balance(invoice, bal)
         self._unplanned = unpl
@@ -204,6 +207,7 @@ class MiroLibrary:
         if not self.cfg.simulate:
             return
         info = self.miro.simulate()
+        self._check_abap(invoice, "simulate")
         self._screenshot(invoice, "simulated")
         logger.info(f"Simulate OK {('- ' + info) if info else ''}", also_console=True)
 
@@ -237,7 +241,42 @@ class MiroLibrary:
         self._error_kind = ""
         self._finish(inv_id, status, txt, doc, sel, detail)
         logger.info(f"{status}: SAP document {doc}", also_console=True)
+
+        # POSTED → move PDF from processing/ to output/ with rename <GRN>_<Journal>_invoice.pdf
+        if status == "POSTED":
+            try:
+                self._move_to_output(invoice, doc)
+            except Exception as exc:
+                logger.warn(f"Could not move PDF to output folder: {exc}")
+
         return status
+
+    def _move_to_output(self, invoice, doc_number: str) -> None:
+        """Move posted invoice PDF from processing/ to output/ with rename via app workflow."""
+        try:
+            import importlib.util, os
+            app_root = os.environ.get("CLEARMATCH_APP_ROOT", "")
+            if not app_root:
+                return
+            spec = importlib.util.spec_from_file_location(
+                "workflow",
+                os.path.join(app_root, "backend", "app", "services", "workflow.py")
+            )
+            wf = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(wf)
+
+            class _Inv:
+                def __init__(self, d, doc):
+                    self.id = int(d.get("id", 0))
+                    self.grn_number = d.get("grn_number", "")
+                    self.invoice_number = d.get("invoice_number", "")
+                    self.miro_doc_number = doc
+                    self.miro_status = "POSTED"
+                    self.queue = d.get("queue", "matched")
+
+            wf.place_posted_by_id(_Inv(invoice, doc_number))
+        except Exception as exc:
+            logger.warn(f"output folder move skipped: {exc}")
 
     @keyword("Should Retry Invoice")
     def should_retry(self, invoice, error):
@@ -271,7 +310,8 @@ class MiroLibrary:
         """Classifies the error and stores it:
              data problem           -> REVIEW  (not retried)
              error while saving     -> UNKNOWN (check in SAP, not retried)
-             other SAP / tech error -> FAILED  (retried next run)"""
+             other SAP / tech error -> FAILED  (retried next run)
+        SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder."""
         kind = self._error_kind or "TECH"
         status = {"DATA": "REVIEW", "SAVE": "UNKNOWN"}.get(kind, "FAILED")
         shot = self._screenshot(invoice, "error")
@@ -284,9 +324,45 @@ class MiroLibrary:
         except Exception as e:                          # DB down: never hide the SAP error
             logger.error(f"Could not write failure to DB: {e}")
         logger.warn(f"{invoice.get('invoice_number')}: {status} - {error}")
+
+        # SAP / robot errors -> move PDF to exception/sap_error/ folder
+        if kind in ("SAP", "TECH", "SAVE"):
+            try:
+                self._move_to_sap_error(invoice, reason=kind.lower())
+            except Exception as exc:
+                logger.warn(f"Could not move PDF to sap_error folder: {exc}")
+
         if self.miro and status != "UNKNOWN":
             self.miro.leave()
         return status
+
+    def _move_to_sap_error(self, invoice, reason: str = "sap_error") -> None:
+        """Move the invoice PDF to exception/sap_error/ via the app's workflow module."""
+        try:
+            import importlib, sys as _sys
+            # Locate the app's workflow module (it lives in the FastAPI app, not the robot)
+            # Robot and app share the same machine, so we import directly
+            import importlib.util, os
+            # Try to find app workflow module from env or common paths
+            app_root = os.environ.get("CLEARMATCH_APP_ROOT", "")
+            if not app_root:
+                return                               # app root not configured — skip silently
+            spec = importlib.util.spec_from_file_location(
+                "workflow",
+                os.path.join(app_root, "backend", "app", "services", "workflow.py")
+            )
+            wf = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(wf)
+            # Build a minimal Invoice-like object from the invoice dict
+            class _Inv:
+                def __init__(self, d):
+                    self.id = int(d.get("id", 0))
+                    self.grn_number = d.get("grn_number", "")
+                    self.invoice_number = d.get("invoice_number", "")
+                    self.miro_doc_number = ""
+            wf.move_to_sap_error(_Inv(invoice), reason)
+        except Exception as exc:
+            logger.warn(f"sap_error folder move skipped: {exc}")
 
     @keyword("Reset SAP Screen")
     def reset_screen(self):
@@ -335,3 +411,10 @@ class MiroLibrary:
         if p:
             logger.info(f"Screenshot: {p}")
         return p
+
+    def _check_abap(self, invoice, stage: str) -> None:
+        """Check if SAP showed an ABAP error or unexpected screen after any step.
+        Raises SapError with the error text (txn, screen, title, status) — no screenshot."""
+        if not self.miro:
+            return
+        self.miro.check_for_abap_error(stage, screenshot_path=None)
