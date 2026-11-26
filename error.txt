@@ -1,5 +1,10 @@
-SELECT filename, po_number, invoice_number, grn_number, grn_date
+SELECT 
+    filename,
+    po_number,
+    invoice_number,
+    grn_number,
+    grn_date
 FROM invoices
-WHERE TO_DATE(grn_date, 'DD-MM-YYYY') > '2026-10-02'
-  AND grn_date IS NOT NULL
+WHERE status = 'RECONCILE'
+  AND grn_date > '02-10-2026'
 ORDER BY grn_date DESC;
