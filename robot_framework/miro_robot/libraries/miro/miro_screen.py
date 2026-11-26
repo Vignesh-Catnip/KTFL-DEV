@@ -100,6 +100,11 @@ def connect_sap(cfg: Config) -> SapSession:
     conn = app.OpenConnection(cfg.sap_connection, True)
     sess = conn.Children.ElementAt(0)
     s = SapSession(sess, cfg)
+    s.find("wnd[0]").Maximize()
+    logon(s, cfg)
+    return s
+
+
     s.opened_by_robot = True
     s.connection = conn
     s.find("wnd[0]").Maximize()
@@ -238,6 +243,50 @@ class MiroScreen:
                 self.note(f"[{stage}] {mt or 'msg'}: {txt}")
             return
 
+    # ------------------------------------------------------------ ABAP / wrong-page detection
+    def check_for_abap_error(self, stage: str, screenshot_path=None) -> None:
+        """Detect SAP ABAP runtime error page or any unexpected screen (not MIRO/MRM).
+        Takes a screenshot of the error page, then raises SapError with the screen details.
+        Call this whenever SAP might have jumped to a different screen unexpectedly."""
+        try:
+            info = self.s.screen_info()
+            txn = self.s.transaction().upper()
+            title = str(self.s.find("wnd[0]").Text or "")
+        except Exception:
+            return   # can't even read the screen - let the caller handle it
+
+        # ABAP runtime error pages: transaction SM13, ABAP dump viewer, or title contains "Runtime Error"
+        is_abap = (
+            "SM13" in info or
+            "SAPMSSY0" in info or
+            txn in ("SM13", "ABAP") or
+            "runtime error" in title.lower() or
+            "abap" in title.lower() or
+            "dump" in title.lower()
+        )
+
+        # Wrong page: not MIRO and not a known MRM sub-screen
+        is_wrong_page = (
+            txn not in ("MIRO", "SM30", "") and
+            "MRM" not in info and
+            not self.s.popup_open()
+        )
+
+        if is_abap or is_wrong_page:
+            # Take screenshot of the error page
+            if screenshot_path:
+                try:
+                    self.s.screenshot(screenshot_path)
+                    log.warning("SAP error page screenshot saved: %s", screenshot_path)
+                except Exception:
+                    pass
+            _, stxt = self.s.status()
+            page_desc = f"txn={txn} screen={info} title='{title}'"
+            if is_abap:
+                raise SapError(f"[{stage}] ABAP runtime error on SAP screen: {page_desc} | status: {stxt}")
+            else:
+                raise SapError(f"[{stage}] SAP showed unexpected screen (expected MIRO): {page_desc} | status: {stxt}")
+
     # ------------------------------------------------------------ start
     def open(self) -> None:
         self.leave()                                          # clean start, discards any half-entered doc
@@ -363,6 +412,9 @@ class MiroScreen:
         if got != code:
             raise SapError(f"SAP keeps tax code '{got}' instead of '{code}'")
 
+    def set_tax_code(self, code: str) -> None:
+        """Basic data: Tax code combo (cmbINVFO-MWSKZ).key = 'I3' - as in the SAP recording."""
+        combo = self.s.find_name("INVFO-MWSKZ", types=("GuiComboBox", "GuiCTextField"))
     @staticmethod
     def _changeable(el) -> bool:
         try:
@@ -425,13 +477,15 @@ class MiroScreen:
         self.s.set_field("RM08M-EBELN", po)
         self.s.enter()
         self.handle_messages("purchase order")
-        # After PO entry SAP may show a full-screen message display (SAPMSSY0/120 or similar).
-        # This is NOT a wnd[1] popup - it replaces the main window. Detect and press Enter to return.
+        # After PO entry SAP may show a full-screen message display (SAPMSSY0/120 or similar)
+        # or an ABAP runtime error page. Detect and handle.
         for _ in range(3):
             info = self.s.screen_info()
             txn = self.s.transaction().upper()
-            if "SAPMSSY0" in info or (txn not in ("MIRO", "") and "MRM" not in info):
+            if "SAPMSSY0" in info or (txn not in ("MIRO", "") and "MRM" not in info and not self.s.popup_open()):
                 _, stxt = self.s.status()
+                # Check for ABAP error first - this is a hard stop
+                self.check_for_abap_error("purchase order")
                 self.note(f"[purchase order] SAP showed message screen ({info}): {stxt} - pressing Enter to continue")
                 self.s.enter()
                 self.s.wait_ready()
@@ -464,7 +518,10 @@ class MiroScreen:
         if abs(balance) <= c.balance_tolerance:
             self.s._show(None, f"Balance {balance:,.2f} = OK, invoice total matches")
             return 0.0
-        if abs(balance) > c.max_unplanned_cost:
+        if balance < 0:
+            raise MiroDataError(f"Balance is {balance:,.2f}: selected GRN lines + tax are MORE than the "
+                                f"invoice total - cannot use unplanned delivery costs")
+        if balance > c.max_unplanned_cost:
             raise MiroDataError(f"Balance {balance:,.2f} is more than MIRO_MAX_UNPLANNED_COST "
                                 f"{c.max_unplanned_cost:,.2f} - not booked as unplanned delivery costs")
 
