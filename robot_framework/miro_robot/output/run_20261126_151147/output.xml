@@ -1,0 +1,2110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.5 (Python 3.12.3 on win32)" generated="2026-11-26T15:11:48.770452" rpa="true" schemaversion="5">
+<suite id="s1" name="Miro Posting" source="C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot">
+<kw name="Start Robot" type="SETUP">
+<kw name="Initialize MIRO Robot" owner="MiroLibrary">
+<msg time="2026-11-26T15:11:49.142505" level="INFO">MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui</msg>
+<msg time="2026-11-26T15:11:49.142505" level="INFO">Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s</msg>
+<status status="PASS" start="2026-11-26T15:11:49.125506" elapsed="0.016999"/>
+</kw>
+<kw name="Connect To Invoice Database" owner="MiroLibrary">
+<status status="PASS" start="2026-11-26T15:11:49.142505" elapsed="0.119005"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:11:49.124505" elapsed="0.137005"/>
+</kw>
+<test id="s1-t1" name="Enter Matched Invoices In MIRO" line="24">
+<kw name="Get Invoices Ready For MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:11:49.300515" level="INFO">9 invoice(s) with status MATCHED waiting for MIRO</msg>
+<msg time="2026-11-26T15:11:49.301512" level="INFO">${invoices} = [{'id': 1536, 'invoice_number': '1702/2026-2027', 'invoice_date': '31.07.2026', 'po_number': '6100015411', 'grn_number': '5000340793', 'vendor': 'SNEHDEEP PACKAGING PVT LTD', 'vendor_code': '310026', ...</msg>
+<var>${invoices}</var>
+<status status="PASS" start="2026-11-26T15:11:49.262512" elapsed="0.039000"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${invoices}">
+<kw name="Pass Execution" owner="BuiltIn">
+<arg>Nothing to do - no MATCHED invoices waiting.</arg>
+<doc>Stops rest of the current test, setup or teardown and sets status to PASS.</doc>
+<status status="NOT RUN" start="2026-11-26T15:11:49.304515" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:11:49.301512" elapsed="0.003003"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:11:49.301512" elapsed="0.003003"/>
+</if>
+<kw name="Connect To SAP" owner="MiroLibrary">
+<msg time="2026-11-26T15:11:54.250028" level="INFO">SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)</msg>
+<msg time="2026-11-26T15:11:54.254031" level="INFO">&gt; Press Enter</msg>
+<status status="PASS" start="2026-11-26T15:11:49.304515" elapsed="4.949516"/>
+</kw>
+<for flavor="IN">
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:11:54.259028" level="INFO">=== Invoice 1702/2026-2027 | PO 6100015411 | GRN 5000340793 | total 97190.7 ===</msg>
+<msg time="2026-11-26T15:11:54.259028" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:11:54.255029" elapsed="0.003999"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:11:54.259028" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:11:54.259028" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:11:54.259028" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:11:54.262028" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:11:55.790124" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:11:57.411748" level="INFO">  &gt; Command field: /nMIRO</msg>
+<msg time="2026-11-26T15:11:58.928857" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:01.122555" level="INFO">  &gt; Press Enter (popup)</msg>
+<status status="PASS" start="2026-11-26T15:11:54.260035" elapsed="9.143696"/>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:03.411731" level="INFO">  &gt; Type INVFO-BLDAT = 31.07.2026</msg>
+<msg time="2026-11-26T15:12:04.973366" level="INFO">  &gt; Type INVFO-XBLNR = 1702/2026-2027</msg>
+<msg time="2026-11-26T15:12:06.552513" level="INFO">  &gt; Type INVFO-WAERS = INR</msg>
+<msg time="2026-11-26T15:12:08.170689" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:03.403731" elapsed="6.770111"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:10.190843" level="INFO">  &gt; Type RM08M-EBELN = 6100015411</msg>
+<msg time="2026-11-26T15:12:11.799516" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:10.173842" elapsed="3.844854"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:14.023696" level="INFO">  &gt; Open tab Basic data</msg>
+<msg time="2026-11-26T15:12:15.586309" level="INFO">  &gt; Type INVFO-XMWST = True</msg>
+<msg time="2026-11-26T15:12:17.436989" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:19.204142" level="FAIL">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</msg>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:12:14.018696" elapsed="5.216971">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:19.235667" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:11:54.260035" elapsed="24.976630">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:11:54.260035" elapsed="24.976630">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:19.236665" level="INFO">1702/2026-2027: first try failed (SAP: [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:12:19.236665" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:12:19.236665" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:19.502197" level="INFO">Screenshot: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\screenshots\1536_1702_2026_2027_first_try_error_151219.png</msg>
+<msg time="2026-11-26T15:12:19.505197" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:12:21.039817" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:22.630956" level="INFO">=== RETRY 1/1: invoice 1702/2026-2027 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:12:19.236665" elapsed="3.394291"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:22.632954" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:12:24.144657" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:25.725288" level="INFO">  &gt; Command field: /nMIRO</msg>
+<msg time="2026-11-26T15:12:27.245915" level="INFO">  &gt; Press Enter</msg>
+<status status="PASS" start="2026-11-26T15:12:22.631963" elapsed="6.767222"/>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:29.404185" level="INFO">  &gt; Type INVFO-BLDAT = 31.07.2026</msg>
+<msg time="2026-11-26T15:12:31.199405" level="INFO">  &gt; Type INVFO-XBLNR = 1702/2026-2027</msg>
+<msg time="2026-11-26T15:12:32.777034" level="INFO">  &gt; Type INVFO-WAERS = INR</msg>
+<msg time="2026-11-26T15:12:34.387705" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:29.399185" elapsed="7.064793"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:36.479982" level="INFO">  &gt; Type RM08M-EBELN = 6100015411</msg>
+<msg time="2026-11-26T15:12:38.091646" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:36.464980" elapsed="3.704394"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:40.174374" level="INFO">  &gt; Open tab Basic data</msg>
+<msg time="2026-11-26T15:12:41.732533" level="INFO">  &gt; Type INVFO-XMWST = True</msg>
+<msg time="2026-11-26T15:12:43.483689" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:45.234861" level="FAIL">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</msg>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:12:40.169374" elapsed="5.066491">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:45.235865" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:45.235865" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:45.235865" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:12:45.235865" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:45.235865" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:45.236863" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:12:22.630956" elapsed="22.605907">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:12:22.630956" elapsed="22.605907">[tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:45.496870" level="INFO">Screenshot: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\screenshots\1536_1702_2026_2027_error_151245.png</msg>
+<msg time="2026-11-26T15:12:45.502876" level="WARN">1702/2026-2027: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</msg>
+<msg time="2026-11-26T15:12:45.504869" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:12:47.027560" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:48.672204" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:12:45.236863" elapsed="3.435341"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:12:48.673209" level="INFO">1702/2026-2027 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:12:48.673209" elapsed="0.000000"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:12:45.236863" elapsed="3.436346"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:12:22.630956" elapsed="26.042253"/>
+</try>
+<status status="PASS" start="2026-11-26T15:12:19.236665" elapsed="29.436544"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:48.673209" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:12:48.674204" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:12:48.673209" elapsed="0.000995"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:12:19.236665" elapsed="29.437539"/>
+</if>
+<status status="PASS" start="2026-11-26T15:12:19.236665" elapsed="29.437539"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:11:54.260035" elapsed="54.414169"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:11:54.255029" elapsed="54.419175"/>
+</kw>
+<var name="${invoice}">{'id': 1536, 'invoice_number': '1702/2026-2027', 'invoice_date': '31.07.2026', 'po_number': '6100015411', 'grn_number': '5000340793', 'vendor': 'SNEHDEEP PACKAGING PVT LTD', 'vendor_code': '310026', '...</var>
+<status status="PASS" start="2026-11-26T15:11:54.254031" elapsed="54.420173"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:48.677203" level="INFO">=== Invoice 26-27/001152 | PO 6100020050 | GRN 5000360144 | total 144338.0 ===</msg>
+<msg time="2026-11-26T15:12:48.677203" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:48.675203" elapsed="0.002000"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:12:48.677203" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:12:48.677203" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:12:48.677203" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:48.680205" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:12:50.199823" level="INFO">  &gt; Press Enter</msg>
+<msg time="2026-11-26T15:12:51.774527" level="INFO">  &gt; Command field: /nMIRO</msg>
+<msg time="2026-11-26T15:12:53.294667" level="INFO">  &gt; Press Enter</msg>
+<status status="PASS" start="2026-11-26T15:12:48.678214" elapsed="6.998270"/>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<msg time="2026-11-26T15:12:55.685485" level="INFO">  &gt; Type INVFO-BLDAT = 25.08.2026</msg>
+<msg time="2026-11-26T15:12:57.441109" level="INFO">  &gt; Type INVFO-XBLNR = 26-27/001152</msg>
+<msg time="2026-11-26T15:12:59.020306" level="INFO">  &gt; Type INVFO-WAERS = INR</msg>
+<msg time="2026-11-26T15:13:00.629414" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:12:55.676484" elapsed="7.068085"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:02.759568" level="INFO">  &gt; Type RM08M-EBELN = 6100020050</msg>
+<msg time="2026-11-26T15:13:04.382224" level="INFO">  &gt; Press Enter</msg>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:02.745568" elapsed="3.974317"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:06.723876" level="INFO">  &gt; Open tab Basic data</msg>
+<msg time="2026-11-26T15:13:08.274174" level="INFO">  &gt; Type INVFO-XMWST = True</msg>
+<msg time="2026-11-26T15:13:10.471869" level="INFO">  &gt; Type INVFO-MWSKZ = I3</msg>
+<msg time="2026-11-26T15:13:12.426574" level="INFO">  &gt; Tax code OK: I3</msg>
+<msg time="2026-11-26T15:13:13.951737" level="INFO">  &gt; Type INVFO-BUPLA = 2022</msg>
+<msg time="2026-11-26T15:13:15.672882" level="INFO">  &gt; Type INVFO-SECCO = 2022</msg>
+<msg time="2026-11-26T15:13:17.496568" level="FAIL">com_error: (-2147417851, 'The server threw an exception.', None, None)</msg>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:06.719885" elapsed="10.777684">com_error: (-2147417851, 'The server threw an exception.', None, None)</status>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:17.497569" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:17.497569" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:17.497569" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:17.497569" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:17.498568" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:17.498568" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:12:48.677203" elapsed="28.821365">com_error: (-2147417851, 'The server threw an exception.', None, None)</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:12:48.677203" elapsed="28.821365">com_error: (-2147417851, 'The server threw an exception.', None, None)</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:17.498568" level="INFO">26-27/001152: first try failed (TECH: com_error: (-2147417851, 'The server threw an exception.', None, None)) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:17.498568" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:17.498568" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:17.662090" level="INFO">Screenshot: C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\screenshots\1540_26_27_001152_first_try_error_151317.png</msg>
+<msg time="2026-11-26T15:13:17.664090" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:13:19.181195" level="INFO">=== RETRY 1/1: invoice 26-27/001152 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:17.499568" elapsed="1.681627"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:19.381201" level="INFO">  &gt; Command field: /n</msg>
+<msg time="2026-11-26T15:13:20.883871" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:19.182202" elapsed="1.702673">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.884875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.884875" elapsed="0.001000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.885875" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:19.182202" elapsed="1.703673">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:19.181195" elapsed="1.705678">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.891872" level="WARN">26-27/001152: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.891872" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.886873" elapsed="0.004999"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.892874" level="INFO">26-27/001152 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.892874" elapsed="0.000000"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.886873" elapsed="0.006001"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:19.181195" elapsed="1.711679"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:17.499568" elapsed="3.393306"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.892874" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.893874" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.892874" elapsed="0.001000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:17.499568" elapsed="3.394306"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:17.498568" elapsed="3.395306"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:12:48.677203" elapsed="32.216671"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:12:48.675203" elapsed="32.218671"/>
+</kw>
+<var name="${invoice}">{'id': 1540, 'invoice_number': '26-27/001152', 'invoice_date': '25.08.2026', 'po_number': '6100020050', 'grn_number': '5000360144', 'vendor': 'UNI-TECH ENGINEERS', 'vendor_code': '30941', 'currency': ...</var>
+<status status="PASS" start="2026-11-26T15:12:48.674204" elapsed="32.219670"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.895875" level="INFO">=== Invoice 879 | PO 5100002366 | GRN 5000373614 | total 87285.0 ===</msg>
+<msg time="2026-11-26T15:13:20.895875" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.894874" elapsed="0.001001"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.895875" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.895875" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.895875" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.897873" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.896877" elapsed="0.001996">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.898873" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.898873" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.898873" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.898873" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.898873" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.899876" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.899876" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.899876" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.899876" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.895875" elapsed="0.004001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.895875" elapsed="0.004001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.899876" level="INFO">879: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.900875" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.899876" elapsed="0.000999"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.901872" level="INFO">=== RETRY 1/1: invoice 879 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.900875" elapsed="0.000997"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.902876" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.901872" elapsed="0.002008">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.903880" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.903880" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.903880" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.903880" elapsed="0.000993"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.904873" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.904873" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.904873" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.904873" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.904873" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.901872" elapsed="0.003001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.901872" elapsed="0.003001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.908871" level="WARN">879: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.908871" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.904873" elapsed="0.003998"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.909875" level="INFO">879 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.908871" elapsed="0.001004"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.904873" elapsed="0.005002"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.901872" elapsed="0.008003"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.900875" elapsed="0.009000"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.909875" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.909875" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.909875" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.900875" elapsed="0.009000"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.899876" elapsed="0.009999"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.895875" elapsed="0.014000"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.893874" elapsed="0.016001"/>
+</kw>
+<var name="${invoice}">{'id': 1543, 'invoice_number': '879', 'invoice_date': '10.09.2026', 'po_number': '5100002366', 'grn_number': '5000373614', 'vendor': 'EURO STEEL AND TRACER PRODUCTS', 'vendor_code': '50038', 'currency...</var>
+<status status="PASS" start="2026-11-26T15:13:20.893874" elapsed="0.017005"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.912879" level="INFO">=== Invoice 880 | PO 5100002363 | GRN 5000373619 | total 231534.0 ===</msg>
+<msg time="2026-11-26T15:13:20.912879" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.910879" elapsed="0.002000"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.912879" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.912879" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.912879" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.913881" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.913881" elapsed="0.000995">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.914876" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.914876" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.914876" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.915875" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.912879" elapsed="0.002996">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.912879" elapsed="0.002996">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.915875" level="INFO">880: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.916874" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.915875" elapsed="0.000999"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.917871" level="INFO">=== RETRY 1/1: invoice 880 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.916874" elapsed="0.000997"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.918879" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.917871" elapsed="0.002006">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.919877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.919877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.919877" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.919877" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.920875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.920875" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.920875" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.920875" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.920875" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.917871" elapsed="0.003004">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.917871" elapsed="0.003004">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.925871" level="WARN">880: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.925871" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.920875" elapsed="0.004996"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.926874" level="INFO">880 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.925871" elapsed="0.001003"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.920875" elapsed="0.005999"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.917871" elapsed="0.009003"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.916874" elapsed="0.010000"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.926874" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.926874" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.926874" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.916874" elapsed="0.010000"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.915875" elapsed="0.010999"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.912879" elapsed="0.013995"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.910879" elapsed="0.015995"/>
+</kw>
+<var name="${invoice}">{'id': 1544, 'invoice_number': '880', 'invoice_date': '10.09.2026', 'po_number': '5100002363', 'grn_number': '5000373619', 'vendor': 'EURO STEEL AND TRACER PRODUCTS', 'vendor_code': '50038', 'currency...</var>
+<status status="PASS" start="2026-11-26T15:13:20.910879" elapsed="0.015995"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.928873" level="INFO">=== Invoice 979 | PO 5100002467 | GRN 5000387769 | total 29205.0 ===</msg>
+<msg time="2026-11-26T15:13:20.928873" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.927875" elapsed="0.000998"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.929875" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.928873" elapsed="0.001002"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.928873" elapsed="0.001002"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.931873" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.930873" elapsed="0.001000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.932877" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.929875" elapsed="0.003002">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.929875" elapsed="0.004001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.933876" level="INFO">979: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.933876" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.933876" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.934874" level="INFO">=== RETRY 1/1: invoice 979 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.933876" elapsed="0.000998"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.935875" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.935875" elapsed="0.000999">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.936874" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.936874" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.936874" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.936874" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.937877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.937877" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.937877" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.937877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.937877" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.935875" elapsed="0.002002">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.935875" elapsed="0.002002">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.941880" level="WARN">979: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.942873" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.937877" elapsed="0.004996"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.943877" level="INFO">979 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.942873" elapsed="0.001004"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.937877" elapsed="0.006000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.935875" elapsed="0.008002"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.933876" elapsed="0.010001"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.943877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.943877" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.943877" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.933876" elapsed="0.010001"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.933876" elapsed="0.010001"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.929875" elapsed="0.014002"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.927875" elapsed="0.017002"/>
+</kw>
+<var name="${invoice}">{'id': 1549, 'invoice_number': '979', 'invoice_date': '27.09.2026', 'po_number': '5100002467', 'grn_number': '5000387769', 'vendor': 'EURO STEEL AND TRACER PRODUCTS', 'vendor_code': '50038', 'currency...</var>
+<status status="PASS" start="2026-11-26T15:13:20.927875" elapsed="0.017002"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.946872" level="INFO">=== Invoice KT-82/2026-27 | PO 6100023920 | GRN 5000393525 | total 1856.14 ===</msg>
+<msg time="2026-11-26T15:13:20.946872" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.944877" elapsed="0.001995"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.946872" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.946872" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.946872" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.947877" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.947877" elapsed="0.000998">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.948875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.948875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.948875" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.949877" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.946872" elapsed="0.003005">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.946872" elapsed="0.003005">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.950876" level="INFO">KT-82/2026-27: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.950876" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.949877" elapsed="0.000999"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.951877" level="INFO">=== RETRY 1/1: invoice KT-82/2026-27 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.950876" elapsed="0.001001"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.953874" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.952874" elapsed="0.001000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.954887" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.952874" elapsed="0.002013">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.951877" elapsed="0.003010">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.963877" level="WARN">KT-82/2026-27: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.964874" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.955882" elapsed="0.008992"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.965880" level="INFO">KT-82/2026-27 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.964874" elapsed="0.001006"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.954887" elapsed="0.010993"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.951877" elapsed="0.014003"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.950876" elapsed="0.015004"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.965880" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.966877" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.965880" elapsed="0.000997"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.950876" elapsed="0.016001"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.949877" elapsed="0.017000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.946872" elapsed="0.020005"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.944877" elapsed="0.022000"/>
+</kw>
+<var name="${invoice}">{'id': 1552, 'invoice_number': 'KT-82/2026-27', 'invoice_date': '05.10.2026', 'po_number': '6100023920', 'grn_number': '5000393525', 'vendor': 'VS ENTERPRISES', 'vendor_code': '', 'currency': 'INR', '...</var>
+<status status="PASS" start="2026-11-26T15:13:20.944877" elapsed="0.022000"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.969875" level="INFO">=== Invoice AT-26-27-0832 | PO 6100014717 | GRN 5000345215 | total 3292.0 ===</msg>
+<msg time="2026-11-26T15:13:20.969875" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.967877" elapsed="0.001998"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.969875" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.969875" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.969875" elapsed="0.000000"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.971876" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.970878" elapsed="0.002000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.972878" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.973876" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.970878" elapsed="0.002998">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.969875" elapsed="0.004001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.973876" level="INFO">AT-26-27-0832: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.973876" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.973876" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.975874" level="INFO">=== RETRY 1/1: invoice AT-26-27-0832 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.973876" elapsed="0.001998"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.976875" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.975874" elapsed="0.002004">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.977878" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.978877" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.975874" elapsed="0.003003">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.975874" elapsed="0.003003">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.980874" level="WARN">AT-26-27-0832: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.981874" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.978877" elapsed="0.002997"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.982877" level="INFO">AT-26-27-0832 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.981874" elapsed="0.001003"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.978877" elapsed="0.004000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.975874" elapsed="0.007003"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.973876" elapsed="0.009001"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.982877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.982877" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.982877" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.973876" elapsed="0.009001"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.973876" elapsed="0.009001"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.969875" elapsed="0.013002"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.967877" elapsed="0.015000"/>
+</kw>
+<var name="${invoice}">{'id': 1565, 'invoice_number': 'AT-26-27-0832', 'invoice_date': '01.08.2026', 'po_number': '6100014717', 'grn_number': '5000345215', 'vendor': 'ACCUMEASURE TOOLS', 'vendor_code': '31243', 'currency': ...</var>
+<status status="PASS" start="2026-11-26T15:13:20.966877" elapsed="0.016000"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.984875" level="INFO">=== Invoice 27407507 | PO 5100002049 | GRN 5000346407 | total 56965.68 ===</msg>
+<msg time="2026-11-26T15:13:20.984875" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.983878" elapsed="0.000997"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.985878" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:20.984875" elapsed="0.001003"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.984875" elapsed="0.001003"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.986874" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.985878" elapsed="0.002000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.987878" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.985878" elapsed="0.002997">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.985878" elapsed="0.002997">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.988875" level="INFO">27407507: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:20.988875" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.988875" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.989878" level="INFO">=== RETRY 1/1: invoice 27407507 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.988875" elapsed="0.001003"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.991876" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:20.990877" elapsed="0.001998">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.992875" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:20.990877" elapsed="0.001998">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:20.990877" elapsed="0.001998">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:20.997879" level="WARN">27407507: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.997879" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.993881" elapsed="0.003998"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:20.998877" level="INFO">27407507 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:20.998877" elapsed="0.000000"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:20.993881" elapsed="0.004996"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.990877" elapsed="0.008000"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:20.988875" elapsed="0.010002"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.998877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:20.998877" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:20.998877" elapsed="0.000000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.988875" elapsed="0.010002"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:20.988875" elapsed="0.011003"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:20.985878" elapsed="0.014000"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.983878" elapsed="0.016000"/>
+</kw>
+<var name="${invoice}">{'id': 1568, 'invoice_number': '27407507', 'invoice_date': '08.08.2026', 'po_number': '5100002049', 'grn_number': '5000346407', 'vendor': 'EGEARZ PRIVATE LIMITED', 'vendor_code': '', 'currency': 'INR'...</var>
+<status status="PASS" start="2026-11-26T15:13:20.982877" elapsed="0.017001"/>
+</iter>
+<iter>
+<kw name="Process One Invoice">
+<kw name="Claim Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.000875" level="INFO">=== Invoice KALP2610003722 | PO 5100002512 | GRN 5000402140 | total 1008778.88 ===</msg>
+<msg time="2026-11-26T15:13:21.000875" level="INFO">${claimed} = True</msg>
+<var>${claimed}</var>
+<arg>${invoice}</arg>
+<status status="PASS" start="2026-11-26T15:13:20.999878" elapsed="0.000997"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${claimed}">
+<return>
+<status status="NOT RUN" start="2026-11-26T15:13:21.001878" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-26T15:13:21.000875" elapsed="0.001003"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:21.000875" elapsed="0.001003"/>
+</if>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.002875" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:21.001878" elapsed="0.002001">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.003879" elapsed="0.000999"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:21.001878" elapsed="0.003000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:21.001878" elapsed="0.003000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error}">
+<kw name="Should Retry Invoice" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.004878" level="INFO">KALP2610003722: first try failed (SAP: SAP element not found: wnd[0]/tbar[0]/okcd) -&gt; retrying once</msg>
+<msg time="2026-11-26T15:13:21.004878" level="INFO">${retry} = True</msg>
+<var>${retry}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>True when the invoice failed the FIRST time with a SAP / technical error and may be tried once more now.
+Never for a data problem (a second try gives the same answer) and never for an error while saving
+(the document may already exist in SAP - a second try could post it twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:21.004878" elapsed="0.000000"/>
+</kw>
+<if>
+<branch type="IF" condition="${retry}">
+<kw name="Prepare Retry" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.005878" level="INFO">=== RETRY 1/1: invoice KALP2610003722 ===</msg>
+<arg>${invoice}</arg>
+<doc>Back to a clean MIRO screen and a clean per-invoice state before the second try.</doc>
+<status status="PASS" start="2026-11-26T15:13:21.004878" elapsed="0.001000"/>
+</kw>
+<try>
+<branch type="TRY">
+<kw name="Run Invoice Steps">
+<kw name="Open MIRO" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.006878" level="FAIL">SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<status status="FAIL" start="2026-11-26T15:13:21.006878" elapsed="0.000999">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<kw name="Enter Invoice Header" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Purchase Order" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Tax And Business Place" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Select GRN Lines" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Reads the MIRO item table, keeps only rows whose Reference Document = GRN number,
+checks them against the invoice from the DB, then ticks exactly those rows.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Check And Fix HSN" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>HSN/SAC column of the selected GRN rows must equal the HSN in the database;
+different -&gt; the cell is overwritten with the DB value.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Enter Amount And Settle Balance" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<doc>Amount = invoice total. Balance 0 -&gt; OK, the Details tab is NOT opened. Balance &gt; 0 (up to
+MIRO_MAX_UNPLANNED_COST) -&gt; Details tab: Doc. Type by plant + Unpl. Del. Csts = balance. Balance must end at 0.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Simulate Invoice" owner="MiroLibrary">
+<arg>${invoice}</arg>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Complete Invoice" owner="MiroLibrary">
+<var>${result}</var>
+<arg>${invoice}</arg>
+<doc>CHECK -&gt; leave without saving | PARK -&gt; park | POST -&gt; post. Records the result.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.007877" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${result}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.008878" elapsed="0.000000"/>
+</kw>
+<arg>${invoice}</arg>
+<status status="FAIL" start="2026-11-26T15:13:21.005878" elapsed="0.003000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</kw>
+<status status="FAIL" start="2026-11-26T15:13:21.005878" elapsed="0.003000">SAP element not found: wnd[0]/tbar[0]/okcd</status>
+</branch>
+<branch type="EXCEPT" assign="${error2}">
+<kw name="Record Failure" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.011877" level="WARN">KALP2610003722: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:21.011877" level="INFO">${status} = FAILED</msg>
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error2}</arg>
+<arg>retried=True</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="PASS" start="2026-11-26T15:13:21.008878" elapsed="0.002999"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-11-26T15:13:21.012878" level="INFO">KALP2610003722 -&gt; FAILED (after retry)</msg>
+<arg>${invoice}[invoice_number] -&gt; ${status} (after retry)</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-11-26T15:13:21.011877" elapsed="0.001001"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:21.008878" elapsed="0.004000"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:21.005878" elapsed="0.007000"/>
+</try>
+<status status="PASS" start="2026-11-26T15:13:21.004878" elapsed="0.008000"/>
+</branch>
+<branch type="ELSE">
+<kw name="Record Failure" owner="MiroLibrary">
+<var>${status}</var>
+<arg>${invoice}</arg>
+<arg>${error}</arg>
+<doc>Classifies the error and stores it:
+     data problem           -&gt; REVIEW  (not retried)
+     error while saving     -&gt; UNKNOWN (check in SAP, not retried)
+     other SAP / tech error -&gt; FAILED  (retried next run)
+SAP / TECH errors also trigger a move to exception/sap_error/ in the invoice folder.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.012878" elapsed="0.000000"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<arg>${invoice}[invoice_number] -&gt; ${status}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-26T15:13:21.013879" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-26T15:13:21.012878" elapsed="0.001001"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:21.004878" elapsed="0.009001"/>
+</if>
+<status status="PASS" start="2026-11-26T15:13:21.004878" elapsed="0.009001"/>
+</branch>
+<status status="PASS" start="2026-11-26T15:13:21.001878" elapsed="0.012001"/>
+</try>
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="PASS" start="2026-11-26T15:13:20.999878" elapsed="0.014001"/>
+</kw>
+<var name="${invoice}">{'id': 1571, 'invoice_number': 'KALP2610003722', 'invoice_date': '09.10.2026', 'po_number': '5100002512', 'grn_number': '5000402140', 'vendor': 'HINDALCO INDUSTRIES LIMITED', 'vendor_code': '20166338'...</var>
+<status status="PASS" start="2026-11-26T15:13:20.999878" elapsed="0.014001"/>
+</iter>
+<var>${invoice}</var>
+<value>@{invoices}</value>
+<status status="PASS" start="2026-11-26T15:11:54.254031" elapsed="86.759848"/>
+</for>
+<status status="PASS" start="2026-11-26T15:11:49.261510" elapsed="91.752369"/>
+</test>
+<kw name="Stop Robot" type="TEARDOWN">
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Reset SAP Screen" owner="MiroLibrary">
+<status status="PASS" start="2026-11-26T15:13:21.015878" elapsed="0.000000"/>
+</kw>
+<arg>Reset SAP Screen</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible errorw.</doc>
+<status status="PASS" start="2026-11-26T15:13:21.014876" elapsed="0.001002"/>
+</kw>
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Write Run Summary" owner="MiroLibrary">
+<msg time="2026-11-26T15:13:21.016878" level="INFO">MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 9 | UNKNOWN 0 | SKIPPED 0</msg>
+<status status="PASS" start="2026-11-26T15:13:21.016878" elapsed="0.001998"/>
+</kw>
+<arg>Write Run Summary</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible errorw.</doc>
+<status status="PASS" start="2026-11-26T15:13:21.015878" elapsed="0.002998"/>
+</kw>
+<kw name="Close Connections" owner="MiroLibrary">
+<status status="PASS" start="2026-11-26T15:13:21.018876" elapsed="0.000000"/>
+</kw>
+<status status="PASS" start="2026-11-26T15:13:21.014876" elapsed="0.005001"/>
+</kw>
+<doc>KTFL - MIRO invoice entry robot
+
+Picks invoices with status = MATCHED from PostgreSQL (written by the
+invoice extractor) and enters them in MIRO:
+1. Basic data: date, reference -&gt; PO -&gt; then Calculate tax, Tax code
+   (invoices.tax_code), Business Place + Section, Text (first line item)
+2. Tick ONLY rows whose "Reference Document" = invoice GRN
+   -&gt; HSN/SAC of those rows = DB HSN (changed in the cell if different)
+3. Amount = invoice total -&gt; balance 0? else Details tab: Doc. Type by
+   plant, Unpl. Del. Csts = balance
+4. Simulate -&gt; CHECK: exit | PARK: park | POST: post
+
+MIRO_MODE = CHECK (default, nothing saved) | PARK | POST
+Run:  run_miro.bat      or      robot --outputdir output tasks\miro_posting.robot</doc>
+<status status="PASS" start="2026-11-26T15:11:48.774454" elapsed="92.245423"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tasks</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Miro Posting" id="s1" pass="1" fail="0" skip="0">Miro Posting</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2026-11-26T15:12:45.502876" level="WARN">1702/2026-2027: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027</msg>
+<msg time="2026-11-26T15:13:20.891872" level="WARN">26-27/001152: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.908871" level="WARN">879: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.925871" level="WARN">880: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.941880" level="WARN">979: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.963877" level="WARN">KT-82/2026-27: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.980874" level="WARN">AT-26-27-0832: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:20.997879" level="WARN">27407507: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+<msg time="2026-11-26T15:13:21.011877" level="WARN">KALP2610003722: FAILED - SAP element not found: wnd[0]/tbar[0]/okcd</msg>
+</errors>
+</robot>
