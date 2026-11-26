@@ -6,5 +6,6 @@ SELECT
     grn_date
 FROM invoices
 WHERE status = 'RECONCILE'
-  AND grn_date > '02-10-2026'
-ORDER BY grn_date DESC;
+  AND grn_date IS NOT NULL
+  AND TO_DATE(grn_date, 'DD.MM.YYYY') > '2026-10-02'
+ORDER BY TO_DATE(grn_date, 'DD.MM.YYYY') DESC;
