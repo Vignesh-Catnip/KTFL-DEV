@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.2.2 (Python 3.12.3 on win32)" generated="2026-11-27T16:20:09.020012" rpa="true" schemaversion="5">
+<suite id="s1" name="Miro Posting" source="C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot">
+<kw name="Start Robot" type="SETUP">
+<kw name="Initialize MIRO Robot" owner="MiroLibrary">
+<msg time="2026-11-27T16:20:09.973464" level="INFO">MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui</msg>
+<msg time="2026-11-27T16:20:09.974459" level="INFO">Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s</msg>
+<status status="PASS" start="2026-11-27T16:20:09.957542" elapsed="0.017919"/>
+</kw>
+<kw name="Connect To Invoice Database" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T16:20:09.975461" elapsed="0.145005"/>
+</kw>
+<status status="PASS" start="2026-11-27T16:20:09.957446" elapsed="0.164019"/>
+</kw>
+<test id="s1-t1" name="Enter Matched Invoices In MIRO" line="35">
+<if>
+<branch type="IF" condition="$REQUEUE_INVOICE_ID != $NONE">
+<kw name="Process Single Requeue">
+<arg>${REQUEUE_INVOICE_ID}</arg>
+<doc>Re-queue path: process ONE specific invoice by id (dashboard Re-queue button).</doc>
+<status status="NOT RUN" start="2026-11-27T16:20:10.123465" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-27T16:20:10.122464" elapsed="0.001001"/>
+</branch>
+<branch type="ELSE">
+<kw name="Run Invoice Loop">
+<kw name="Get Invoices Ready For MIRO" owner="MiroLibrary">
+<msg time="2026-11-27T16:20:10.192993" level="INFO">9 invoice(s) with status MATCHED waiting for MIRO</msg>
+<msg time="2026-11-27T16:20:10.193991" level="INFO">${invoices} = [{'id': 1536, 'invoice_number': '1702/2026-2027', 'invoice_date': '31.07.2026', 'po_number': '6100015411', 'grn_number': '5000340793', 'vendor': 'SNEHDEEP PACKAGING PVT LTD', 'vendor_code': '310026', ...</msg>
+<var>${invoices}</var>
+<status status="PASS" start="2026-11-27T16:20:10.124466" elapsed="0.069525"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${invoices}">
+<kw name="Log" owner="BuiltIn">
+<arg>No MATCHED invoices at startup - waiting ${IDLE_WAIT_SECONDS}s before exit.</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-11-27T16:20:10.195993" elapsed="0.000000"/>
+</kw>
+<kw name="Wait And Check For Invoices">
+<doc>No MATCHED invoices: wait, check again, reopen SAP if any found.</doc>
+<status status="NOT RUN" start="2026-11-27T16:20:10.195993" elapsed="0.000000"/>
+</kw>
+<return>
+<status status="NOT RUN" start="2026-11-27T16:20:10.195993" elapsed="0.000000"/>
+</return>
+<status status="NOT RUN" start="2026-11-27T16:20:10.193991" elapsed="0.002002"/>
+</branch>
+<status status="PASS" start="2026-11-27T16:20:10.193991" elapsed="0.002002"/>
+</if>
+<kw name="Connect To SAP" owner="MiroLibrary">
+<msg time="2026-11-27T16:20:15.842115" level="INFO">&gt; Press Enter</msg>
+<msg time="2026-11-27T16:20:15.842115" level="FAIL">AttributeError: FindById.SendVKey</msg>
+<status status="FAIL" start="2026-11-27T16:20:10.196993" elapsed="5.646120">AttributeError: FindById.SendVKey</status>
+</kw>
+<for flavor="IN">
+<iter>
+<kw name="Process One Invoice">
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end with 60-second SAP step timeout.
+A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues.
+Data problems and errors while saving are never retried.
+If a SAP step hangs for SAP_STEP_TIMEOUT seconds, SAP is closed and
+the invoice is marked FAILED so the next run can retry.</doc>
+<status status="NOT RUN" start="2026-11-27T16:20:15.844116" elapsed="0.000000"/>
+</kw>
+<var name="${invoice}"/>
+<status status="NOT RUN" start="2026-11-27T16:20:15.843113" elapsed="0.001003"/>
+</iter>
+<var>${invoice}</var>
+<value>@{invoices}</value>
+<status status="NOT RUN" start="2026-11-27T16:20:15.843113" elapsed="0.001003"/>
+</for>
+<doc>Normal run: process all MATCHED invoices.
+When none found: close SAP, wait, check again, reopen only if MATCHED found.</doc>
+<status status="FAIL" start="2026-11-27T16:20:10.123465" elapsed="5.720651">AttributeError: FindById.SendVKey</status>
+</kw>
+<status status="FAIL" start="2026-11-27T16:20:10.123465" elapsed="5.720651">AttributeError: FindById.SendVKey</status>
+</branch>
+<status status="FAIL" start="2026-11-27T16:20:10.122464" elapsed="5.721652">AttributeError: FindById.SendVKey</status>
+</if>
+<doc>Main entry point.
+- If REQUEUE_INVOICE_ID is set: process only that one invoice and exit.
+- Otherwise: process all MATCHED invoices; when none are found, close SAP,
+  wait 60s, check again, reopen SAP if MATCHED found.</doc>
+<status status="FAIL" start="2026-11-27T16:20:10.121465" elapsed="5.723646">AttributeError: FindById.SendVKey</status>
+</test>
+<kw name="Stop Robot" type="TEARDOWN">
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Reset SAP Screen" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T16:20:15.847110" elapsed="0.000000"/>
+</kw>
+<arg>Reset SAP Screen</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible error.</doc>
+<status status="PASS" start="2026-11-27T16:20:15.847110" elapsed="0.000000"/>
+</kw>
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Write Run Summary" owner="MiroLibrary">
+<msg time="2026-11-27T16:20:15.848110" level="INFO">MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0</msg>
+<status status="PASS" start="2026-11-27T16:20:15.848110" elapsed="0.004000"/>
+</kw>
+<arg>Write Run Summary</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible error.</doc>
+<status status="PASS" start="2026-11-27T16:20:15.848110" elapsed="0.004000"/>
+</kw>
+<kw name="Close Connections" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T16:20:15.852110" elapsed="0.001001"/>
+</kw>
+<status status="PASS" start="2026-11-27T16:20:15.847110" elapsed="0.006001"/>
+</kw>
+<doc>KTFL - MIRO invoice entry robot
+
+Picks invoices with status = MATCHED from PostgreSQL (written by the
+invoice extractor) and enters them in MIRO:
+1. Basic data: date, reference -&gt; PO -&gt; then Calculate tax, Tax code
+   (invoices.tax_code), Business Place + Section, Text (first line item)
+2. Tick ONLY rows whose "Reference Document" = invoice GRN
+   -&gt; HSN/SAC of those rows = DB HSN (changed in the cell if different)
+3. Amount = invoice total -&gt; balance 0? else Details tab: Doc. Type by
+   plant, Unpl. Del. Csts = balance
+4. Simulate -&gt; CHECK: exit | PARK: park | POST: post
+
+MIRO_MODE = CHECK (default, nothing saved) | PARK | POST
+Run:  run_miro.bat      or      robot --outputdir output tasks\miro_posting.robot
+
+Variables (optional, passed via CLI):
+  -v REQUEUE_INVOICE_ID:123   process only invoice id=123 (dashboard re-queue)
+  -v SAP_STEP_TIMEOUT:60      seconds before a hanging SAP step is aborted</doc>
+<status status="FAIL" start="2026-11-27T16:20:09.023012" elapsed="6.830099"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1" skip="0">All Tasks</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Miro Posting" id="s1" pass="0" fail="1" skip="0">Miro Posting</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

@@ -1,0 +1,106 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s
+Enter Matched Invoices In MIRO :: Main entry point. - If REQUEUE_INVOICE_ID is set: process only that one in... 9 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+=== Invoice 1702/2026-2027 | PO 6100015411 | GRN 5000340793 | total 97190.7 ===
+1702/2026-2027: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 1702/2026-2027 ===
+[ WARN ] 1702/2026-2027: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+1702/2026-2027 -> FAILED (after retry)
+=== Invoice 26-27/001152 | PO 6100020050 | GRN 5000360144 | total 144338.0 ===
+26-27/001152: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 26-27/001152 ===
+[ WARN ] 26-27/001152: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+26-27/001152 -> FAILED (after retry)
+=== Invoice 879 | PO 5100002366 | GRN 5000373614 | total 87285.0 ===
+879: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 879 ===
+[ WARN ] 879: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+879 -> FAILED (after retry)
+=== Invoice 880 | PO 5100002363 | GRN 5000373619 | total 231534.0 ===
+880: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 880 ===
+[ WARN ] 880: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+880 -> FAILED (after retry)
+=== Invoice 979 | PO 5100002467 | GRN 5000387769 | total 29205.0 ===
+979: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 979 ===
+[ WARN ] 979: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+979 -> FAILED (after retry)
+=== Invoice KT-82/2026-27 | PO 6100023920 | GRN 5000393525 | total 1856.14 ===
+KT-82/2026-27: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice KT-82/2026-27 ===
+[ WARN ] KT-82/2026-27: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+KT-82/2026-27 -> FAILED (after retry)
+=== Invoice 27407507 | PO 5100002049 | GRN 5000346407 | total 56965.68 ===
+27407507: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 27407507 ===
+[ WARN ] 27407507: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+27407507 -> FAILED (after retry)
+=== Invoice KALP2610003722 | PO 5100002512 | GRN 5000402140 | total 1008778.88 ===
+KALP2610003722: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice KALP2610003722 ===
+[ WARN ] KALP2610003722: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+KALP2610003722 -> FAILED (after retry)
+=== Invoice AT-26-27-0832 | PO 6100014717 | GRN 5000345215 | total 3292.0 ===
+AT-26-27-0832: first try failed (TECH: Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice AT-26-27-0832 ===
+[ WARN ] AT-26-27-0832: FAILED - Keyword 'MiroLibrary.Open MIRO' expected 0 arguments, got 1.
+[ WARN ] sap_error folder move skipped: attempted relative import with no known parent package
+  > Command field: /n
+  > Press Enter
+AT-26-27-0832 -> FAILED (after retry)
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 9 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_163353\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_163353\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_163353\report.html
