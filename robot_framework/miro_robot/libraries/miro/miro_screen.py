@@ -518,10 +518,7 @@ class MiroScreen:
         if abs(balance) <= c.balance_tolerance:
             self.s._show(None, f"Balance {balance:,.2f} = OK, invoice total matches")
             return 0.0
-        if balance < 0:
-            raise MiroDataError(f"Balance is {balance:,.2f}: selected GRN lines + tax are MORE than the "
-                                f"invoice total - cannot use unplanned delivery costs")
-        if balance > c.max_unplanned_cost:
+        if abs(balance) > c.max_unplanned_cost:
             raise MiroDataError(f"Balance {balance:,.2f} is more than MIRO_MAX_UNPLANNED_COST "
                                 f"{c.max_unplanned_cost:,.2f} - not booked as unplanned delivery costs")
 
