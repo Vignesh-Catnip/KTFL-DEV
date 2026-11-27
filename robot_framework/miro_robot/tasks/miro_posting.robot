@@ -136,7 +136,7 @@ Process One Invoice
 Run Invoice Steps With Timeout
     [Documentation]    Run all SAP steps. Each step has an implicit timeout via Run Keyword With Timeout.
     [Arguments]    ${invoice}
-    Run SAP Step With Timeout    Open MIRO                        ${invoice}
+    Open MIRO
     Run SAP Step With Timeout    Enter Invoice Header             ${invoice}
     Run SAP Step With Timeout    Enter Purchase Order             ${invoice}
     Run SAP Step With Timeout    Enter Tax And Business Place     ${invoice}
