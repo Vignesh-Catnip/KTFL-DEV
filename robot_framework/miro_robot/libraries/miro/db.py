@@ -59,6 +59,7 @@ class MiroDb:
             self._doc_cols_cache = "".join(f", {c}" for c in ("doc_type", "doc_type_desc") if c in have)
         return self._doc_cols_cache
 
+
     def close(self) -> None:
         if self.conn is not None:
             self.conn.close()
@@ -70,24 +71,31 @@ class MiroDb:
         return self.conn.cursor()
 
     # ------------------------------------------------------------ reading
-    def pending_invoices(self, source_status: str, mode: str, max_attempts: int, limit: int) -> list[dict]:
+    def pending_invoices(self, source_status: str, mode: str, max_attempts: int, limit: int,
+                         invoice_id: int | None = None) -> list[dict]:
         """MATCHED invoices that still need MIRO work in this mode.
 
         CHECK mode is a dry run: it takes EVERY MATCHED invoice on every run (no reset needed),
         except ones already saved in SAP (POSTED / PARKED) or in doubt (UNKNOWN / IN_PROGRESS)."""
+
         doc_cols = self._doc_cols()
+        # Optional single-invoice filter (used when dashboard re-queues one invoice)
+        id_filter = "AND id = %(inv_id)s" if invoice_id is not None else ""
+
         if mode == "CHECK":
             sql = f"""
             SELECT id, invoice_number, invoice_date, po_number, grn_number, vendor, vendor_code,
                    currency, subtotal, tax, total, gst_tax_code, sap_tax_code, plant_code, hsn_sac, tax_code, business_place{doc_cols},
+
                    COALESCE(miro_status, '') AS miro_status, COALESCE(miro_attempts, 0) AS miro_attempts
               FROM invoices
              WHERE status = %(st)s
                AND COALESCE(miro_status, '') NOT IN ('POSTED', 'PARKED', 'UNKNOWN', 'IN_PROGRESS')
+               {id_filter}
              ORDER BY id
              LIMIT %(lim)s"""
             with self._cur() as cur:
-                cur.execute(sql, {"st": source_status, "lim": limit})
+                cur.execute(sql, {"st": source_status, "lim": limit, "inv_id": invoice_id})
                 rows = cur.fetchall()
             self.conn.commit()
             return [self._clean(r) for r in rows]
@@ -102,11 +110,12 @@ class MiroDb:
                AND (miro_status IS NULL OR miro_status = ''
                     OR (miro_status = ANY(%(redo)s) AND COALESCE(miro_attempts, 0) < %(max)s)
                     OR (miro_status = 'CHECKED' AND %(mode)s <> 'CHECK'))
+               {id_filter}
              ORDER BY id
              LIMIT %(lim)s"""
         with self._cur() as cur:
             cur.execute(sql, {"st": source_status, "redo": redo, "max": max_attempts,
-                              "mode": mode, "lim": limit})
+                              "mode": mode, "lim": limit, "inv_id": invoice_id})
             rows = cur.fetchall()
         self.conn.commit()
         return [self._clean(r) for r in rows]
