@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.5 (Python 3.12.3 on win32)" generated="2026-11-27T10:52:41.351136" rpa="true" schemaversion="5">
+<suite id="s1" name="Miro Posting" source="C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\tasks\miro_posting.robot">
+<kw name="Start Robot" type="SETUP">
+<kw name="Initialize MIRO Robot" owner="MiroLibrary">
+<msg time="2026-11-27T10:52:41.730665" level="INFO">MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui</msg>
+<msg time="2026-11-27T10:52:41.730665" level="INFO">Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s</msg>
+<status status="PASS" start="2026-11-27T10:52:41.724672" elapsed="0.005993"/>
+</kw>
+<kw name="Connect To Invoice Database" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T10:52:41.730665" elapsed="0.115115"/>
+</kw>
+<status status="PASS" start="2026-11-27T10:52:41.724672" elapsed="0.121108"/>
+</kw>
+<test id="s1-t1" name="Enter Matched Invoices In MIRO" line="24">
+<kw name="Get Invoices Ready For MIRO" owner="MiroLibrary">
+<msg time="2026-11-27T10:52:41.873779" level="INFO">9 invoice(s) with status MATCHED waiting for MIRO</msg>
+<msg time="2026-11-27T10:52:41.874778" level="INFO">${invoices} = [{'id': 1536, 'invoice_number': '1702/2026-2027', 'invoice_date': '31.07.2026', 'po_number': '6100015411', 'grn_number': '5000340793', 'vendor': 'SNEHDEEP PACKAGING PVT LTD', 'vendor_code': '310026', ...</msg>
+<var>${invoices}</var>
+<status status="PASS" start="2026-11-27T10:52:41.846774" elapsed="0.028004"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${invoices}">
+<kw name="Pass Execution" owner="BuiltIn">
+<arg>Nothing to do - no MATCHED invoices waiting.</arg>
+<doc>Stops rest of the current test, setup or teardown and sets status to PASS.</doc>
+<status status="NOT RUN" start="2026-11-27T10:52:41.877783" elapsed="0.000000"/>
+</kw>
+<status status="NOT RUN" start="2026-11-27T10:52:41.874778" elapsed="0.003005"/>
+</branch>
+<status status="PASS" start="2026-11-27T10:52:41.874778" elapsed="0.003005"/>
+</if>
+<kw name="Connect To SAP" owner="MiroLibrary">
+<msg time="2026-11-27T10:52:42.026298" level="WARN">no reusable SAP session; found: KTFL HANA SANDBOX/session0: user=ATC01021 client=150 program=SAPMSYST -&gt; skipped (not logged on)</msg>
+<msg time="2026-11-27T10:52:42.072300" level="FAIL">SAP element not found: wnd[0]/usr/txtRSYST-BNAME</msg>
+<status status="FAIL" start="2026-11-27T10:52:41.877783" elapsed="0.197515">SAP element not found: wnd[0]/usr/txtRSYST-BNAME</status>
+</kw>
+<for flavor="IN">
+<iter>
+<kw name="Process One Invoice">
+<arg>${invoice}</arg>
+<doc>One invoice end-to-end. A SAP / technical failure is tried ONCE more straight away (clean screen);
+if it fails again it is recorded (with a note) and the loop continues. Data problems and errors
+while saving are never retried (a second try could not help / could post twice).</doc>
+<status status="NOT RUN" start="2026-11-27T10:52:42.077300" elapsed="0.000000"/>
+</kw>
+<var name="${invoice}"/>
+<status status="NOT RUN" start="2026-11-27T10:52:42.076298" elapsed="0.001002"/>
+</iter>
+<var>${invoice}</var>
+<value>@{invoices}</value>
+<status status="NOT RUN" start="2026-11-27T10:52:42.076298" elapsed="0.001002"/>
+</for>
+<status status="FAIL" start="2026-11-27T10:52:41.845780" elapsed="0.231520">SAP element not found: wnd[0]/usr/txtRSYST-BNAME</status>
+</test>
+<kw name="Stop Robot" type="TEARDOWN">
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Reset SAP Screen" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T10:52:42.079303" elapsed="0.000000"/>
+</kw>
+<arg>Reset SAP Screen</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible errorw.</doc>
+<status status="PASS" start="2026-11-27T10:52:42.079303" elapsed="0.000000"/>
+</kw>
+<kw name="Run Keyword And Ignore Error" owner="BuiltIn">
+<kw name="Write Run Summary" owner="MiroLibrary">
+<msg time="2026-11-27T10:52:42.081304" level="INFO">MIRO run finished: CHECKED 0 | PARKED 0 | POSTED 0 | REVIEW 0 | FAILED 0 | UNKNOWN 0 | SKIPPED 0</msg>
+<status status="PASS" start="2026-11-27T10:52:42.080301" elapsed="0.003999"/>
+</kw>
+<arg>Write Run Summary</arg>
+<doc>Runs the given keyword with the given arguments and ignores possible errorw.</doc>
+<status status="PASS" start="2026-11-27T10:52:42.080301" elapsed="0.003999"/>
+</kw>
+<kw name="Close Connections" owner="MiroLibrary">
+<status status="PASS" start="2026-11-27T10:52:42.084300" elapsed="0.000000"/>
+</kw>
+<status status="PASS" start="2026-11-27T10:52:42.078302" elapsed="0.005998"/>
+</kw>
+<doc>KTFL - MIRO invoice entry robot
+
+Picks invoices with status = MATCHED from PostgreSQL (written by the
+invoice extractor) and enters them in MIRO:
+1. Basic data: date, reference -&gt; PO -&gt; then Calculate tax, Tax code
+   (invoices.tax_code), Business Place + Section, Text (first line item)
+2. Tick ONLY rows whose "Reference Document" = invoice GRN
+   -&gt; HSN/SAC of those rows = DB HSN (changed in the cell if different)
+3. Amount = invoice total -&gt; balance 0? else Details tab: Doc. Type by
+   plant, Unpl. Del. Csts = balance
+4. Simulate -&gt; CHECK: exit | PARK: park | POST: post
+
+MIRO_MODE = CHECK (default, nothing saved) | PARK | POST
+Run:  run_miro.bat      or      robot --outputdir output tasks\miro_posting.robot</doc>
+<status status="FAIL" start="2026-11-27T10:52:41.354135" elapsed="0.730165"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1" skip="0">All Tasks</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Miro Posting" id="s1" pass="0" fail="1" skip="0">Miro Posting</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2026-11-27T10:52:42.026298" level="WARN">no reusable SAP session; found: KTFL HANA SANDBOX/session0: user=ATC01021 client=150 program=SAPMSYST -&gt; skipped (not logged on)</msg>
+</errors>
+</robot>

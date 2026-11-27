@@ -1,0 +1,324 @@
+========================================================================================================================
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                         
+========================================================================================================================
+MIRO mode: CHECK | company code 2000 | source status MATCHED | SAP backend gui
+Tax code entry: ON (invoices.tax_code) | Calculate tax: ON | HSN check: ON | step delay: 1.5s
+Enter Matched Invoices In MIRO                                                                                  9 invoice(s) with status MATCHED waiting for MIRO
+SAP session ready (SESSION_MANAGER/SAPLSMTR_NAVIGATION/100)
+=== Invoice 1702/2026-2027 | PO 6100015411 | GRN 5000340793 | total 97190.7 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Press Enter (popup)
+  > Type INVFO-BLDAT = 31.07.2026
+  > Type INVFO-XBLNR = 1702/2026-2027
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100015411
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+1702/2026-2027: first try failed (SAP: [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 1702/2026-2027 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 31.07.2026
+  > Type INVFO-XBLNR = 1702/2026-2027
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100015411
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+[ WARN ] 1702/2026-2027: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2725004617 2027
+  > Command field: /n
+  > Press Enter
+1702/2026-2027 -> FAILED (after retry)
+=== Invoice 26-27/001152 | PO 6100020050 | GRN 5000360144 | total 144338.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 25.08.2026
+  > Type INVFO-XBLNR = 26-27/001152
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100020050
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2022
+  > Type INVFO-SECCO = 2022
+  > Type INVFO-SGTXT = 012101012147 HOBBING FIX. GEAR IDLER 1ST/2ND-MHI M
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+  > Press button DESELECT_ALL
+  > Tick item row 7
+  > Tick item row 8
+  > Press Enter
+  > Press button REFRESH
+  > Reading MIRO item table (all rows, Reference Document column)
+Refresh: rows [7, 8] kept, other rows removed -> now rows [1, 2]
+Selected 2 row(s) [1, 2] for GRN 5000360144 = 122,320.00 (invoice taxable 122,320.00); other GRNs left unselected: ['5000358226', '5000358364', '5000360087', '5000360141', '5000360146', '5000360152', '5000370876']
+  > Reading MIRO item table (all rows, Reference Document column)
+HSN row 1: 84663020 OK (only HSN on invoice)
+HSN row 2: 84663020 OK (only HSN on invoice)
+  > Press button RM08M-HEADER_COLLAPSE
+  > Open tab Basic data
+  > Type INVFO-WRBTR = 144338.00
+  > Press Enter
+  > Open tab Basic data
+Balance after amount: 0.40
+  > Balance 0.40 not zero -> Details tab, Unpl. Del. Csts
+  > Open tab Details
+  > Type INVFO-BLART = X4
+  > Type INVFO-BEZNK = 0.40
+  > Press Enter
+Doc. Type set: X4 Invoice - AMBT1
+Unpl. Del. Csts 0.40 entered - balance 0
+  > Press Simulate
+  > Press Cancel (F12) (popup)
+Simulate OK - Simulate Document in INR (Document currency) | Debit | 144,338.00 | Credit | 144,338.00 | Bal. | 0.00
+  > Command field: /n
+  > Press Enter
+26-27/001152 -> CHECKED
+=== Invoice 879 | PO 5100002366 | GRN 5000373614 | total 87285.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 10.09.2026
+  > Type INVFO-XBLNR = 879
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002366
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2002
+  > Type INVFO-SECCO = 2002
+  > Type INVFO-SGTXT = 722840 STEEL BARS DIN-1.2714 FLAT- 280 X 110 X 170
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+879: first try failed (DATA: MIRO shows no items for PO 5100002366 (PO fully invoiced, wrong PO, or GR not posted)) -> no retry for this kind of error
+[ WARN ] 879: REVIEW - MIRO shows no items for PO 5100002366 (PO fully invoiced, wrong PO, or GR not posted)
+  > Command field: /n
+  > Press Enter
+879 -> REVIEW
+=== Invoice 880 | PO 5100002363 | GRN 5000373619 | total 231534.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 10.09.2026
+  > Type INVFO-XBLNR = 880
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002363
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2002
+  > Type INVFO-SECCO = 2002
+  > Type INVFO-SGTXT = 722840 STEEL BARS DIN-1.2714 FLAT- 370 X 210 X 100
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+880: first try failed (DATA: MIRO shows no items for PO 5100002363 (PO fully invoiced, wrong PO, or GR not posted)) -> no retry for this kind of error
+[ WARN ] 880: REVIEW - MIRO shows no items for PO 5100002363 (PO fully invoiced, wrong PO, or GR not posted)
+  > Command field: /n
+  > Press Enter
+880 -> REVIEW
+=== Invoice 979 | PO 5100002467 | GRN 5000387769 | total 29205.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 27.09.2026
+  > Type INVFO-XBLNR = 979
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002467
+  > Press Enter
+979: first try failed (SAP: [purchase order] SAP error: Purchase order 5100002467 does not exist) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 979 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 27.09.2026
+  > Type INVFO-XBLNR = 979
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002467
+  > Press Enter
+[ WARN ] 979: FAILED - [purchase order] SAP error: Purchase order 5100002467 does not exist
+  > Command field: /n
+  > Press Enter
+979 -> FAILED (after retry)
+=== Invoice KT-82/2026-27 | PO 6100023920 | GRN 5000393525 | total 1856.14 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 05.10.2026
+  > Type INVFO-XBLNR = KT-82/2026-27
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100023920
+  > Press Enter
+KT-82/2026-27: first try failed (SAP: [purchase order] SAP error: Purchase order 6100023920 does not exist) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice KT-82/2026-27 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 05.10.2026
+  > Type INVFO-XBLNR = KT-82/2026-27
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100023920
+  > Press Enter
+[ WARN ] KT-82/2026-27: FAILED - [purchase order] SAP error: Purchase order 6100023920 does not exist
+  > Command field: /n
+  > Press Enter
+KT-82/2026-27 -> FAILED (after retry)
+=== Invoice AT-26-27-0832 | PO 6100014717 | GRN 5000345215 | total 3292.0 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 01.08.2026
+  > Type INVFO-XBLNR = AT-26-27-0832
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 6100014717
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Type INVFO-MWSKZ = I3
+  > Tax code OK: I3
+  > Type INVFO-BUPLA = 2021
+  > Type INVFO-SECCO = 2021
+  > Type INVFO-SGTXT = 012302002216 PADDLE GAUGE 136.610/136.810 136.61 /
+  > Press Enter
+  > Open tab Basic data
+  > Press button RM08M-HEADER_COLLAPSE
+  > Reading MIRO item table (all rows, Reference Document column)
+  > Press button DESELECT_ALL
+  > Tick item row 11
+  > Press Enter
+  > Press button REFRESH
+  > Reading MIRO item table (all rows, Reference Document column)
+Refresh: rows [11] kept, other rows removed -> now rows [1]
+Selected 1 row(s) [1] for GRN 5000345215 = 2,790.00 (invoice taxable 2,790.00); other GRNs left unselected: ['5000241224', '5000241226', '5000244103', '5000250374', '5000346220', '5000360567']
+  > Reading MIRO item table (all rows, Reference Document column)
+HSN row 1: 90173021 OK (only HSN on invoice)
+  > Press button RM08M-HEADER_COLLAPSE
+  > Open tab Basic data
+  > Type INVFO-WRBTR = 3292.00
+  > Press Enter
+  > Open tab Basic data
+Balance after amount: -0.20
+AT-26-27-0832: first try failed (DATA: Balance is -0.20: selected GRN lines + tax are MORE than the invoice total - cannot use unplanned delivery costs) -> no retry for this kind of error
+[ WARN ] AT-26-27-0832: REVIEW - Balance is -0.20: selected GRN lines + tax are MORE than the invoice total - cannot use unplanned delivery costs
+  > Command field: /n
+  > Press Enter
+AT-26-27-0832 -> REVIEW
+=== Invoice 27407507 | PO 5100002049 | GRN 5000346407 | total 56965.68 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 08.08.2026
+  > Type INVFO-XBLNR = 27407507
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002049
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+27407507: first try failed (SAP: [tax code] SAP error: Check if invoice already entered under journal entry 2728004529 2027) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice 27407507 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 08.08.2026
+  > Type INVFO-XBLNR = 27407507
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002049
+  > Press Enter
+  > Open tab Basic data
+  > Type INVFO-XMWST = True
+  > Press Enter
+[ WARN ] 27407507: FAILED - [tax code] SAP error: Check if invoice already entered under journal entry 2728004529 2027
+  > Command field: /n
+  > Press Enter
+27407507 -> FAILED (after retry)
+=== Invoice KALP2610003722 | PO 5100002512 | GRN 5000402140 | total 1008778.88 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 09.10.2026
+  > Type INVFO-XBLNR = KALP2610003722
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002512
+  > Press Enter
+KALP2610003722: first try failed (SAP: [purchase order] SAP error: Purchase order 5100002512 does not exist) -> retrying once
+  > Command field: /n
+  > Press Enter
+=== RETRY 1/1: invoice KALP2610003722 ===
+  > Command field: /n
+  > Press Enter
+  > Command field: /nMIRO
+  > Press Enter
+  > Type INVFO-BLDAT = 09.10.2026
+  > Type INVFO-XBLNR = KALP2610003722
+  > Type INVFO-WAERS = INR
+  > Press Enter
+  > Type RM08M-EBELN = 5100002512
+  > Press Enter
+[ WARN ] KALP2610003722: FAILED - [purchase order] SAP error: Purchase order 5100002512 does not exist
+  > Command field: /n
+  > Press Enter
+KALP2610003722 -> FAILED (after retry)
+| PASS |
+------------------------------------------------------------------------------------------------------------------------
+  > Command field: /n
+  > Press Enter
+MIRO run finished: CHECKED 1 | PARKED 0 | POSTED 0 | REVIEW 3 | FAILED 5 | UNKNOWN 0 | SKIPPED 0
+Miro Posting :: KTFL - MIRO invoice entry robot                                                                 | PASS |
+1 task, 1 passed, 0 failed
+========================================================================================================================
+Output:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_103857\output.xml
+Log:     C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_103857\log.html
+Report:  C:\Users\ckts00126\Desktop\KTFL-EXTRACTION\robot_framework\miro_robot\output\run_20261127_103857\report.html
