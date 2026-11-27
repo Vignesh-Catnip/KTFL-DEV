@@ -112,6 +112,7 @@ def posting_csv(status: str | None = None, db: Session = Depends(get_db), _: Use
 
 @router.post("/posting/{invoice_id}/requeue")
 def requeue(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(require("approver"))):
+    from ..services import robot as robot_svc
     inv = db.get(Invoice, invoice_id)
     if inv is None:
         raise HTTPException(404, "Invoice not found")
@@ -121,6 +122,8 @@ def requeue(invoice_id: int, db: Session = Depends(get_db), user: User = Depends
     old = inv.miro_status
     inv.miro_status, inv.miro_attempts, inv.miro_message = None, 0, None
     audit(db, "MIRO_REQUEUED", inv.id, {"previous": old}, user.username)
+    # Start robot for this ONE invoice only — passes -v REQUEUE_INVOICE_ID:{invoice_id}
+    robot_svc.trigger(by=user.username, reason="REQUEUE", requeue_invoice_id=invoice_id)
     return {"ok": True}
 
 
