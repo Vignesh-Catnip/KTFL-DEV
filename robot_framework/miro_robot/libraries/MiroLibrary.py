@@ -83,12 +83,41 @@ class MiroLibrary:
                         f"(check them in SAP MIR4 before resetting miro_status)")
 
     @keyword("Get Invoices Ready For MIRO")
-    def get_pending(self):
+    def get_pending(self, invoice_id: int | None = None):
         rows = self.db.pending_invoices(self.cfg.source_status, self.cfg.mode,
-                                        self.cfg.max_attempts, self.cfg.batch_limit)
-        logger.info(f"{len(rows)} invoice(s) with status {self.cfg.source_status} waiting for MIRO",
+                                        self.cfg.max_attempts, self.cfg.batch_limit,
+                                        invoice_id=invoice_id)
+        logger.info(f"{len(rows)} invoice(s) with status {self.cfg.source_status} waiting for MIRO"
+                    + (f" (invoice_id={invoice_id})" if invoice_id else ""),
                     also_console=True)
         return rows
+
+    @keyword("Has Pending Invoices")
+    def has_pending(self) -> bool:
+        """Quick check: are there any MATCHED invoices waiting? Used by the idle loop."""
+        rows = self.db.pending_invoices(self.cfg.source_status, self.cfg.mode,
+                                        self.cfg.max_attempts, 1)
+        return len(rows) > 0
+
+    @keyword("Close SAP Session")
+    def close_sap_session(self):
+        """Close SAP GUI gracefully. Used when no invoices are waiting or after a hang."""
+        try:
+            from miro.miro_screen import close_sap
+            close_sap(self.sap)
+        except Exception as exc:
+            logger.warn(f"SAP close: {exc}")
+        self.sap = None
+        self.miro = None
+
+    @keyword("Reopen SAP Session")
+    @_track
+    def reopen_sap_session(self):
+        """Open a fresh SAP connection. Used by the idle loop after finding new invoices."""
+        self.sap = connect_sap(self.cfg)
+        self.sap.say = self._say
+        self.miro = MiroScreen(self.sap, self.cfg)
+        logger.info(f"SAP session reopened ({self.sap.screen_info()})", also_console=True)
 
     @keyword("Connect To SAP")
     @_track
